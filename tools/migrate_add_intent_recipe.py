@@ -46,6 +46,14 @@ CREATE TABLE IF NOT EXISTS Recipe (
 );
 CREATE INDEX IF NOT EXISTS Recipe_dishId_idx ON Recipe(dishId);
 
+CREATE TABLE IF NOT EXISTS RecipeAlias (
+    id TEXT PRIMARY KEY,
+    recipeId TEXT NOT NULL REFERENCES Recipe(id),
+    alias TEXT NOT NULL,
+    createdAt TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS RecipeAlias_recipeId_idx ON RecipeAlias(recipeId);
+
 CREATE TABLE IF NOT EXISTS RecipeLine (
     id TEXT PRIMARY KEY,
     recipeId TEXT NOT NULL REFERENCES Recipe(id),
@@ -127,7 +135,7 @@ def migrate(db_path: Path) -> None:
     conn.commit()
     tables = [r[0] for r in conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name IN "
-        "('Dish','DishAlias','Recipe','RecipeLine','DishSaleUpload','DishSale',"
+        "('Dish','DishAlias','Recipe','RecipeAlias','RecipeLine','DishSaleUpload','DishSale',"
         "'IntentDay','IntentDishCount','IntentIngredient')"
     )]
     conn.close()

@@ -27,9 +27,14 @@ def match_recipe(conn: sqlite3.Connection, extracted_text: str) -> RecipeMatchRe
     target = normalize(extracted_text)
     best: dict | None = None
     for recipe in recipes:
-        score = compare_two_strings(target, normalize(recipe["name"])) * 100
-        if best is None or score > best["score"]:
-            best = {"recipeId": recipe["id"], "recipeName": recipe["name"], "score": score}
+        aliases = conn.execute(
+            "SELECT alias FROM RecipeAlias WHERE recipeId = ? ORDER BY rowid ASC", (recipe["id"],)
+        ).fetchall()
+        candidates = [normalize(recipe["name"])] + [normalize(a["alias"]) for a in aliases]
+        for candidate in candidates:
+            score = compare_two_strings(target, candidate) * 100
+            if best is None or score > best["score"]:
+                best = {"recipeId": recipe["id"], "recipeName": recipe["name"], "score": score}
 
     if best is None:
         return {"matchedRecipeId": None, "matchedRecipeName": None, "confidence": 0, "status": "MANUAL"}
@@ -46,3 +51,18 @@ def match_recipe(conn: sqlite3.Connection, extracted_text: str) -> RecipeMatchRe
         "matchedRecipeId": best["recipeId"], "matchedRecipeName": best["recipeName"],
         "confidence": confidence, "status": status,
     }
+
+
+def save_recipe_alias(conn: sqlite3.Connection, recipe_id: str, alias: str) -> None:
+    from app.dates import now_db
+    from app.db import new_id
+
+    normalized = normalize(alias)
+    existing = conn.execute("SELECT id FROM RecipeAlias WHERE alias = ?", (normalized,)).fetchone()
+    if existing:
+        conn.execute("UPDATE RecipeAlias SET recipeId = ? WHERE alias = ?", (recipe_id, normalized))
+    else:
+        conn.execute(
+            "INSERT INTO RecipeAlias (id, recipeId, alias, createdAt) VALUES (?, ?, ?, ?)",
+            (new_id(), recipe_id, normalized, now_db()),
+        )
