@@ -282,11 +282,90 @@ tr:hover td { background: var(--muted); }
 .line-item-row .field { flex: 1; margin-bottom: 0; }
 
 /* --- Mobile --- */
+/* --- Mobile nav (hamburger) --- */
+.nav-toggle-checkbox { display: none; }
+.nav-toggle-label {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  margin-left: auto;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: background-color 0.15s var(--ease);
+}
+.nav-toggle-label:hover { background: rgba(255, 255, 255, 0.08); }
+.nav-toggle-label span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform 0.2s var(--ease), opacity 0.2s var(--ease);
+}
+.nav-toggle-checkbox:checked ~ .app-nav-inner .nav-toggle-label span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.nav-toggle-checkbox:checked ~ .app-nav-inner .nav-toggle-label span:nth-child(2) { opacity: 0; }
+.nav-toggle-checkbox:checked ~ .app-nav-inner .nav-toggle-label span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
 @media (max-width: 640px) {
-  .app-nav-inner { padding: 8px 14px; }
-  .nav-links { width: 100%; order: 3; }
-  .nav-signout { margin-left: 0; order: 2; }
-  .app-main { padding: 18px 14px 52px; }
+  .app-nav-inner {
+    padding: 10px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    position: relative; /* anchors the dropdown panel below */
+    min-height: 52px;
+  }
+  .nav-toggle-label { display: flex; width: 40px; height: 40px; } /* real tap target, not a cramped 32px */
+  .nav-signout { margin-left: auto; order: 2; }
+  .nav-signout .btn-link { min-height: 40px; display: inline-flex; align-items: center; }
+
+  /* A proper dropdown PANEL anchored below the header, full-width and out of
+     the flex-sibling flow entirely -- avoids fighting the brand/hamburger/
+     sign-out items for row space (the earlier flex:1-inherited-width bug),
+     and reads as a native mobile app menu rather than a squeezed-in flex item. */
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    max-height: 0;
+    overflow: hidden;
+    background: var(--header-bg);
+    box-shadow: var(--shadow-lg);
+    transition: max-height 0.25s var(--ease);
+    z-index: 30;
+  }
+  .nav-toggle-checkbox:checked ~ .app-nav-inner .nav-links {
+    max-height: calc(100vh - 52px);
+    overflow-y: auto;
+    padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
+  }
+  .nav-links a {
+    border-radius: 10px;
+    padding: 14px 16px; /* >=44px tall tap target, matches iOS/Android guidelines */
+    font-size: 0.95rem;
+    width: 100%;
+  }
+
+  /* Prevent iOS Safari's auto-zoom-on-focus (triggers below 16px) and give
+     every tappable control a comfortable, standard mobile hit target. */
+  input, select, textarea { font-size: 16px; padding: 11px 12px; }
+  .btn { min-height: 44px; padding: 10px 18px; }
+  .btn-sm { min-height: 38px; padding: 7px 14px; }
+
+  .app-main {
+    padding: 16px 14px calc(52px + env(safe-area-inset-bottom));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+  h1 { font-size: 1.3rem; }
   table { font-size: 0.78rem; }
-  .card { padding: 16px; }
+  .card { padding: 16px; border-radius: 10px; }
+  .flex-row { gap: 10px; }
 }

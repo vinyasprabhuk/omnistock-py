@@ -3,8 +3,18 @@
 <html lang="en" data-theme="{{ branding.themeMode if branding else 'system' }}" data-accent="{{ branding.themeColor if branding else 'navy' }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}{{ branding.appName if branding else 'OmniStock' }}{% endblock %}</title>
+
+  <!-- PWA: makes this installable to a phone home screen (Android: real
+       "Install app" prompt; iOS: Add to Home Screen via apple-touch-icon). -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="{{ branding.headerColor if branding and branding.headerColor else '#0b1f44' }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="{{ branding.appName if branding else 'OmniStock' }}">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,6 +31,7 @@
 <body>
   {% if current_user %}
   <header class="app-nav">
+    <input type="checkbox" id="nav-toggle" class="nav-toggle-checkbox">
     <div class="app-nav-inner">
       <a href="/" class="brand brand-{{ branding.brandSize if branding else 'md' }}">
         {% if branding and branding.logoPath %}
@@ -28,6 +39,9 @@
         {% endif %}
         <span class="brand-name">{{ (branding.appName if branding else 'OmniStock') | upper }}</span>
       </a>
+      <label for="nav-toggle" class="nav-toggle-label" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </label>
       <nav class="nav-links">
         {% for link in nav_links %}
           <a href="{{ link.href }}" class="{{ 'active' if request.path.startswith(link.href) else '' }}">{{ link.label }}</a>
@@ -55,6 +69,11 @@
   </main>
   <script src="{{ url_for('static', filename='js/table-search.js') }}"></script>
   <script src="{{ url_for('static', filename='js/line-items.js') }}"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    }
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

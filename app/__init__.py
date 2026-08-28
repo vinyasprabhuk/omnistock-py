@@ -7,8 +7,10 @@ from app.auth.permissions import can_access_route, can_write, default_route_for_
 from app.db import get_connection
 from app.security import get_csrf_token, validate_csrf
 
-# Paths open to anyone, matching src/proxy.ts's PUBLIC_PATHS.
-PUBLIC_PATHS = ("/login", "/branding", "/static")
+# Paths open to anyone, matching src/proxy.ts's PUBLIC_PATHS. manifest.json/
+# sw.js must be public too -- the browser fetches these to decide if the site
+# is installable, before any login has happened.
+PUBLIC_PATHS = ("/login", "/branding", "/static", "/manifest.json", "/sw.js")
 
 
 def create_app(config_object: str = "config.Config") -> Flask:
@@ -36,9 +38,11 @@ def create_app(config_object: str = "config.Config") -> Flask:
     from app.views.kitchen import bp as kitchen_bp
     from app.views.wastage import bp as wastage_bp
     from app.views.admin import bp as admin_bp
+    from app.views.pwa import bp as pwa_bp
 
     app.register_blueprint(login_bp)
     app.register_blueprint(files_bp)
+    app.register_blueprint(pwa_bp)
     app.register_blueprint(tracker_bp)
     app.register_blueprint(inventory_bp)
     app.register_blueprint(requirements_bp)
