@@ -69,6 +69,34 @@ GROUP_C_SIDES: list[AccompanimentEntry] = [
     {"refType": "ITEM", "refName": "Appalam", "qty": 1, "unit": "piece"},
 ]
 
+# Combo/tiffin platters -- keyed by exact dish name rather than category,
+# confirmed in chat. Components with no recipe of their own yet (Idly,
+# Vada, Masala Dosa batters, chutneys, Filter Coffee) are RECIPE_MISSING so
+# they show as a real gap instead of silently vanishing, same as every
+# other unresolved accompaniment.
+COMBO_COMPOSITIONS: dict[str, list[AccompanimentEntry]] = {
+    "Mini Tiffin": [
+        {"refType": "RECIPE", "refName": "Kesari", "qty": 70, "unit": "ml"},
+        {"refType": "RECIPE", "refName": "Ghee Pongal", "qty": 200, "unit": "ml"},
+        {"refType": "RECIPE", "refName": "Tamilnadu Sambar", "qty": 100, "unit": "ml"},
+        {"refType": "RECIPE_MISSING", "refName": "Idly (1 pc, in Mini Tiffin)", "qty": 1, "unit": "piece"},
+        {"refType": "RECIPE_MISSING", "refName": "Vada (half, in Mini Tiffin)", "qty": 0.5, "unit": "piece"},
+        {"refType": "RECIPE_MISSING", "refName": "Masala Dosa (half, in Mini Tiffin)", "qty": 0.5, "unit": "piece"},
+        {"refType": "RECIPE_MISSING", "refName": "Coconut Chutney", "qty": 50, "unit": "ml"},
+        {"refType": "RECIPE_MISSING", "refName": "Tomato Chutney", "qty": 50, "unit": "ml"},
+        {"refType": "RECIPE_MISSING", "refName": "Mint Chutney", "qty": 50, "unit": "ml"},
+    ],
+    "South Indian Combo": [
+        # Ghee Pongal portion here wasn't specified explicitly -- assumed a
+        # standard full 250ml portion (its normal stand-alone size) rather
+        # than guessing at a fraction. Flag if that's wrong.
+        {"refType": "RECIPE", "refName": "Ghee Pongal", "qty": 250, "unit": "ml"},
+        {"refType": "RECIPE_MISSING", "refName": "Idly (2 pcs, in South Indian Combo)", "qty": 2, "unit": "piece"},
+        {"refType": "RECIPE_MISSING", "refName": "Vada (1 pc, in South Indian Combo)", "qty": 1, "unit": "piece"},
+        {"refType": "RECIPE_MISSING", "refName": "Filter Coffee (in South Indian Combo)", "qty": 1, "unit": "piece"},
+    ],
+}
+
 
 def accompaniments_for_dish(category: str, dish_name: str) -> list[AccompanimentEntry]:
     """Every accompaniment entry that applies to one dish, by its
@@ -90,5 +118,7 @@ def accompaniments_for_dish(category: str, dish_name: str) -> list[Accompaniment
 
     if category == GROUP_C_CATEGORY:
         entries.extend(GROUP_C_SIDES)
+
+    entries.extend(COMBO_COMPOSITIONS.get(dish_name, []))
 
     return entries

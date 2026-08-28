@@ -132,6 +132,8 @@ def generate_intent_day(
         own_recipe = conn.execute(
             "SELECT * FROM Recipe WHERE dishId = ?", (d["dishId"],)
         ).fetchone()
+        dish_accompaniments = accompaniments_for_dish(d["category"], d["dishName"])
+
         if own_recipe and own_recipe["servesQty"]:
             multiplier = d["finalQty"] / own_recipe["servesQty"]
             for item_id, qty in _expand_recipe_items(conn, own_recipe["id"], multiplier).items():
@@ -140,8 +142,15 @@ def generate_intent_day(
         elif d["category"] not in ("OTHER",):
             gaps.append({"dishName": d["dishName"], "reason": "no base recipe yet"})
             dish_counts.append(d)
+        elif dish_accompaniments:
+            # category OTHER with no own recipe would normally be dropped
+            # entirely -- but a combo/tiffin platter (see
+            # intent_rules.COMBO_COMPOSITIONS) still needs to show up as a
+            # predicted dish, since it's what's actually driving demand for
+            # its components (e.g. Mini Tiffin driving Ghee Pongal).
+            dish_counts.append(d)
 
-        for entry in accompaniments_for_dish(d["category"], d["dishName"]):
+        for entry in dish_accompaniments:
             if entry["refType"] == "RECIPE_MISSING":
                 gaps.append({"dishName": f"{d['dishName']} -> {entry['refName']}", "reason": "accompaniment recipe not provided yet"})
                 continue
