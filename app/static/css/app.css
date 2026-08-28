@@ -148,7 +148,6 @@ h3 { font-size: 0.95rem; }
 }
 .nav-links a:hover { opacity: 1; background: rgba(255, 255, 255, 0.08); text-decoration: none; }
 .nav-links a.active { opacity: 1; background: rgba(255, 255, 255, 0.16); font-weight: 600; }
-.nav-signout { margin-left: auto; }
 .btn-link {
   background: none; border: none; color: inherit; opacity: 0.7; cursor: pointer;
   font-size: 0.84rem; padding: 6px 10px; border-radius: 999px;
@@ -296,6 +295,7 @@ tr:hover td { background: var(--muted); }
 /* --- Mobile --- */
 /* --- Mobile nav (hamburger) --- */
 .nav-toggle-checkbox { display: none; }
+.nav-right { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .nav-toggle-label {
   display: none;
   flex-direction: column;
@@ -304,7 +304,6 @@ tr:hover td { background: var(--muted); }
   width: 32px;
   height: 32px;
   padding: 6px;
-  margin-left: auto;
   cursor: pointer;
   border-radius: 7px;
   transition: background-color 0.15s var(--ease);
@@ -334,7 +333,6 @@ tr:hover td { background: var(--muted); }
   min-height: 52px;
 }
 .nav-toggle-label { display: flex; width: 40px; height: 40px; } /* real tap target, not a cramped 32px */
-.nav-signout { margin-left: auto; order: 2; }
 .nav-signout .btn-link { min-height: 40px; display: inline-flex; align-items: center; }
 
 /* A proper dropdown PANEL anchored below the header, full-width and out of

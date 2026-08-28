@@ -39,18 +39,20 @@
         {% endif %}
         <span class="brand-name">{{ (branding.appName if branding else 'OmniStock') | upper }}</span>
       </a>
-      <label for="nav-toggle" class="nav-toggle-label" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </label>
       <nav class="nav-links">
         {% for link in nav_links %}
           <a href="{{ link.href }}" class="{{ 'active' if request.path.startswith(link.href) else '' }}">{{ link.label }}</a>
         {% endfor %}
       </nav>
-      <form action="/logout" method="post" class="nav-signout">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn-link">Sign out</button>
-      </form>
+      <div class="nav-right">
+        <label for="nav-toggle" class="nav-toggle-label" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </label>
+        <form action="/logout" method="post" class="nav-signout">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-link">Sign out</button>
+        </form>
+      </div>
     </div>
   </header>
   {% endif %}
