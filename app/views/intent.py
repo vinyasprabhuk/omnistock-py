@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import tempfile
 from datetime import timedelta
+from pathlib import Path
 
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import from_db, to_db, today_key
 from app.security import require_write
+from app.services.dish_sales_loader import load_dish_sales_file
 from app.services.intent import compute_recipe_prep, generate_intent_day, set_dish_override
 
 bp = Blueprint("intent", __name__)
@@ -159,3 +162,53 @@ def confirm(intent_day_id: str):
     conn.commit()
     flash("Day confirmed.", "success")
     return redirect(url_for("intent.index", week=week, day=day, branchId=branch_id))
+
+
+@bp.route("/intent/upload-sales", methods=["POST"])
+@require_write
+def upload_sales():
+    conn = g.conn
+    week = request.form.get("week") or today_key()
+    branch_id = request.form.get("branchId")
+    files = [f for f in request.files.getlist("files") if f and f.filename]
+    if not files:
+        flash("Choose at least one day-wise sale report file.", "error")
+        return redirect(url_for("intent.index", week=week, branchId=branch_id))
+
+    total_rows = 0
+    total_dishes = 0
+    dates_loaded: list[str] = []
+    errors: list[str] = []
+
+    for file in files:
+        if not file.filename.lower().endswith((".xlsx", ".xls")):
+            errors.append(f"{file.filename}: not an .xlsx/.xls file")
+            continue
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            file.save(tmp.name)
+            tmp_path = Path(tmp.name)
+        try:
+            result = load_dish_sales_file(conn, str(tmp_path), file.filename)
+            if result["date"] is None:
+                errors.append(f"{file.filename}: no sale rows found -- check it's the real export format")
+                continue
+            total_rows += result["rowsLoaded"]
+            total_dishes += result["dishesCreated"]
+            dates_loaded.append(result["date"])
+        except Exception as e:
+            errors.append(f"{file.filename}: {e}")
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+    conn.commit()
+
+    if dates_loaded:
+        flash(
+            f"Loaded {len(dates_loaded)} day(s) ({', '.join(sorted(dates_loaded))}), "
+            f"{total_rows} sale rows, {total_dishes} new dishes discovered.",
+            "success",
+        )
+    if errors:
+        flash(f"{len(errors)} file(s) skipped: {'; '.join(errors)}", "error")
+
+    return redirect(url_for("intent.index", week=week, branchId=branch_id))

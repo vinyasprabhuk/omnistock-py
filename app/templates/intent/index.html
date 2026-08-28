@@ -27,6 +27,18 @@
   </div>
 </div>
 
+<details class="rcard" style="margin-bottom:16px;">
+  <summary>Upload sale reports <span class="rmeta text-muted">day-wise POS export, one or more files at once</span></summary>
+  <form method="post" action="{{ url_for('intent.upload_sales') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;padding:12px 14px 14px;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+    <label class="field" style="width:auto;"><span>Files</span><input type="file" name="files" accept=".xlsx,.xls" multiple required style="width:320px;"></label>
+    <button type="submit" class="btn btn-primary">Upload &amp; Load</button>
+  </form>
+  <p class="text-muted" style="font-size:0.8rem;padding:0 14px 12px;margin:0;">Re-uploading a date replaces that day's sales, so it's safe to run again. Intent averages the last 6 same-weekday reports, so more history here means better predictions.</p>
+</details>
+
 <div class="flex-row" style="gap:6px;margin-bottom:18px;flex-wrap:wrap;">
   {% for d in days_info %}
   <a href="?week={{ days_info[0].dateKey }}&day={{ d.dateKey }}&branchId={{ branch.branchId }}"
