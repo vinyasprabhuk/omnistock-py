@@ -17,6 +17,15 @@ uploads/
 tests/parity_out/
 *.log
 
+# Server-managed, environment-specific -- cPanel's CloudLinux env-var tool
+# and our manually-added Passenger directives write directly into
+# .htaccess on the live server; tmp/ is Passenger's own restart-trigger
+# folder. Neither belongs in the repo -- tracking them would make every
+# future cPanel-side edit show up as "uncommitted changes" and block
+# Git Version Control's deploy step.
+/.htaccess
+/tmp/
+
 # Editor
 .vscode/
 .idea/
