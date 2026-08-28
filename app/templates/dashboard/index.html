@@ -27,20 +27,48 @@
 
 <div class="card-grid card-grid-4">
   <div class="card stat">
-    <div class="stat-label">{{ 'Kitchen Requirement in Period' if is_filtered else "Today's Kitchen Requirement" }}</div>
-    <div class="stat-value">{{ requirement_item_count }} items</div>
+    <div class="stat-label">{{ 'Spend Breakdown in Period' if is_filtered else "Today's Spend Breakdown" }}</div>
+    <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--muted);margin:10px 0 8px;">
+      <div style="width:{{ breakdown_pct.purchase }}%;background:var(--primary);" title="Purchases {{ breakdown_pct.purchase | round(1) }}%"></div>
+      <div style="width:{{ breakdown_pct.issue }}%;background:var(--warning);" title="Stock Issued {{ breakdown_pct.issue | round(1) }}%"></div>
+      <div style="width:{{ breakdown_pct.inventory }}%;background:var(--success);" title="Inventory Value {{ breakdown_pct.inventory | round(1) }}%"></div>
+    </div>
+    <div style="font-size:0.78rem;line-height:1.7;">
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--primary);margin-right:5px;"></span>Purchases &mdash; {{ breakdown_pct.purchase | round(1) }}%</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--warning);margin-right:5px;"></span>Stock Issued &mdash; {{ breakdown_pct.issue | round(1) }}%</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--success);margin-right:5px;"></span>Inventory Value &mdash; {{ breakdown_pct.inventory | round(1) }}%</div>
+    </div>
   </div>
   <div class="card stat">
     <div class="stat-label">{{ 'Purchases in Period' if is_filtered else "Today's Purchases" }}</div>
-    <div class="stat-value">{{ today_purchases | fmt }} units</div>
+    <div class="stat-value">{{ today_purchase_spend | money_grouped }}</div>
   </div>
   <div class="card stat">
     <div class="stat-label">{{ 'Stock Issued in Period' if is_filtered else "Today's Stock Issued" }}</div>
-    <div class="stat-value">{{ today_issued | fmt }} units</div>
+    <div class="stat-value">{{ today_issue_spend | money_grouped }}</div>
   </div>
   <div class="card stat">
     <div class="stat-label">{{ 'Inventory Value (as of ' ~ to_param ~ ')' if (is_filtered and to_param) else 'Inventory Value' }}</div>
     <div class="stat-value">{{ total_store_value | money_grouped }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <h3 class="mt-0">{{ 'Stock Issued Spend by Department in Period' if is_filtered else 'Stock Issued Spend by Department (All Time)' }}</h3>
+  {% if usage_by_department | length == 0 %}<p class="text-muted">No stock issue history yet.</p>{% endif %}
+  <div class="card-grid card-grid-4">
+    {% for d in usage_by_department %}
+    <div>
+      <div class="flex-row" style="justify-content:space-between;font-size:0.85rem;">
+        <span>{{ d.department }}</span>
+        <strong>{{ (d.totalSpend / usage_department_total * 100) | round(1) if usage_department_total else 0 }}%</strong>
+      </div>
+      <div style="height:8px;border-radius:4px;background:var(--muted);overflow:hidden;margin:4px 0;">
+        <div style="height:100%;background:var(--warning);width:{{ (d.totalSpend / max_usage_department * 100) }}%;"></div>
+      </div>
+      <div class="text-muted" style="font-size:0.78rem;">{{ d.totalSpend | money_grouped }}</div>
+    </div>
+    {% endfor %}
   </div>
 </div>
 

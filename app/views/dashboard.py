@@ -7,7 +7,7 @@ from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import date_key_to_db, from_db, today_key
 from app.services import purchase_analytics as pa
 from app.services import usage_analytics as ua
-from app.services.calculations import get_consolidated_requirement, get_master_inventory, get_period_tracker
+from app.services.calculations import get_master_inventory, get_period_tracker
 from app.services.spend_periods import get_period_boundaries
 
 bp = Blueprint("dashboard", __name__)
@@ -28,6 +28,42 @@ def _sum_qty(conn, table: str, join_table: str, join_col: str, branch_id: str,
         f"JOIN {join_table} j ON j.id = t.{join_col} WHERE {' AND '.join(conditions)}"
     )
     return float(conn.execute(sql, params).fetchone()[0] or 0)
+
+
+def _sum_purchase_spend(conn, branch_id: str, date_eq=None, date_gte=None, date_lte=None) -> float:
+    conditions = ["j.branchId = ?"]
+    params: list = [branch_id]
+    if date_eq is not None:
+        conditions.append("j.date = ?"); params.append(date_eq)
+    if date_gte is not None:
+        conditions.append("j.date >= ?"); params.append(date_gte)
+    if date_lte is not None:
+        conditions.append("j.date <= ?"); params.append(date_lte)
+    sql = (
+        "SELECT COALESCE(SUM(t.qty * t.rate), 0) FROM PurchaseItem t "
+        f"JOIN Purchase j ON j.id = t.purchaseId WHERE {' AND '.join(conditions)}"
+    )
+    return float(conn.execute(sql, params).fetchone()[0] or 0)
+
+
+def _sum_issue_spend(conn, branch_id: str, avg_rate_by_item: dict[str, float],
+                      date_eq=None, date_gte=None, date_lte=None) -> float:
+    """StockIssueItem has no rate of its own, so (mirroring usage_analytics'
+    convention) each item's all-history average purchase rate values it."""
+    conditions = ["j.branchId = ?"]
+    params: list = [branch_id]
+    if date_eq is not None:
+        conditions.append("j.date = ?"); params.append(date_eq)
+    if date_gte is not None:
+        conditions.append("j.date >= ?"); params.append(date_gte)
+    if date_lte is not None:
+        conditions.append("j.date <= ?"); params.append(date_lte)
+    sql = (
+        "SELECT t.itemId AS itemId, t.qty AS qty FROM StockIssueItem t "
+        f"JOIN StockIssue j ON j.id = t.stockIssueId WHERE {' AND '.join(conditions)}"
+    )
+    rows = conn.execute(sql, params).fetchall()
+    return sum(float(r["qty"]) * avg_rate_by_item.get(r["itemId"], 0.0) for r in rows)
 
 
 @bp.route("/dashboard")
@@ -97,9 +133,9 @@ def index():
     # --- fetch everything (mirrors the original's Promise.all -- always computed regardless of active tab) ---
     from app.dates import to_db as _to_db
     inventory = get_master_inventory(conn, branch_id, range_to_db)
-    requirement_rows = get_consolidated_requirement(conn, branch_id, date_eq=req_date_eq, date_gte=req_date_gte, date_lte=req_date_lte)
-    today_purchases = _sum_qty(conn, "PurchaseItem", "Purchase", "purchaseId", branch_id, req_date_eq, req_date_gte, req_date_lte)
-    today_issued = _sum_qty(conn, "StockIssueItem", "StockIssue", "stockIssueId", branch_id, req_date_eq, req_date_gte, req_date_lte)
+    today_purchase_spend = _sum_purchase_spend(conn, branch_id, req_date_eq, req_date_gte, req_date_lte)
+    avg_rate_by_item = ua.get_avg_rate_by_item(conn)
+    today_issue_spend = _sum_issue_spend(conn, branch_id, avg_rate_by_item, req_date_eq, req_date_gte, req_date_lte)
 
     spend_summary = pa.get_spend_summary(conn, branch_id, range_)
     spend_by_ingredient = pa.get_spend_by_ingredient(conn, branch_id, range_)
@@ -154,19 +190,26 @@ def index():
 
     low_stock = [r for r in inventory if r["currentStock"] <= 0]
     total_store_value = sum(r["storeValue"] for r in inventory)
-    requirement_item_count = len(requirement_rows)
+    breakdown_total = today_purchase_spend + today_issue_spend + total_store_value
+    breakdown_pct = {
+        "purchase": (today_purchase_spend / breakdown_total * 100) if breakdown_total else 0.0,
+        "issue": (today_issue_spend / breakdown_total * 100) if breakdown_total else 0.0,
+        "inventory": (total_store_value / breakdown_total * 100) if breakdown_total else 0.0,
+    }
     max_month_spend = max([1] + [m["totalSpend"] for m in spend_by_month])
     max_department_spend = max([1] + [d["totalSpend"] for d in spend_by_department])
     max_usage_month = max([1] + [m["totalSpend"] for m in usage_by_month])
     max_usage_department = max([1] + [d["totalSpend"] for d in usage_by_department])
+    usage_department_total = sum(d["totalSpend"] for d in usage_by_department)
 
     return render_template(
         "dashboard/index.html",
         branch=branch, is_admin=is_admin, branches=branches, active_tab=active_tab,
         from_param=from_param or "", to_param=to_param or "", department_name=department_name,
         departments=departments, is_filtered=is_filtered,
-        requirement_item_count=requirement_item_count, today_purchases=today_purchases,
-        today_issued=today_issued, total_store_value=total_store_value,
+        today_purchase_spend=today_purchase_spend,
+        today_issue_spend=today_issue_spend, total_store_value=total_store_value,
+        breakdown_pct=breakdown_pct,
         period_a=period_a, period_b=period_b, cmp_mode=cmp_mode,
         cmp_a_from=cmp_a_from or "", cmp_a_to=cmp_a_to or "", cmp_b_from=cmp_b_from or "", cmp_b_to=cmp_b_to or "",
         all_items=all_items, cmp_item_ids=cmp_item_ids, cmp_dept=cmp_dept,
@@ -179,5 +222,6 @@ def index():
         usage_by_department=usage_by_department, usage_by_month=usage_by_month,
         usage_by_branch=usage_by_branch, usage_period=usage_period,
         max_usage_month=max_usage_month, max_usage_department=max_usage_department,
+        usage_department_total=usage_department_total,
         low_stock=low_stock,
     )
