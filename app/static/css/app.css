@@ -179,6 +179,10 @@ a.card:hover, .card.card-link:hover {
 .card-grid { display: grid; gap: 16px; }
 .card-grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 
+.ing-input { width: 76px; font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--card-foreground); }
+.dept-row td { background: var(--secondary); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--primary); padding: 6px 10px; }
+.qty { font-variant-numeric: tabular-nums; font-weight: 500; }
+
 .recipe-list { display: flex; flex-direction: column; gap: 10px; }
 .rcard { border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .rcard summary { list-style: none; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; font-weight: 500; }

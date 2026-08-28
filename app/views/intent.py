@@ -7,7 +7,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import from_db, to_db, today_key
 from app.security import require_write
-from app.services.intent import generate_intent_day, set_dish_override
+from app.services.intent import compute_recipe_prep, generate_intent_day, set_dish_override
 
 bp = Blueprint("intent", __name__)
 
@@ -57,7 +57,7 @@ def index():
     intent_day = None
     dish_counts = []
     ingredients = []
-    gaps_count = 0
+    recipe_prep = []
     if selected["intentDayId"]:
         intent_day = conn.execute("SELECT * FROM IntentDay WHERE id = ?", (selected["intentDayId"],)).fetchone()
         dish_counts = conn.execute(
@@ -67,21 +67,24 @@ def index():
             (selected["intentDayId"],),
         ).fetchall()
         ingredients = conn.execute(
-            "SELECT ii.*, item.name AS itemName, item.unit AS unit, dept.name AS departmentName "
+            "SELECT ii.*, item.name AS itemName, item.unit AS unit "
             "FROM IntentIngredient ii JOIN Item item ON item.id = ii.itemId "
-            "JOIN Department dept ON dept.id = ii.departmentId "
-            "WHERE ii.intentDayId = ? ORDER BY dept.name, ii.qty DESC",
+            "WHERE ii.intentDayId = ? ORDER BY ii.groupLabel, ii.qty DESC",
             (selected["intentDayId"],),
         ).fetchall()
+        recipe_prep = compute_recipe_prep(conn, selected["intentDayId"])
 
     prev_week = (week_monday - timedelta(days=7)).strftime("%Y-%m-%d")
     next_week = (week_monday + timedelta(days=7)).strftime("%Y-%m-%d")
+    dish_categories = sorted({dc["category"] for dc in dish_counts})
+    recipe_groups = sorted({ing["groupLabel"] for ing in ingredients})
 
     return render_template(
         "intent/index.html", branch=branch, is_admin=is_admin, branches=branches,
         days_info=days_info, selected=selected, week_label=f"{week_dates[0].strftime('%d %b')} - {week_dates[6].strftime('%d %b %Y')}",
         prev_week=prev_week, next_week=next_week, intent_day=intent_day,
-        dish_counts=dish_counts, ingredients=ingredients,
+        dish_counts=dish_counts, ingredients=ingredients, recipe_prep=recipe_prep,
+        dish_categories=dish_categories, recipe_groups=recipe_groups,
     )
 
 

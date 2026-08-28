@@ -11,6 +11,7 @@ from app.excel.export_workbook import (
     build_tracker_workbook,
 )
 from app.services.calculations import get_consolidated_requirement, get_daily_tracker, get_master_inventory
+from app.services.intent import compute_recipe_prep
 
 bp = Blueprint("export", __name__, url_prefix="/api/export")
 
@@ -59,7 +60,7 @@ def intent():
         (date_key_to_db(date), branch["branchId"]),
     ).fetchone()
 
-    dish_counts, ingredients = [], []
+    dish_counts, ingredients, recipe_prep = [], [], []
     if intent_day:
         dish_counts = [dict(r) for r in g.conn.execute(
             "SELECT dish.name AS dishName, dish.category AS category, idc.finalQty AS finalQty, idc.source AS source "
@@ -67,11 +68,11 @@ def intent():
             "WHERE idc.intentDayId = ? ORDER BY idc.finalQty DESC", (intent_day["id"],),
         )]
         ingredients = [dict(r) for r in g.conn.execute(
-            "SELECT dept.name AS departmentName, item.name AS itemName, item.unit AS unit, ii.qty AS qty, ii.source AS source "
+            "SELECT ii.groupLabel AS groupLabel, item.name AS itemName, item.unit AS unit, ii.qty AS qty, ii.source AS source "
             "FROM IntentIngredient ii JOIN Item item ON item.id = ii.itemId "
-            "JOIN Department dept ON dept.id = ii.departmentId "
-            "WHERE ii.intentDayId = ? ORDER BY dept.name, ii.qty DESC", (intent_day["id"],),
+            "WHERE ii.intentDayId = ? ORDER BY ii.groupLabel, ii.qty DESC", (intent_day["id"],),
         )]
+        recipe_prep = compute_recipe_prep(g.conn, intent_day["id"])
 
-    data = build_intent_workbook(date, dish_counts, ingredients)
+    data = build_intent_workbook(date, dish_counts, recipe_prep, ingredients)
     return _xlsx_response(data, f"intent-{date}.xlsx")

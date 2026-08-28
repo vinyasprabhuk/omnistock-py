@@ -119,20 +119,23 @@ def generate_intent_day(
     predicted = predict_dish_counts(conn, date_key, weeks_back, dish_overrides)
     date_db = date_key_to_db(date_key)
 
-    item_totals: dict[tuple[str, str], float] = defaultdict(float)  # (itemId, departmentId) -> qty
+    # Keyed by (itemId, groupLabel) where groupLabel is the RECIPE that
+    # actually needs the ingredient (e.g. "Tamilnadu Sambar"), not the dish
+    # that triggered it (e.g. "Plain Dosa") -- so Toor Dhal shows up under
+    # "Tamilnadu Sambar", never misleadingly attributed to "Dosa" just
+    # because a dosa sale is what happened to need more sambar made.
+    item_totals: dict[tuple[str, str], float] = defaultdict(float)
     gaps: list[IntentGap] = []
     dish_counts: list[PredictedDish] = []
 
     for d in predicted:
-        dept_id = d["departmentId"]
-
         own_recipe = conn.execute(
             "SELECT * FROM Recipe WHERE dishId = ?", (d["dishId"],)
         ).fetchone()
         if own_recipe and own_recipe["servesQty"]:
             multiplier = d["finalQty"] / own_recipe["servesQty"]
             for item_id, qty in _expand_recipe_items(conn, own_recipe["id"], multiplier).items():
-                item_totals[(item_id, dept_id)] += qty
+                item_totals[(item_id, own_recipe["name"])] += qty
             dish_counts.append(d)
         elif d["category"] not in ("OTHER",):
             gaps.append({"dishName": d["dishName"], "reason": "no base recipe yet"})
@@ -149,7 +152,7 @@ def generate_intent_day(
                     continue
                 total_needed = d["finalQty"] * entry["qty"]
                 qty_in_item_unit = total_needed / 1000.0 if entry["unit"] == "ml" and item["unit"].lower() == "litre" else total_needed
-                item_totals[(item["id"], dept_id)] += qty_in_item_unit
+                item_totals[(item["id"], entry["refName"])] += qty_in_item_unit
                 continue
             recipe = _recipe_by_name(conn, entry["refName"])
             if recipe is None:
@@ -163,7 +166,7 @@ def generate_intent_day(
             ml_needed = d["finalQty"] * entry["qty"]
             multiplier = ml_needed / batch_ml
             for item_id, qty in _expand_recipe_items(conn, recipe["id"], multiplier).items():
-                item_totals[(item_id, dept_id)] += qty
+                item_totals[(item_id, recipe["name"])] += qty
 
     existing = conn.execute(
         "SELECT id FROM IntentDay WHERE date = ? AND branchId = ?", (date_db, branch_id)
@@ -189,12 +192,12 @@ def generate_intent_day(
             (new_id(), intent_day_id, d["dishId"], d["predictedQty"], d["finalQty"], d["source"], ts, ts),
         )
 
-    for (item_id, dept_id), qty in item_totals.items():
+    for (item_id, group_label), qty in item_totals.items():
         ts = now_db()
         conn.execute(
-            "INSERT INTO IntentIngredient (id, intentDayId, itemId, departmentId, qty, source, createdAt, updatedAt) "
+            "INSERT INTO IntentIngredient (id, intentDayId, itemId, groupLabel, qty, source, createdAt, updatedAt) "
             "VALUES (?, ?, ?, ?, ?, 'AUTO', ?, ?)",
-            (new_id(), intent_day_id, item_id, dept_id, round(qty, 3), ts, ts),
+            (new_id(), intent_day_id, item_id, group_label, round(qty, 3), ts, ts),
         )
 
     return {
@@ -223,3 +226,70 @@ def set_dish_override(conn: sqlite3.Connection, intent_day_id: str, dish_id: str
 
     date_key = from_db(day["date"]).strftime("%Y-%m-%d")
     return generate_intent_day(conn, date_key, day["branchId"], dish_overrides=overrides)
+
+
+class RecipePrep(TypedDict):
+    recipeName: str
+    totalLitres: float | None
+    totalUnits: float | None
+    unitLabel: str
+    batchesNeeded: float | None
+    batchSizeLabel: str
+    contributors: list[str]
+
+
+def compute_recipe_prep(conn: sqlite3.Connection, intent_day_id: str) -> list[RecipePrep]:
+    """How much of each recipe (Sambar, Rasam, Kootu, ... and any dish's own
+    recipe like Ghee Pongal) needs to be made that day -- read off the
+    day's current dish counts (so it stays in sync with any dish-count
+    overrides), not persisted separately."""
+    dish_counts = conn.execute(
+        "SELECT idc.dishId, idc.finalQty, dish.name AS dishName, dish.category AS category "
+        "FROM IntentDishCount idc JOIN Dish dish ON dish.id = idc.dishId "
+        "WHERE idc.intentDayId = ? ORDER BY idc.finalQty DESC",
+        (intent_day_id,),
+    ).fetchall()
+
+    # Everything a recipe is used for -- as someone's own dish AND as an
+    # accompaniment on other dishes -- draws from the same pot, so it's
+    # tracked as one combined ml total per recipe rather than two separate
+    # numbers that would otherwise show the same recipe name twice.
+    ml_needed: dict[str, float] = defaultdict(float)
+    contributor_qty: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+
+    for d in dish_counts:
+        own_recipe = conn.execute(
+            "SELECT name, portionSizeMl FROM Recipe WHERE dishId = ?", (d["dishId"],)
+        ).fetchone()
+        if own_recipe and own_recipe["portionSizeMl"]:
+            ml_needed[own_recipe["name"]] += d["finalQty"] * own_recipe["portionSizeMl"]
+            contributor_qty[own_recipe["name"]][d["dishName"]] += d["finalQty"]
+
+        for entry in accompaniments_for_dish(d["category"], d["dishName"]):
+            if entry["refType"] != "RECIPE":
+                continue
+            ml_needed[entry["refName"]] += d["finalQty"] * entry["qty"]
+            contributor_qty[entry["refName"]][d["dishName"]] += d["finalQty"]
+
+    results: list[RecipePrep] = []
+    for name, ml in ml_needed.items():
+        recipe = conn.execute("SELECT * FROM Recipe WHERE name = ?", (name,)).fetchone()
+        if recipe is None:
+            continue
+        batch_ml = (recipe["servesVolumeLitre"] * 1000.0 if recipe["servesVolumeLitre"]
+                    else (recipe["servesQty"] or 0) * (recipe["portionSizeMl"] or 0))
+        batches = round(ml / batch_ml, 2) if batch_ml else None
+        batch_label = (f"{recipe['servesQty']:g} pax" if recipe["servesQty"] else "") + (
+            f" / {recipe['servesVolumeLitre']:g}L batch" if recipe["servesVolumeLitre"] else " batch")
+        top_contributors = sorted(contributor_qty[name].items(), key=lambda kv: -kv[1])
+        labels = [f"{dish_name} ×{qty:g}" for dish_name, qty in top_contributors[:5]]
+        if len(top_contributors) > 5:
+            labels.append(f"+{len(top_contributors) - 5} more")
+        results.append({
+            "recipeName": name, "totalLitres": round(ml / 1000.0, 2), "totalUnits": None,
+            "unitLabel": "Litres", "batchesNeeded": batches, "batchSizeLabel": batch_label,
+            "contributors": labels,
+        })
+
+    results.sort(key=lambda r: -(r["totalLitres"] or 0))
+    return results

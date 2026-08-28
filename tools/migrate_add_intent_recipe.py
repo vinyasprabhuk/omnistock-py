@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS IntentIngredient (
     id TEXT PRIMARY KEY,
     intentDayId TEXT NOT NULL REFERENCES IntentDay(id),
     itemId TEXT NOT NULL REFERENCES Item(id),
-    departmentId TEXT NOT NULL REFERENCES Department(id),
+    groupLabel TEXT NOT NULL,
     qty REAL NOT NULL,
     source TEXT NOT NULL,
     createdAt TEXT NOT NULL,

@@ -46,47 +46,70 @@
 </div>
 {% else %}
 
+<div class="flex-row" style="gap:10px;margin-bottom:18px;color:var(--muted-foreground);font-size:13px;">
+  <span><strong style="color:var(--foreground);">{{ dish_counts | length }}</strong> dishes predicted</span>
+  <span>&middot;</span>
+  <span><strong style="color:var(--foreground);">{{ recipe_prep | length }}</strong> recipes to prepare</span>
+  <span>&middot;</span>
+  <span><strong style="color:var(--foreground);">{{ ingredients | length }}</strong> ingredient lines</span>
+  {% if intent_day.status == 'CONFIRMED' %}<span>&middot;</span><span class="badge badge-success">Confirmed</span>{% endif %}
+</div>
+
 <div class="card">
-  <h2>Predicted dish counts</h2>
+  <h2>How much to prepare</h2>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-6px;">Sambar, chutneys, curries and any dish with its own recipe &mdash; how much of each to actually cook for {{ selected.label }}.</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Dish</th><th>Category</th><th style="width:110px;">Final qty</th><th style="width:90px;"></th></tr></thead>
+      <thead><tr><th>Recipe</th><th style="width:110px;">Amount</th><th style="width:170px;">Batches</th><th>Driven by</th></tr></thead>
       <tbody>
-        {% for dc in dish_counts %}
+        {% for rp in recipe_prep %}
         <tr>
-          <td>{{ dc.dishName }}</td>
-          <td class="text-muted">{{ dc.category }}</td>
-          <td>
-            <form method="post" action="{{ url_for('intent.override_dish', intent_day_id=intent_day.id, dish_id=dc.dishId) }}" class="flex-row" style="gap:4px;">
-              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
-              <input type="hidden" name="day" value="{{ selected.dateKey }}">
-              <input type="hidden" name="branchId" value="{{ branch.branchId }}">
-              <input type="number" name="finalQty" value="{{ dc.finalQty }}" step="any" style="width:70px;">
-              <button type="submit" class="btn btn-sm">Set</button>
-            </form>
-          </td>
-          <td>{% if dc.source == 'MANUAL' %}<span class="badge badge-warning">Edited</span>{% else %}<span class="badge badge-success">Avg</span>{% endif %}</td>
+          <td><strong>{{ rp.recipeName }}</strong></td>
+          <td class="qty">{{ rp.totalLitres }} L</td>
+          <td class="text-muted">{% if rp.batchesNeeded %}{{ rp.batchesNeeded }}&times; ({{ rp.batchSizeLabel }}){% endif %}</td>
+          <td class="text-muted" style="font-size:0.78rem;">{{ rp.contributors | join(', ') }}</td>
         </tr>
         {% endfor %}
+        {% if recipe_prep | length == 0 %}
+        <tr><td colspan="4" class="text-muted">Nothing to prepare yet &mdash; no dish today uses a loaded recipe or accompaniment.</td></tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
 </div>
 
 <div class="card">
-  <h2>Resulting ingredient requirement</h2>
+  <div class="flex-row" style="justify-content:space-between;align-items:baseline;">
+    <h2>Ingredient requirement</h2>
+    {% if intent_day.status != 'CONFIRMED' %}
+    <form method="post" action="{{ url_for('intent.confirm', intent_day_id=intent_day.id) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+      <input type="hidden" name="day" value="{{ selected.dateKey }}">
+      <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+      <button type="submit" class="btn btn-primary btn-sm">Confirm {{ selected.label }}</button>
+    </form>
+    {% endif %}
+  </div>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-6px;">Grouped by which recipe actually needs it &mdash; Toor Dhal under "Tamilnadu Sambar" means it's for the sambar that goes with dishes sold today, not the dish itself.</p>
+  <div class="flex-row" style="gap:8px;margin:2px 0 12px;">
+    <select id="ing-dept-filter" style="width:auto;">
+      <option value="">All recipes</option>
+      {% for grp in recipe_groups %}<option value="{{ grp }}">{{ grp }}</option>{% endfor %}
+    </select>
+    <input type="text" id="ing-name-filter" placeholder="Search item...">
+  </div>
   {% set ns = namespace(current_dept='') %}
   <div class="table-wrap">
-    <table>
-      <thead><tr><th>Item</th><th>Unit</th><th style="width:110px;">Qty</th><th style="width:80px;"></th></tr></thead>
+    <table class="ing-table" id="ing-table">
+      <thead><tr><th>Item</th><th style="width:70px;">Unit</th><th style="width:150px;">Qty</th><th style="width:70px;"></th></tr></thead>
       <tbody>
         {% for ing in ingredients %}
-        {% if ing.departmentName != ns.current_dept %}
-        {% set ns.current_dept = ing.departmentName %}
-        <tr><td colspan="4" style="background:var(--secondary);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:var(--primary);">{{ ing.departmentName }}</td></tr>
+        {% if ing.groupLabel != ns.current_dept %}
+        {% set ns.current_dept = ing.groupLabel %}
+        <tr class="dept-row" data-dept-header="{{ ing.groupLabel }}"><td colspan="4">{{ ing.groupLabel }}</td></tr>
         {% endif %}
-        <tr>
+        <tr data-name="{{ ing.itemName | lower }}" data-department="{{ ing.groupLabel }}">
           <td>{{ ing.itemName }}</td>
           <td class="text-muted">{{ ing.unit }}</td>
           <td>
@@ -95,11 +118,11 @@
               <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
               <input type="hidden" name="day" value="{{ selected.dateKey }}">
               <input type="hidden" name="branchId" value="{{ branch.branchId }}">
-              <input type="number" name="qty" value="{{ ing.qty }}" step="any" style="width:80px;">
-              <button type="submit" class="btn btn-sm">Set</button>
+              <input type="number" name="qty" value="{{ ing.qty }}" step="any" class="ing-input">
+              <button type="submit" class="btn-link" style="font-size:12px;">Save</button>
             </form>
           </td>
-          <td>{% if ing.source == 'EDITED' %}<span class="badge badge-warning">Edited</span>{% else %}<span class="badge badge-success">Auto</span>{% endif %}</td>
+          <td>{% if ing.source == 'EDITED' %}<span class="badge badge-warning">Edited</span>{% else %}<span class="badge badge-muted">Auto</span>{% endif %}</td>
         </tr>
         {% endfor %}
         {% if ingredients | length == 0 %}
@@ -108,20 +131,80 @@
       </tbody>
     </table>
   </div>
-
-  <div class="flex-row" style="justify-content:flex-end;margin-top:12px;">
-    {% if intent_day.status != 'CONFIRMED' %}
-    <form method="post" action="{{ url_for('intent.confirm', intent_day_id=intent_day.id) }}">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
-      <input type="hidden" name="day" value="{{ selected.dateKey }}">
-      <input type="hidden" name="branchId" value="{{ branch.branchId }}">
-      <button type="submit" class="btn btn-primary">Confirm {{ selected.label }}</button>
-    </form>
-    {% else %}
-    <span class="badge badge-success">Confirmed</span>
-    {% endif %}
-  </div>
 </div>
+
+<details class="rcard">
+  <summary>Predicted dish counts <span class="rmeta text-muted">{{ dish_counts | length }} dishes, ranked by the 6-week average</span></summary>
+  <div class="flex-row" style="gap:8px;padding:0 14px;margin:10px 0;">
+    <select id="dish-category-filter" style="width:auto;">
+      <option value="">All categories</option>
+      {% for cat in dish_categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}
+    </select>
+    <input type="text" id="dish-name-filter" placeholder="Search dish...">
+  </div>
+  <div class="table-wrap">
+    <table id="dish-counts-table">
+      <thead><tr><th>Dish</th><th style="width:150px;">Category</th><th style="width:150px;">Final qty</th><th style="width:70px;"></th></tr></thead>
+      <tbody>
+        {% for dc in dish_counts %}
+        <tr data-name="{{ dc.dishName | lower }}" data-category="{{ dc.category }}">
+          <td>{{ dc.dishName }}</td>
+          <td class="text-muted">{{ dc.category }}</td>
+          <td>
+            <form method="post" action="{{ url_for('intent.override_dish', intent_day_id=intent_day.id, dish_id=dc.dishId) }}" class="flex-row" style="gap:4px;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+              <input type="hidden" name="day" value="{{ selected.dateKey }}">
+              <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+              <input type="number" name="finalQty" value="{{ dc.finalQty }}" step="any" class="ing-input">
+              <button type="submit" class="btn-link" style="font-size:12px;">Save</button>
+            </form>
+          </td>
+          <td>{% if dc.source == 'MANUAL' %}<span class="badge badge-warning">Edited</span>{% else %}<span class="badge badge-muted">Avg</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  function wireFilter(selectEl, inputEl, rowSelector, matchFn) {
+    if (!selectEl && !inputEl) return;
+    const rows = document.querySelectorAll(rowSelector);
+    function apply() {
+      rows.forEach((row) => { row.hidden = !matchFn(row); });
+    }
+    if (selectEl) selectEl.addEventListener("change", apply);
+    if (inputEl) inputEl.addEventListener("input", apply);
+  }
+
+  const dishCat = document.getElementById("dish-category-filter");
+  const dishName = document.getElementById("dish-name-filter");
+  wireFilter(dishCat, dishName, "#dish-counts-table tbody tr[data-name]", (row) => {
+    const cat = dishCat ? dishCat.value : "";
+    const q = dishName ? dishName.value.trim().toLowerCase() : "";
+    return (!cat || row.dataset.category === cat) && (!q || row.dataset.name.includes(q));
+  });
+
+  const ingDept = document.getElementById("ing-dept-filter");
+  const ingName = document.getElementById("ing-name-filter");
+  function applyIngFilter() {
+    const dept = ingDept ? ingDept.value : "";
+    const q = ingName ? ingName.value.trim().toLowerCase() : "";
+    document.querySelectorAll("#ing-table tbody tr[data-name]").forEach((row) => {
+      row.hidden = !((!dept || row.dataset.department === dept) && (!q || row.dataset.name.includes(q)));
+    });
+    document.querySelectorAll("#ing-table tbody tr.dept-row").forEach((row) => {
+      row.hidden = !!dept && row.dataset.deptHeader !== dept;
+    });
+  }
+  if (ingDept) ingDept.addEventListener("change", applyIngFilter);
+  if (ingName) ingName.addEventListener("input", applyIngFilter);
+})();
+</script>
 {% endblock %}

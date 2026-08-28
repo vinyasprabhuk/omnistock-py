@@ -69,9 +69,18 @@ def build_consolidated_requirement_workbook(date: str, rows: list[dict]) -> byte
     return _to_bytes(wb)
 
 
-def build_intent_workbook(date: str, dish_counts: list[dict], ingredients: list[dict]) -> bytes:
+def build_intent_workbook(date: str, dish_counts: list[dict], recipe_prep: list[dict], ingredients: list[dict]) -> bytes:
     wb = Workbook()
     wb.remove(wb.active)
+
+    prep_sheet = _sheet(wb, "How Much To Prepare", [
+        ("Recipe", 28), ("Amount (Litres)", 16), ("Batches Needed", 16), ("Batch Size", 20), ("Driven By", 60),
+    ])
+    for rp in recipe_prep:
+        prep_sheet.append([
+            rp["recipeName"], rp["totalLitres"], rp["batchesNeeded"], rp["batchSizeLabel"],
+            ", ".join(rp["contributors"]),
+        ])
 
     dish_sheet = _sheet(wb, "Predicted Dish Counts", [
         ("Dish", 32), ("Category", 18), ("Final Qty", 12), ("Source", 10),
@@ -80,9 +89,9 @@ def build_intent_workbook(date: str, dish_counts: list[dict], ingredients: list[
         dish_sheet.append([d["dishName"], d["category"], d["finalQty"], d["source"]])
 
     ing_sheet = _sheet(wb, "Ingredient Requirement", [
-        ("Department", 20), ("Item", 24), ("Unit", 10), ("Qty", 12), ("Source", 10),
+        ("Recipe", 24), ("Item", 24), ("Unit", 10), ("Qty", 12), ("Source", 10),
     ])
     for i in ingredients:
-        ing_sheet.append([i["departmentName"], i["itemName"], i["unit"], i["qty"], i["source"]])
+        ing_sheet.append([i["groupLabel"], i["itemName"], i["unit"], i["qty"], i["source"]])
 
     return _to_bytes(wb)
