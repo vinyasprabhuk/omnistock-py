@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Recipe - {{ branding.appName }}{% endblock %}
+{% block content %}
+<h1>Recipe</h1>
+<p class="text-muted">The ingredient makeup of every dish, used by Intent to translate planned production into raw material needs.</p>
+
+<div class="card">
+  <h2>Dishes with a recipe ({{ dish_recipes | length }})</h2>
+  <div class="recipe-list">
+    {% for r in dish_recipes %}
+    <details class="rcard">
+      <summary>{{ r.name }} <span class="rmeta text-muted">{{ r.menuGroup }} &middot; {{ recipe_lines[r.recipeId] | length }} ingredients</span></summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Ingredient</th><th>Qty for full batch</th><th>Unit</th><th></th></tr></thead>
+          <tbody>
+            {% for line in recipe_lines[r.recipeId] %}
+            <tr>
+              <td>{{ line.itemName or line.rawIngredientName }}</td>
+              <td>{{ '%.3f' | format(line.qty) if line.itemId else line.rawQtyValue }}</td>
+              <td>{{ line.itemUnit or line.rawQtyUnit }}</td>
+              <td>{% if not line.itemId %}<span class="badge badge-danger">No item match</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Accompaniment recipes ({{ accompaniment_recipes | length }})</h2>
+  <p class="text-muted">Not sold on their own &mdash; added automatically by the Intent accompaniment rules (chutneys, sambar, sides).</p>
+  <div class="recipe-list">
+    {% for r in accompaniment_recipes %}
+    <details class="rcard">
+      <summary>{{ r.name }} <span class="rmeta text-muted">{{ recipe_lines[r.recipeId] | length }} ingredients</span></summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Ingredient</th><th>Qty for full batch</th><th>Unit</th><th></th></tr></thead>
+          <tbody>
+            {% for line in recipe_lines[r.recipeId] %}
+            <tr>
+              <td>{{ line.itemName or line.rawIngredientName }}</td>
+              <td>{{ '%.3f' | format(line.qty) if line.itemId else line.rawQtyValue }}</td>
+              <td>{{ line.itemUnit or line.rawQtyUnit }}</td>
+              <td>{% if not line.itemId %}<span class="badge badge-danger">No item match</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Dishes with no recipe yet</h2>
+  <p class="text-muted">Grouped by menu group, ranked by how often each dish has actually sold. Intent can't forecast a dish's own ingredients until it has a recipe (its accompaniments can still be covered even without one).</p>
+  <div class="recipe-list">
+    {% for group_name, dishes in dishes_without_recipe_by_group.items() %}
+    <details class="rcard">
+      <summary>{{ group_name }} <span class="rmeta text-muted">{{ dishes | length }} dishes</span></summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dish</th><th>Accompaniment category</th><th>Times sold (all history)</th></tr></thead>
+          <tbody>
+            {% for d in dishes %}
+            <tr>
+              <td>{{ d.name }}</td>
+              <td class="text-muted">{{ d.category }}</td>
+              <td>{{ d.saleCount }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

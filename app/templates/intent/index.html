@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "_macros.html" import branch_switcher %}
+{% block title %}Intent - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="flex-row" style="justify-content:space-between;margin-bottom:16px;">
+  <h1 class="mt-0">Intent &mdash; {{ branch.branchName }}</h1>
+  {% if is_admin %}{{ branch_switcher(branches, branch.branchId) }}{% endif %}
+</div>
+
+<div class="card flex-row" style="justify-content:space-between;align-items:center;margin-bottom:16px;">
+  <div class="flex-row" style="align-items:center;gap:10px;">
+    <a class="btn btn-sm" href="?week={{ prev_week }}&branchId={{ branch.branchId }}">&lsaquo;</a>
+    <strong>Week of {{ week_label }}</strong>
+    <a class="btn btn-sm" href="?week={{ next_week }}&branchId={{ branch.branchId }}">&rsaquo;</a>
+  </div>
+  <form method="post" action="{{ url_for('intent.generate') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+    <input type="hidden" name="date" value="{{ selected.dateKey }}">
+    <button type="submit" class="btn btn-primary">Regenerate {{ selected.label }}</button>
+  </form>
+</div>
+
+<div class="flex-row" style="gap:6px;margin-bottom:18px;flex-wrap:wrap;">
+  {% for d in days_info %}
+  <a href="?week={{ days_info[0].dateKey }}&day={{ d.dateKey }}&branchId={{ branch.branchId }}"
+     class="card" style="flex:1;min-width:110px;text-decoration:none;color:inherit;{{ 'border-color:var(--primary);box-shadow:0 0 0 1px var(--primary);' if d.dateKey == selected.dateKey else '' }}">
+    <div style="font-size:12px;font-weight:600;">{{ d.label }}</div>
+    <div class="text-muted" style="font-size:11px;">{{ d.display }}</div>
+    {% if d.status == 'CONFIRMED' %}<span class="badge badge-success" style="margin-top:6px;">Confirmed</span>
+    {% elif d.status == 'DRAFT' %}<span class="badge badge-warning" style="margin-top:6px;">Draft</span>
+    {% else %}<span class="badge badge-muted" style="margin-top:6px;">Not generated</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+{% if not intent_day %}
+<div class="card">
+  <p class="text-muted">No Intent generated for {{ selected.label }} {{ selected.display }} yet. Click "Regenerate {{ selected.label }}" above to compute it from the last 6 weeks of sales.</p>
+</div>
+{% else %}
+
+<div class="card">
+  <h2>Predicted dish counts</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Dish</th><th>Category</th><th style="width:110px;">Final qty</th><th style="width:90px;"></th></tr></thead>
+      <tbody>
+        {% for dc in dish_counts %}
+        <tr>
+          <td>{{ dc.dishName }}</td>
+          <td class="text-muted">{{ dc.category }}</td>
+          <td>
+            <form method="post" action="{{ url_for('intent.override_dish', intent_day_id=intent_day.id, dish_id=dc.dishId) }}" class="flex-row" style="gap:4px;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+              <input type="hidden" name="day" value="{{ selected.dateKey }}">
+              <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+              <input type="number" name="finalQty" value="{{ dc.finalQty }}" step="any" style="width:70px;">
+              <button type="submit" class="btn btn-sm">Set</button>
+            </form>
+          </td>
+          <td>{% if dc.source == 'MANUAL' %}<span class="badge badge-warning">Edited</span>{% else %}<span class="badge badge-success">Avg</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Resulting ingredient requirement</h2>
+  {% set ns = namespace(current_dept='') %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Item</th><th>Unit</th><th style="width:110px;">Qty</th><th style="width:80px;"></th></tr></thead>
+      <tbody>
+        {% for ing in ingredients %}
+        {% if ing.departmentName != ns.current_dept %}
+        {% set ns.current_dept = ing.departmentName %}
+        <tr><td colspan="4" style="background:var(--secondary);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:var(--primary);">{{ ing.departmentName }}</td></tr>
+        {% endif %}
+        <tr>
+          <td>{{ ing.itemName }}</td>
+          <td class="text-muted">{{ ing.unit }}</td>
+          <td>
+            <form method="post" action="{{ url_for('intent.update_ingredient', intent_day_id=intent_day.id, ingredient_id=ing.id) }}" class="flex-row" style="gap:4px;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+              <input type="hidden" name="day" value="{{ selected.dateKey }}">
+              <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+              <input type="number" name="qty" value="{{ ing.qty }}" step="any" style="width:80px;">
+              <button type="submit" class="btn btn-sm">Set</button>
+            </form>
+          </td>
+          <td>{% if ing.source == 'EDITED' %}<span class="badge badge-warning">Edited</span>{% else %}<span class="badge badge-success">Auto</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        {% if ingredients | length == 0 %}
+        <tr><td colspan="4" class="text-muted">No ingredient lines yet &mdash; every predicted dish is missing a recipe. Check the Recipe tab.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex-row" style="justify-content:flex-end;margin-top:12px;">
+    {% if intent_day.status != 'CONFIRMED' %}
+    <form method="post" action="{{ url_for('intent.confirm', intent_day_id=intent_day.id) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+      <input type="hidden" name="day" value="{{ selected.dateKey }}">
+      <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+      <button type="submit" class="btn btn-primary">Confirm {{ selected.label }}</button>
+    </form>
+    {% else %}
+    <span class="badge badge-success">Confirmed</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

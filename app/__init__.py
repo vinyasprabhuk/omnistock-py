@@ -39,6 +39,8 @@ def create_app(config_object: str = "config.Config") -> Flask:
     from app.views.wastage import bp as wastage_bp
     from app.views.admin import bp as admin_bp
     from app.views.pwa import bp as pwa_bp
+    from app.views.intent import bp as intent_bp
+    from app.views.recipe import bp as recipe_bp
 
     app.register_blueprint(login_bp)
     app.register_blueprint(files_bp)
@@ -53,6 +55,8 @@ def create_app(config_object: str = "config.Config") -> Flask:
     app.register_blueprint(kitchen_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(wastage_bp)
+    app.register_blueprint(intent_bp)
+    app.register_blueprint(recipe_bp)
 
     from app.services.color import is_light_color
     from app.formatting import fmt, money, money_grouped, pct
@@ -136,6 +140,8 @@ def _nav_links(user: dict | None) -> list[dict]:
         {"href": "/dashboard", "label": "Dashboard", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
         {"href": "/inventory", "label": "Master Inventory", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
         {"href": "/kitchen", "label": "Kitchen Upload", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
+        {"href": "/intent", "label": "Intent", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
+        {"href": "/recipe", "label": "Recipe", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
         {"href": "/requirements", "label": "Requirements", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
         {"href": "/tracker", "label": "Daily Tracker", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
         {"href": "/issue", "label": "Stock Issue", "roles": ["ADMIN", "MANAGER", "STORE"]},
