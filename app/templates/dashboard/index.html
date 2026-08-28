@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import branch_switcher %}
+{% block title %}Dashboard - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="flex-row" style="justify-content:space-between;margin-bottom:16px;">
+  <h1 class="mt-0">Dashboard &mdash; {{ branch.branchName }}</h1>
+  {% if is_admin %}{{ branch_switcher(branches, branch.branchId) }}{% endif %}
+</div>
+
+<form method="get" class="card flex-row" style="align-items:flex-end;">
+  <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+  <input type="hidden" name="tab" value="{{ active_tab }}">
+  <label class="field" style="width:auto;"><span>From</span><input type="date" name="from" value="{{ from_param }}" style="width:auto"></label>
+  <label class="field" style="width:auto;"><span>To</span><input type="date" name="to" value="{{ to_param }}" style="width:auto"></label>
+  <label class="field" style="width:auto;">
+    <span>Department</span>
+    <select name="department" style="width:auto">
+      <option value="all">All departments</option>
+      {% for d in departments %}<option value="{{ d }}" {{ 'selected' if d == department_name else '' }}>{{ d }}</option>{% endfor %}
+    </select>
+  </label>
+  <div class="field" style="width:auto;"><span>&nbsp;</span><button type="submit" class="btn btn-sm">Apply</button></div>
+  {% if from_param or to_param or department_name %}
+  <div class="field" style="width:auto;"><span>&nbsp;</span><a class="btn btn-sm" href="?tab={{ active_tab }}&branchId={{ branch.branchId }}">Clear filters</a></div>
+  {% endif %}
+</form>
+
+<div class="card-grid card-grid-4">
+  <div class="card stat">
+    <div class="stat-label">{{ 'Kitchen Requirement in Period' if is_filtered else "Today's Kitchen Requirement" }}</div>
+    <div class="stat-value">{{ requirement_item_count }} items</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">{{ 'Purchases in Period' if is_filtered else "Today's Purchases" }}</div>
+    <div class="stat-value">{{ today_purchases | fmt }} units</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">{{ 'Stock Issued in Period' if is_filtered else "Today's Stock Issued" }}</div>
+    <div class="stat-value">{{ today_issued | fmt }} units</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">{{ 'Inventory Value (as of ' ~ to_param ~ ')' if (is_filtered and to_param) else 'Inventory Value' }}</div>
+    <div class="stat-value">{{ total_store_value | money_grouped }}</div>
+  </div>
+</div>
+
+{% set base_qs = '&branchId=' ~ branch.branchId ~ (('&from=' ~ from_param) if from_param else '') ~ (('&to=' ~ to_param) if to_param else '') ~ (('&department=' ~ department_name) if department_name else '') %}
+<div class="flex-row" style="margin:16px 0;border-bottom:1px solid var(--border);">
+  <a class="btn {{ 'btn-primary' if active_tab == 'comparison' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=comparison{{ base_qs }}">Period Comparison</a>
+  <a class="btn {{ 'btn-primary' if active_tab == 'purchase' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=purchase{{ base_qs }}">Purchase Spend</a>
+  <a class="btn {{ 'btn-primary' if active_tab == 'usage' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=usage{{ base_qs }}">Usage Spend</a>
+  <a class="btn {{ 'btn-primary' if active_tab == 'lowstock' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=lowstock{{ base_qs }}">Low Stock ({{ low_stock | length }})</a>
+</div>
+
+{% if active_tab == 'purchase' %}
+  {% include "dashboard/_tab_purchase.html" %}
+{% elif active_tab == 'usage' %}
+  {% include "dashboard/_tab_usage.html" %}
+{% elif active_tab == 'lowstock' %}
+  {% include "dashboard/_tab_lowstock.html" %}
+{% else %}
+  {% include "dashboard/_tab_comparison.html" %}
+{% endif %}
+{% endblock %}

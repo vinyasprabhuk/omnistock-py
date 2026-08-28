@@ -1,0 +1,2002 @@
+[
+  {
+    "input": "Sun FLower Oil",
+    "expectedItemName": "Sun FLower Oil",
+    "result": {
+      "matchedItemId": "cmt3gss6q0000xqsxcxe5rn2a",
+      "matchedItemName": "Sun FLower Oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "sun flower oil",
+    "expectedItemName": "Sun FLower Oil",
+    "result": {
+      "matchedItemId": "cmt3gss6q0000xqsxcxe5rn2a",
+      "matchedItemName": "Sun FLower Oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "SunFLowerOil",
+    "expectedItemName": "Sun FLower Oil",
+    "result": {
+      "matchedItemId": "cmt3gss6q0000xqsxcxe5rn2a",
+      "matchedItemName": "Sun FLower Oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Sun FLower Oi",
+    "expectedItemName": "Sun FLower Oil",
+    "result": {
+      "matchedItemId": "cmt3gss6q0000xqsxcxe5rn2a",
+      "matchedItemName": "Sun FLower Oil",
+      "confidence": 95.24,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Sun FLower Oil ",
+    "expectedItemName": "Sun FLower Oil",
+    "result": {
+      "matchedItemId": "cmt3gss6q0000xqsxcxe5rn2a",
+      "matchedItemName": "Sun FLower Oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Meals Rice",
+    "expectedItemName": "Meals Rice",
+    "result": {
+      "matchedItemId": "cmt3gss870002xqsx0hrw22r1",
+      "matchedItemName": "Meals Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "meals rice",
+    "expectedItemName": "Meals Rice",
+    "result": {
+      "matchedItemId": "cmt3gss870002xqsx0hrw22r1",
+      "matchedItemName": "Meals Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "MealsRice",
+    "expectedItemName": "Meals Rice",
+    "result": {
+      "matchedItemId": "cmt3gss870002xqsx0hrw22r1",
+      "matchedItemName": "Meals Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Meals Ric",
+    "expectedItemName": "Meals Rice",
+    "result": {
+      "matchedItemId": "cmt3gss870002xqsx0hrw22r1",
+      "matchedItemName": "Meals Rice",
+      "confidence": 93.33,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Meals Rice ",
+    "expectedItemName": "Meals Rice",
+    "result": {
+      "matchedItemId": "cmt3gss870002xqsx0hrw22r1",
+      "matchedItemName": "Meals Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Toor Dhal",
+    "expectedItemName": "Toor Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8f0004xqsxb4xw08n0",
+      "matchedItemName": "Toor Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "toor dhal",
+    "expectedItemName": "Toor Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8f0004xqsxb4xw08n0",
+      "matchedItemName": "Toor Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "ToorDhal",
+    "expectedItemName": "Toor Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8f0004xqsxb4xw08n0",
+      "matchedItemName": "Toor Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Toor Dha",
+    "expectedItemName": "Toor Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8f0004xqsxb4xw08n0",
+      "matchedItemName": "Toor Dhal",
+      "confidence": 92.31,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Toor Dhal ",
+    "expectedItemName": "Toor Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8f0004xqsxb4xw08n0",
+      "matchedItemName": "Toor Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Sugar",
+    "expectedItemName": "Sugar",
+    "result": {
+      "matchedItemId": "cmt3gss8k0006xqsx5s2mc8v7",
+      "matchedItemName": "Sugar",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "sugar",
+    "expectedItemName": "Sugar",
+    "result": {
+      "matchedItemId": "cmt3gss8k0006xqsx5s2mc8v7",
+      "matchedItemName": "Sugar",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Sugar",
+    "expectedItemName": "Sugar",
+    "result": {
+      "matchedItemId": "cmt3gss8k0006xqsx5s2mc8v7",
+      "matchedItemName": "Sugar",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Suga",
+    "expectedItemName": "Sugar",
+    "result": {
+      "matchedItemId": "cmt3gss8k0006xqsx5s2mc8v7",
+      "matchedItemName": "Sugar",
+      "confidence": 85.71,
+      "status": "REVIEW"
+    }
+  },
+  {
+    "input": "Sugar ",
+    "expectedItemName": "Sugar",
+    "result": {
+      "matchedItemId": "cmt3gss8k0006xqsx5s2mc8v7",
+      "matchedItemName": "Sugar",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Moong Dhal",
+    "expectedItemName": "Moong Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8q0008xqsxamzlur8j",
+      "matchedItemName": "Moong Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "moong dhal",
+    "expectedItemName": "Moong Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8q0008xqsxamzlur8j",
+      "matchedItemName": "Moong Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "MoongDhal",
+    "expectedItemName": "Moong Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8q0008xqsxamzlur8j",
+      "matchedItemName": "Moong Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Moong Dha",
+    "expectedItemName": "Moong Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8q0008xqsxamzlur8j",
+      "matchedItemName": "Moong Dhal",
+      "confidence": 93.33,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Moong Dhal ",
+    "expectedItemName": "Moong Dhal",
+    "result": {
+      "matchedItemId": "cmt3gss8q0008xqsxamzlur8j",
+      "matchedItemName": "Moong Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Salt",
+    "expectedItemName": "Salt",
+    "result": {
+      "matchedItemId": "cmt3gss8w000axqsxh05fa0j5",
+      "matchedItemName": "Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "salt",
+    "expectedItemName": "Salt",
+    "result": {
+      "matchedItemId": "cmt3gss8w000axqsxh05fa0j5",
+      "matchedItemName": "Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Salt",
+    "expectedItemName": "Salt",
+    "result": {
+      "matchedItemId": "cmt3gss8w000axqsxh05fa0j5",
+      "matchedItemName": "Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Salt",
+    "expectedItemName": "Salt",
+    "result": {
+      "matchedItemId": "cmt3gss8w000axqsxh05fa0j5",
+      "matchedItemName": "Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Salt ",
+    "expectedItemName": "Salt",
+    "result": {
+      "matchedItemId": "cmt3gss8w000axqsxh05fa0j5",
+      "matchedItemName": "Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jeera",
+    "expectedItemName": "Jeera",
+    "result": {
+      "matchedItemId": "cmt3gss91000cxqsx1calen8p",
+      "matchedItemName": "Jeera",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "jeera",
+    "expectedItemName": "Jeera",
+    "result": {
+      "matchedItemId": "cmt3gss91000cxqsx1calen8p",
+      "matchedItemName": "Jeera",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jeera",
+    "expectedItemName": "Jeera",
+    "result": {
+      "matchedItemId": "cmt3gss91000cxqsx1calen8p",
+      "matchedItemName": "Jeera",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jeer",
+    "expectedItemName": "Jeera",
+    "result": {
+      "matchedItemId": "cmt3gss91000cxqsx1calen8p",
+      "matchedItemName": "Jeera",
+      "confidence": 85.71,
+      "status": "REVIEW"
+    }
+  },
+  {
+    "input": "Jeera ",
+    "expectedItemName": "Jeera",
+    "result": {
+      "matchedItemId": "cmt3gss91000cxqsx1calen8p",
+      "matchedItemName": "Jeera",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Rava",
+    "expectedItemName": "Rava",
+    "result": {
+      "matchedItemId": "cmt3gss96000exqsx7ozrvmpz",
+      "matchedItemName": "Rava",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "rava",
+    "expectedItemName": "Rava",
+    "result": {
+      "matchedItemId": "cmt3gss96000exqsx7ozrvmpz",
+      "matchedItemName": "Rava",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Rava",
+    "expectedItemName": "Rava",
+    "result": {
+      "matchedItemId": "cmt3gss96000exqsx7ozrvmpz",
+      "matchedItemName": "Rava",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Rava",
+    "expectedItemName": "Rava",
+    "result": {
+      "matchedItemId": "cmt3gss96000exqsx7ozrvmpz",
+      "matchedItemName": "Rava",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Rava ",
+    "expectedItemName": "Rava",
+    "result": {
+      "matchedItemId": "cmt3gss96000exqsx7ozrvmpz",
+      "matchedItemName": "Rava",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Butter",
+    "expectedItemName": "Butter",
+    "result": {
+      "matchedItemId": "cmt3gss9b000gxqsxudqe0q6r",
+      "matchedItemName": "Butter",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "butter",
+    "expectedItemName": "Butter",
+    "result": {
+      "matchedItemId": "cmt3gss9b000gxqsxudqe0q6r",
+      "matchedItemName": "Butter",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Butter",
+    "expectedItemName": "Butter",
+    "result": {
+      "matchedItemId": "cmt3gss9b000gxqsxudqe0q6r",
+      "matchedItemName": "Butter",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Butte",
+    "expectedItemName": "Butter",
+    "result": {
+      "matchedItemId": "cmt3gss9b000gxqsxudqe0q6r",
+      "matchedItemName": "Butter",
+      "confidence": 88.89,
+      "status": "REVIEW"
+    }
+  },
+  {
+    "input": "Butter ",
+    "expectedItemName": "Butter",
+    "result": {
+      "matchedItemId": "cmt3gss9b000gxqsxudqe0q6r",
+      "matchedItemName": "Butter",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "fried gram",
+    "expectedItemName": "fried gram",
+    "result": {
+      "matchedItemId": "cmt3gss9h000ixqsx7xfu6qnd",
+      "matchedItemName": "fried gram",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "fried gram",
+    "expectedItemName": "fried gram",
+    "result": {
+      "matchedItemId": "cmt3gss9h000ixqsx7xfu6qnd",
+      "matchedItemName": "fried gram",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "friedgram",
+    "expectedItemName": "fried gram",
+    "result": {
+      "matchedItemId": "cmt3gss9h000ixqsx7xfu6qnd",
+      "matchedItemName": "fried gram",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "fried gra",
+    "expectedItemName": "fried gram",
+    "result": {
+      "matchedItemId": "cmt3gss9h000ixqsx7xfu6qnd",
+      "matchedItemName": "fried gram",
+      "confidence": 93.33,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "fried gram ",
+    "expectedItemName": "fried gram",
+    "result": {
+      "matchedItemId": "cmt3gss9h000ixqsx7xfu6qnd",
+      "matchedItemName": "fried gram",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Rock Salt",
+    "expectedItemName": "Rock Salt",
+    "result": {
+      "matchedItemId": "cmt3gss9n000kxqsxg5zwd2x1",
+      "matchedItemName": "Rock Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "rock salt",
+    "expectedItemName": "Rock Salt",
+    "result": {
+      "matchedItemId": "cmt3gss9n000kxqsxg5zwd2x1",
+      "matchedItemName": "Rock Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "RockSalt",
+    "expectedItemName": "Rock Salt",
+    "result": {
+      "matchedItemId": "cmt3gss9n000kxqsxg5zwd2x1",
+      "matchedItemName": "Rock Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Rock Sal",
+    "expectedItemName": "Rock Salt",
+    "result": {
+      "matchedItemId": "cmt3gss9n000kxqsxg5zwd2x1",
+      "matchedItemName": "Rock Salt",
+      "confidence": 92.31,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Rock Salt ",
+    "expectedItemName": "Rock Salt",
+    "result": {
+      "matchedItemId": "cmt3gss9n000kxqsxg5zwd2x1",
+      "matchedItemName": "Rock Salt",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Mustard",
+    "expectedItemName": "Mustard",
+    "result": {
+      "matchedItemId": "cmt3gss9t000mxqsx7s2h45eo",
+      "matchedItemName": "Mustard",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "mustard",
+    "expectedItemName": "Mustard",
+    "result": {
+      "matchedItemId": "cmt3gss9t000mxqsx7s2h45eo",
+      "matchedItemName": "Mustard",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Mustard",
+    "expectedItemName": "Mustard",
+    "result": {
+      "matchedItemId": "cmt3gss9t000mxqsx7s2h45eo",
+      "matchedItemName": "Mustard",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Mustar",
+    "expectedItemName": "Mustard",
+    "result": {
+      "matchedItemId": "cmt3gss9t000mxqsx7s2h45eo",
+      "matchedItemName": "Mustard",
+      "confidence": 90.91,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Mustard ",
+    "expectedItemName": "Mustard",
+    "result": {
+      "matchedItemId": "cmt3gss9t000mxqsx7s2h45eo",
+      "matchedItemName": "Mustard",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jaggery",
+    "expectedItemName": "Jaggery",
+    "result": {
+      "matchedItemId": "cmt3gss9x000oxqsx0cd0irg9",
+      "matchedItemName": "Jaggery",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "jaggery",
+    "expectedItemName": "Jaggery",
+    "result": {
+      "matchedItemId": "cmt3gss9x000oxqsx0cd0irg9",
+      "matchedItemName": "Jaggery",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jaggery",
+    "expectedItemName": "Jaggery",
+    "result": {
+      "matchedItemId": "cmt3gss9x000oxqsx0cd0irg9",
+      "matchedItemName": "Jaggery",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jagger",
+    "expectedItemName": "Jaggery",
+    "result": {
+      "matchedItemId": "cmt3gss9x000oxqsx0cd0irg9",
+      "matchedItemName": "Jaggery",
+      "confidence": 90.91,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jaggery ",
+    "expectedItemName": "Jaggery",
+    "result": {
+      "matchedItemId": "cmt3gss9x000oxqsx0cd0irg9",
+      "matchedItemName": "Jaggery",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jav arisi",
+    "expectedItemName": "Jav arisi",
+    "result": {
+      "matchedItemId": "cmt3gssa4000qxqsxtyjv5mod",
+      "matchedItemName": "Jav arisi",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "jav arisi",
+    "expectedItemName": "Jav arisi",
+    "result": {
+      "matchedItemId": "cmt3gssa4000qxqsxtyjv5mod",
+      "matchedItemName": "Jav arisi",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Javarisi",
+    "expectedItemName": "Jav arisi",
+    "result": {
+      "matchedItemId": "cmt3gssa4000qxqsxtyjv5mod",
+      "matchedItemName": "Jav arisi",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jav aris",
+    "expectedItemName": "Jav arisi",
+    "result": {
+      "matchedItemId": "cmt3gssa4000qxqsxtyjv5mod",
+      "matchedItemName": "Jav arisi",
+      "confidence": 92.31,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jav arisi ",
+    "expectedItemName": "Jav arisi",
+    "result": {
+      "matchedItemId": "cmt3gssa4000qxqsxtyjv5mod",
+      "matchedItemName": "Jav arisi",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Masoor Dal",
+    "expectedItemName": "Masoor Dal",
+    "result": {
+      "matchedItemId": "cmt3gssaa000sxqsxv7qe4t8c",
+      "matchedItemName": "Masoor Dal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "masoor dal",
+    "expectedItemName": "Masoor Dal",
+    "result": {
+      "matchedItemId": "cmt3gssaa000sxqsxv7qe4t8c",
+      "matchedItemName": "Masoor Dal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "MasoorDal",
+    "expectedItemName": "Masoor Dal",
+    "result": {
+      "matchedItemId": "cmt3gssaa000sxqsxv7qe4t8c",
+      "matchedItemName": "Masoor Dal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Masoor Da",
+    "expectedItemName": "Masoor Dal",
+    "result": {
+      "matchedItemId": "cmt3gssaa000sxqsxv7qe4t8c",
+      "matchedItemName": "Masoor Dal",
+      "confidence": 93.33,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Masoor Dal ",
+    "expectedItemName": "Masoor Dal",
+    "result": {
+      "matchedItemId": "cmt3gssaa000sxqsxv7qe4t8c",
+      "matchedItemName": "Masoor Dal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Besan Flour",
+    "expectedItemName": "Besan Flour",
+    "result": {
+      "matchedItemId": "cmt3gssaf000uxqsxmj6uyh89",
+      "matchedItemName": "Besan Flour",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "besan flour",
+    "expectedItemName": "Besan Flour",
+    "result": {
+      "matchedItemId": "cmt3gssaf000uxqsxmj6uyh89",
+      "matchedItemName": "Besan Flour",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "BesanFlour",
+    "expectedItemName": "Besan Flour",
+    "result": {
+      "matchedItemId": "cmt3gssaf000uxqsxmj6uyh89",
+      "matchedItemName": "Besan Flour",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Besan Flou",
+    "expectedItemName": "Besan Flour",
+    "result": {
+      "matchedItemId": "cmt3gssaf000uxqsxmj6uyh89",
+      "matchedItemName": "Besan Flour",
+      "confidence": 94.12,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Besan Flour ",
+    "expectedItemName": "Besan Flour",
+    "result": {
+      "matchedItemId": "cmt3gssaf000uxqsxmj6uyh89",
+      "matchedItemName": "Besan Flour",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Red Chilli",
+    "expectedItemName": "Red Chilli",
+    "result": {
+      "matchedItemId": "cmt3gssak000wxqsxkdo2w6m7",
+      "matchedItemName": "Red Chilli",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "red chilli",
+    "expectedItemName": "Red Chilli",
+    "result": {
+      "matchedItemId": "cmt3gssak000wxqsxkdo2w6m7",
+      "matchedItemName": "Red Chilli",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "RedChilli",
+    "expectedItemName": "Red Chilli",
+    "result": {
+      "matchedItemId": "cmt3gssak000wxqsxkdo2w6m7",
+      "matchedItemName": "Red Chilli",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Red Chill",
+    "expectedItemName": "Red Chilli",
+    "result": {
+      "matchedItemId": "cmt3gssak000wxqsxkdo2w6m7",
+      "matchedItemName": "Red Chilli",
+      "confidence": 93.33,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Red Chilli ",
+    "expectedItemName": "Red Chilli",
+    "result": {
+      "matchedItemId": "cmt3gssak000wxqsxkdo2w6m7",
+      "matchedItemName": "Red Chilli",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coriander whole",
+    "expectedItemName": "Coriander whole",
+    "result": {
+      "matchedItemId": "cmt3gssap000yxqsxugwko3zu",
+      "matchedItemName": "Coriander whole",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "coriander whole",
+    "expectedItemName": "Coriander whole",
+    "result": {
+      "matchedItemId": "cmt3gssap000yxqsxugwko3zu",
+      "matchedItemName": "Coriander whole",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Corianderwhole",
+    "expectedItemName": "Coriander whole",
+    "result": {
+      "matchedItemId": "cmt3gssap000yxqsxugwko3zu",
+      "matchedItemName": "Coriander whole",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coriander whol",
+    "expectedItemName": "Coriander whole",
+    "result": {
+      "matchedItemId": "cmt3gssap000yxqsxugwko3zu",
+      "matchedItemName": "Coriander whole",
+      "confidence": 96,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coriander whole ",
+    "expectedItemName": "Coriander whole",
+    "result": {
+      "matchedItemId": "cmt3gssap000yxqsxugwko3zu",
+      "matchedItemName": "Coriander whole",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coriander Powder",
+    "expectedItemName": "Coriander Powder",
+    "result": {
+      "matchedItemId": "cmt3gssav0010xqsxysn7rnyd",
+      "matchedItemName": "Coriander Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "coriander powder",
+    "expectedItemName": "Coriander Powder",
+    "result": {
+      "matchedItemId": "cmt3gssav0010xqsxysn7rnyd",
+      "matchedItemName": "Coriander Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "CorianderPowder",
+    "expectedItemName": "Coriander Powder",
+    "result": {
+      "matchedItemId": "cmt3gssav0010xqsxysn7rnyd",
+      "matchedItemName": "Coriander Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coriander Powde",
+    "expectedItemName": "Coriander Powder",
+    "result": {
+      "matchedItemId": "cmt3gssav0010xqsxysn7rnyd",
+      "matchedItemName": "Coriander Powder",
+      "confidence": 96.3,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coriander Powder ",
+    "expectedItemName": "Coriander Powder",
+    "result": {
+      "matchedItemId": "cmt3gssav0010xqsxysn7rnyd",
+      "matchedItemName": "Coriander Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Pepper",
+    "expectedItemName": "Pepper",
+    "result": {
+      "matchedItemId": "cmt3gssb10012xqsxlbcmjvs5",
+      "matchedItemName": "Pepper",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "pepper",
+    "expectedItemName": "Pepper",
+    "result": {
+      "matchedItemId": "cmt3gssb10012xqsxlbcmjvs5",
+      "matchedItemName": "Pepper",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Pepper",
+    "expectedItemName": "Pepper",
+    "result": {
+      "matchedItemId": "cmt3gssb10012xqsxlbcmjvs5",
+      "matchedItemName": "Pepper",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Peppe",
+    "expectedItemName": "Pepper",
+    "result": {
+      "matchedItemId": "cmt3gssb10012xqsxlbcmjvs5",
+      "matchedItemName": "Pepper",
+      "confidence": 88.89,
+      "status": "REVIEW"
+    }
+  },
+  {
+    "input": "Pepper ",
+    "expectedItemName": "Pepper",
+    "result": {
+      "matchedItemId": "cmt3gssb10012xqsxlbcmjvs5",
+      "matchedItemName": "Pepper",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Black pepper powder",
+    "expectedItemName": "Black pepper powder",
+    "result": {
+      "matchedItemId": "cmt3gssb70014xqsx1abxac7p",
+      "matchedItemName": "Black pepper powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "black pepper powder",
+    "expectedItemName": "Black pepper powder",
+    "result": {
+      "matchedItemId": "cmt3gssb70014xqsx1abxac7p",
+      "matchedItemName": "Black pepper powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Blackpepperpowder",
+    "expectedItemName": "Black pepper powder",
+    "result": {
+      "matchedItemId": "cmt3gssb70014xqsx1abxac7p",
+      "matchedItemName": "Black pepper powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Black pepper powde",
+    "expectedItemName": "Black pepper powder",
+    "result": {
+      "matchedItemId": "cmt3gssb70014xqsx1abxac7p",
+      "matchedItemName": "Black pepper powder",
+      "confidence": 96.77,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Black pepper powder ",
+    "expectedItemName": "Black pepper powder",
+    "result": {
+      "matchedItemId": "cmt3gssb70014xqsx1abxac7p",
+      "matchedItemName": "Black pepper powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "White Pepper Powder",
+    "expectedItemName": "White Pepper Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbb0016xqsx1iok5m4g",
+      "matchedItemName": "White Pepper Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "white pepper powder",
+    "expectedItemName": "White Pepper Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbb0016xqsx1iok5m4g",
+      "matchedItemName": "White Pepper Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "WhitePepperPowder",
+    "expectedItemName": "White Pepper Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbb0016xqsx1iok5m4g",
+      "matchedItemName": "White Pepper Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "White Pepper Powde",
+    "expectedItemName": "White Pepper Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbb0016xqsx1iok5m4g",
+      "matchedItemName": "White Pepper Powder",
+      "confidence": 96.77,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "White Pepper Powder ",
+    "expectedItemName": "White Pepper Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbb0016xqsx1iok5m4g",
+      "matchedItemName": "White Pepper Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chana Dhal",
+    "expectedItemName": "Chana Dhal",
+    "result": {
+      "matchedItemId": "cmt3gssbg0018xqsxfim8yk3k",
+      "matchedItemName": "Chana Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "chana dhal",
+    "expectedItemName": "Chana Dhal",
+    "result": {
+      "matchedItemId": "cmt3gssbg0018xqsxfim8yk3k",
+      "matchedItemName": "Chana Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "ChanaDhal",
+    "expectedItemName": "Chana Dhal",
+    "result": {
+      "matchedItemId": "cmt3gssbg0018xqsxfim8yk3k",
+      "matchedItemName": "Chana Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chana Dha",
+    "expectedItemName": "Chana Dhal",
+    "result": {
+      "matchedItemId": "cmt3gssbg0018xqsxfim8yk3k",
+      "matchedItemName": "Chana Dhal",
+      "confidence": 93.33,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chana Dhal ",
+    "expectedItemName": "Chana Dhal",
+    "result": {
+      "matchedItemId": "cmt3gssbg0018xqsxfim8yk3k",
+      "matchedItemName": "Chana Dhal",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Turmeric Powder",
+    "expectedItemName": "Turmeric Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbm001axqsxk0m4r6g2",
+      "matchedItemName": "Turmeric Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "turmeric powder",
+    "expectedItemName": "Turmeric Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbm001axqsxk0m4r6g2",
+      "matchedItemName": "Turmeric Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "TurmericPowder",
+    "expectedItemName": "Turmeric Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbm001axqsxk0m4r6g2",
+      "matchedItemName": "Turmeric Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Turmeric Powde",
+    "expectedItemName": "Turmeric Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbm001axqsxk0m4r6g2",
+      "matchedItemName": "Turmeric Powder",
+      "confidence": 96,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Turmeric Powder ",
+    "expectedItemName": "Turmeric Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbm001axqsxk0m4r6g2",
+      "matchedItemName": "Turmeric Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chilly Powder",
+    "expectedItemName": "Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbq001cxqsx0z8fgt1t",
+      "matchedItemName": "Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "chilly powder",
+    "expectedItemName": "Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbq001cxqsx0z8fgt1t",
+      "matchedItemName": "Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "ChillyPowder",
+    "expectedItemName": "Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbq001cxqsx0z8fgt1t",
+      "matchedItemName": "Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chilly Powde",
+    "expectedItemName": "Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbq001cxqsx0z8fgt1t",
+      "matchedItemName": "Chilly Powder",
+      "confidence": 95.24,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chilly Powder ",
+    "expectedItemName": "Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssbq001cxqsx0z8fgt1t",
+      "matchedItemName": "Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Cinnamon",
+    "expectedItemName": "Cinnamon",
+    "result": {
+      "matchedItemId": "cmt3gssbv001exqsxgyuh6i52",
+      "matchedItemName": "Cinnamon",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "cinnamon",
+    "expectedItemName": "Cinnamon",
+    "result": {
+      "matchedItemId": "cmt3gssbv001exqsxgyuh6i52",
+      "matchedItemName": "Cinnamon",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Cinnamon",
+    "expectedItemName": "Cinnamon",
+    "result": {
+      "matchedItemId": "cmt3gssbv001exqsxgyuh6i52",
+      "matchedItemName": "Cinnamon",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Cinnamo",
+    "expectedItemName": "Cinnamon",
+    "result": {
+      "matchedItemId": "cmt3gssbv001exqsxgyuh6i52",
+      "matchedItemName": "Cinnamon",
+      "confidence": 92.31,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Cinnamon ",
+    "expectedItemName": "Cinnamon",
+    "result": {
+      "matchedItemId": "cmt3gssbv001exqsxgyuh6i52",
+      "matchedItemName": "Cinnamon",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Milk Maid",
+    "expectedItemName": "Milk Maid",
+    "result": {
+      "matchedItemId": "cmt3gssc0001gxqsxg157tjin",
+      "matchedItemName": "Milk Maid",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "milk maid",
+    "expectedItemName": "Milk Maid",
+    "result": {
+      "matchedItemId": "cmt3gssc0001gxqsxg157tjin",
+      "matchedItemName": "Milk Maid",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "MilkMaid",
+    "expectedItemName": "Milk Maid",
+    "result": {
+      "matchedItemId": "cmt3gssc0001gxqsxg157tjin",
+      "matchedItemName": "Milk Maid",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Milk Mai",
+    "expectedItemName": "Milk Maid",
+    "result": {
+      "matchedItemId": "cmt3gssc0001gxqsxg157tjin",
+      "matchedItemName": "Milk Maid",
+      "confidence": 92.31,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Milk Maid ",
+    "expectedItemName": "Milk Maid",
+    "result": {
+      "matchedItemId": "cmt3gssc0001gxqsxg157tjin",
+      "matchedItemName": "Milk Maid",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Lg Solid 25g",
+    "expectedItemName": "Lg Solid 25g",
+    "result": {
+      "matchedItemId": "cmt3gssc4001ixqsxuur7slrd",
+      "matchedItemName": "Lg Solid 25g",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "lg solid 25g",
+    "expectedItemName": "Lg Solid 25g",
+    "result": {
+      "matchedItemId": "cmt3gssc4001ixqsxuur7slrd",
+      "matchedItemName": "Lg Solid 25g",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "LgSolid25g",
+    "expectedItemName": "Lg Solid 25g",
+    "result": {
+      "matchedItemId": "cmt3gssc4001ixqsxuur7slrd",
+      "matchedItemName": "Lg Solid 25g",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Lg Solid 25",
+    "expectedItemName": "Lg Solid 25g",
+    "result": {
+      "matchedItemId": "cmt3gssc4001ixqsxuur7slrd",
+      "matchedItemName": "Lg Solid 25g",
+      "confidence": 94.12,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Lg Solid 25g ",
+    "expectedItemName": "Lg Solid 25g",
+    "result": {
+      "matchedItemId": "cmt3gssc4001ixqsxuur7slrd",
+      "matchedItemName": "Lg Solid 25g",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Lg Powder",
+    "expectedItemName": "Lg Powder",
+    "result": {
+      "matchedItemId": "cmt3gssc8001kxqsxfstryufp",
+      "matchedItemName": "Lg Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "lg powder",
+    "expectedItemName": "Lg Powder",
+    "result": {
+      "matchedItemId": "cmt3gssc8001kxqsxfstryufp",
+      "matchedItemName": "Lg Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "LgPowder",
+    "expectedItemName": "Lg Powder",
+    "result": {
+      "matchedItemId": "cmt3gssc8001kxqsxfstryufp",
+      "matchedItemName": "Lg Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Lg Powde",
+    "expectedItemName": "Lg Powder",
+    "result": {
+      "matchedItemId": "cmt3gssc8001kxqsxfstryufp",
+      "matchedItemName": "Lg Powder",
+      "confidence": 92.31,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Lg Powder ",
+    "expectedItemName": "Lg Powder",
+    "result": {
+      "matchedItemId": "cmt3gssc8001kxqsxfstryufp",
+      "matchedItemName": "Lg Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Aromat Powder",
+    "expectedItemName": "Aromat Powder",
+    "result": {
+      "matchedItemId": "cmt3gsscc001mxqsxtkzcgxyz",
+      "matchedItemName": "Aromat Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "aromat powder",
+    "expectedItemName": "Aromat Powder",
+    "result": {
+      "matchedItemId": "cmt3gsscc001mxqsxtkzcgxyz",
+      "matchedItemName": "Aromat Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "AromatPowder",
+    "expectedItemName": "Aromat Powder",
+    "result": {
+      "matchedItemId": "cmt3gsscc001mxqsxtkzcgxyz",
+      "matchedItemName": "Aromat Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Aromat Powde",
+    "expectedItemName": "Aromat Powder",
+    "result": {
+      "matchedItemId": "cmt3gsscc001mxqsxtkzcgxyz",
+      "matchedItemName": "Aromat Powder",
+      "confidence": 95.24,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Aromat Powder ",
+    "expectedItemName": "Aromat Powder",
+    "result": {
+      "matchedItemId": "cmt3gsscc001mxqsxtkzcgxyz",
+      "matchedItemName": "Aromat Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Tomato Sauce",
+    "expectedItemName": "Tomato Sauce",
+    "result": {
+      "matchedItemId": "cmt3gssci001oxqsxtuvi8pgr",
+      "matchedItemName": "Tomato Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "tomato sauce",
+    "expectedItemName": "Tomato Sauce",
+    "result": {
+      "matchedItemId": "cmt3gssci001oxqsxtuvi8pgr",
+      "matchedItemName": "Tomato Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "TomatoSauce",
+    "expectedItemName": "Tomato Sauce",
+    "result": {
+      "matchedItemId": "cmt3gssci001oxqsxtuvi8pgr",
+      "matchedItemName": "Tomato Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Tomato Sauc",
+    "expectedItemName": "Tomato Sauce",
+    "result": {
+      "matchedItemId": "cmt3gssci001oxqsxtuvi8pgr",
+      "matchedItemName": "Tomato Sauce",
+      "confidence": 94.74,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Tomato Sauce ",
+    "expectedItemName": "Tomato Sauce",
+    "result": {
+      "matchedItemId": "cmt3gssci001oxqsxtuvi8pgr",
+      "matchedItemName": "Tomato Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chilly Sauce",
+    "expectedItemName": "Chilly Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscm001qxqsxmw1nyz78",
+      "matchedItemName": "Chilly Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "chilly sauce",
+    "expectedItemName": "Chilly Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscm001qxqsxmw1nyz78",
+      "matchedItemName": "Chilly Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "ChillySauce",
+    "expectedItemName": "Chilly Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscm001qxqsxmw1nyz78",
+      "matchedItemName": "Chilly Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chilly Sauc",
+    "expectedItemName": "Chilly Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscm001qxqsxmw1nyz78",
+      "matchedItemName": "Chilly Sauce",
+      "confidence": 94.74,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Chilly Sauce ",
+    "expectedItemName": "Chilly Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscm001qxqsxmw1nyz78",
+      "matchedItemName": "Chilly Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Soya Sauce",
+    "expectedItemName": "Soya Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscq001sxqsxjuhm5her",
+      "matchedItemName": "Soya Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "soya sauce",
+    "expectedItemName": "Soya Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscq001sxqsxjuhm5her",
+      "matchedItemName": "Soya Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "SoyaSauce",
+    "expectedItemName": "Soya Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscq001sxqsxjuhm5her",
+      "matchedItemName": "Soya Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Soya Sauc",
+    "expectedItemName": "Soya Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscq001sxqsxjuhm5her",
+      "matchedItemName": "Soya Sauce",
+      "confidence": 93.33,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Soya Sauce ",
+    "expectedItemName": "Soya Sauce",
+    "result": {
+      "matchedItemId": "cmt3gsscq001sxqsxjuhm5her",
+      "matchedItemName": "Soya Sauce",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Noodles",
+    "expectedItemName": "Noodles",
+    "result": {
+      "matchedItemId": "cmt3gsscv001uxqsxeiyugkh0",
+      "matchedItemName": "Noodles",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "noodles",
+    "expectedItemName": "Noodles",
+    "result": {
+      "matchedItemId": "cmt3gsscv001uxqsxeiyugkh0",
+      "matchedItemName": "Noodles",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Noodles",
+    "expectedItemName": "Noodles",
+    "result": {
+      "matchedItemId": "cmt3gsscv001uxqsxeiyugkh0",
+      "matchedItemName": "Noodles",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Noodle",
+    "expectedItemName": "Noodles",
+    "result": {
+      "matchedItemId": "cmt3gsscv001uxqsxeiyugkh0",
+      "matchedItemName": "Noodles",
+      "confidence": 90.91,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Noodles ",
+    "expectedItemName": "Noodles",
+    "result": {
+      "matchedItemId": "cmt3gsscv001uxqsxeiyugkh0",
+      "matchedItemName": "Noodles",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jeera Powder",
+    "expectedItemName": "Jeera Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd0001wxqsxn495pu96",
+      "matchedItemName": "Jeera Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "jeera powder",
+    "expectedItemName": "Jeera Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd0001wxqsxn495pu96",
+      "matchedItemName": "Jeera Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "JeeraPowder",
+    "expectedItemName": "Jeera Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd0001wxqsxn495pu96",
+      "matchedItemName": "Jeera Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jeera Powde",
+    "expectedItemName": "Jeera Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd0001wxqsxn495pu96",
+      "matchedItemName": "Jeera Powder",
+      "confidence": 94.74,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Jeera Powder ",
+    "expectedItemName": "Jeera Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd0001wxqsxn495pu96",
+      "matchedItemName": "Jeera Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Peri Peri Powder",
+    "expectedItemName": "Peri Peri Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd5001yxqsx6cm24o0m",
+      "matchedItemName": "Peri Peri Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "peri peri powder",
+    "expectedItemName": "Peri Peri Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd5001yxqsx6cm24o0m",
+      "matchedItemName": "Peri Peri Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "PeriPeriPowder",
+    "expectedItemName": "Peri Peri Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd5001yxqsx6cm24o0m",
+      "matchedItemName": "Peri Peri Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Peri Peri Powde",
+    "expectedItemName": "Peri Peri Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd5001yxqsx6cm24o0m",
+      "matchedItemName": "Peri Peri Powder",
+      "confidence": 96,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Peri Peri Powder ",
+    "expectedItemName": "Peri Peri Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd5001yxqsx6cm24o0m",
+      "matchedItemName": "Peri Peri Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Kashmiri Chilly Powder",
+    "expectedItemName": "Kashmiri Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd90020xqsx9a93ipky",
+      "matchedItemName": "Kashmiri Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "kashmiri chilly powder",
+    "expectedItemName": "Kashmiri Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd90020xqsx9a93ipky",
+      "matchedItemName": "Kashmiri Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "KashmiriChillyPowder",
+    "expectedItemName": "Kashmiri Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd90020xqsx9a93ipky",
+      "matchedItemName": "Kashmiri Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Kashmiri Chilly Powde",
+    "expectedItemName": "Kashmiri Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd90020xqsx9a93ipky",
+      "matchedItemName": "Kashmiri Chilly Powder",
+      "confidence": 97.3,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Kashmiri Chilly Powder ",
+    "expectedItemName": "Kashmiri Chilly Powder",
+    "result": {
+      "matchedItemId": "cmt3gssd90020xqsx9a93ipky",
+      "matchedItemName": "Kashmiri Chilly Powder",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coconut oil",
+    "expectedItemName": "Coconut oil",
+    "result": {
+      "matchedItemId": "cmt3gssde0022xqsxhmpybw81",
+      "matchedItemName": "Coconut oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "coconut oil",
+    "expectedItemName": "Coconut oil",
+    "result": {
+      "matchedItemId": "cmt3gssde0022xqsxhmpybw81",
+      "matchedItemName": "Coconut oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coconutoil",
+    "expectedItemName": "Coconut oil",
+    "result": {
+      "matchedItemId": "cmt3gssde0022xqsxhmpybw81",
+      "matchedItemName": "Coconut oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coconut oi",
+    "expectedItemName": "Coconut oil",
+    "result": {
+      "matchedItemId": "cmt3gssde0022xqsxhmpybw81",
+      "matchedItemName": "Coconut oil",
+      "confidence": 94.12,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Coconut oil ",
+    "expectedItemName": "Coconut oil",
+    "result": {
+      "matchedItemId": "cmt3gssde0022xqsxhmpybw81",
+      "matchedItemName": "Coconut oil",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Basmati Rice",
+    "expectedItemName": "Basmati Rice",
+    "result": {
+      "matchedItemId": "cmt3gssdj0024xqsx4c2zsz6v",
+      "matchedItemName": "Basmati Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "basmati rice",
+    "expectedItemName": "Basmati Rice",
+    "result": {
+      "matchedItemId": "cmt3gssdj0024xqsx4c2zsz6v",
+      "matchedItemName": "Basmati Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "BasmatiRice",
+    "expectedItemName": "Basmati Rice",
+    "result": {
+      "matchedItemId": "cmt3gssdj0024xqsx4c2zsz6v",
+      "matchedItemName": "Basmati Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Basmati Ric",
+    "expectedItemName": "Basmati Rice",
+    "result": {
+      "matchedItemId": "cmt3gssdj0024xqsx4c2zsz6v",
+      "matchedItemName": "Basmati Rice",
+      "confidence": 94.74,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Basmati Rice ",
+    "expectedItemName": "Basmati Rice",
+    "result": {
+      "matchedItemId": "cmt3gssdj0024xqsx4c2zsz6v",
+      "matchedItemName": "Basmati Rice",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Broken Cashew",
+    "expectedItemName": "Broken Cashew",
+    "result": {
+      "matchedItemId": "cmt3gssdn0026xqsx2vss0ugs",
+      "matchedItemName": "Broken Cashew",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "broken cashew",
+    "expectedItemName": "Broken Cashew",
+    "result": {
+      "matchedItemId": "cmt3gssdn0026xqsx2vss0ugs",
+      "matchedItemName": "Broken Cashew",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "BrokenCashew",
+    "expectedItemName": "Broken Cashew",
+    "result": {
+      "matchedItemId": "cmt3gssdn0026xqsx2vss0ugs",
+      "matchedItemName": "Broken Cashew",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Broken Cashe",
+    "expectedItemName": "Broken Cashew",
+    "result": {
+      "matchedItemId": "cmt3gssdn0026xqsx2vss0ugs",
+      "matchedItemName": "Broken Cashew",
+      "confidence": 95.24,
+      "status": "AUTO"
+    }
+  },
+  {
+    "input": "Broken Cashew ",
+    "expectedItemName": "Broken Cashew",
+    "result": {
+      "matchedItemId": "cmt3gssdn0026xqsx2vss0ugs",
+      "matchedItemName": "Broken Cashew",
+      "confidence": 100,
+      "status": "AUTO"
+    }
+  }
+]

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Kitchen Requirement Review - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div style="max-width:1000px;margin:0 auto;">
+<h1>Kitchen Requirement Review</h1>
+
+{% if items | length == 0 and not requirement.confirmedAt and was_structured_file %}
+<div class="card" style="border-color:#f59e0b;background:var(--warning-bg);">
+  This file was read, but no rows had both an item and a quantity -- so nothing came through. Make sure the Qty column is filled in for each item you need, then re-upload, or add rows manually below.
+</div>
+{% endif %}
+{% if items | length == 0 and not requirement.confirmedAt and not was_structured_file %}
+<div class="card" style="border-color:#f59e0b;background:var(--warning-bg);">
+  This file type isn't read automatically (only Excel/Word are). Add the department, item, and quantity rows below manually -- the uploaded file is still saved for reference.
+</div>
+{% endif %}
+{% if requirement.confirmedAt %}
+<div class="card">Confirmed by {{ requirement.confirmedById }} on {{ requirement.confirmedAt }}. This requirement is locked.</div>
+{% endif %}
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Department</th><th>Extracted</th><th>Matched Item</th><th style="width:90px;">Qty</th><th style="width:80px;">Unit</th><th>Confidence</th>{% if not requirement.confirmedAt %}<th></th>{% endif %}</tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        {% set row_form = 'row-form-' ~ item.id %}
+        {% set del_form = 'del-form-' ~ item.id %}
+        <tr>
+          <td>
+            {% if requirement.confirmedAt %}{{ item.departmentName }}
+            {% else %}<input type="text" name="departmentName" form="{{ row_form }}" value="{{ item.departmentName }}" style="width:100%;" onchange="this.form.requestSubmit()">{% endif %}
+          </td>
+          <td class="text-muted">{{ item.extractedText }}</td>
+          <td>
+            {% if requirement.confirmedAt %}{{ item.matchedItemName or '—' }}
+            {% else %}
+            <select name="matchedItemId" form="{{ row_form }}" style="width:100%;" onchange="this.form.requestSubmit()">
+              <option value="">-- select item --</option>
+              {% for it in all_items %}<option value="{{ it.id }}" {{ 'selected' if it.id == item.matchedItemId else '' }}>{{ it.name }} ({{ it.unit }})</option>{% endfor %}
+            </select>
+            {% endif %}
+          </td>
+          <td>
+            {% if requirement.confirmedAt %}{{ item.qty | fmt }}
+            {% else %}<input type="number" name="qty" form="{{ row_form }}" step="any" value="{{ item.qty }}" style="width:100%;" onchange="this.form.requestSubmit()">{% endif %}
+          </td>
+          <td>
+            {% if requirement.confirmedAt %}{{ item.unit }}
+            {% else %}<input type="text" name="unit" form="{{ row_form }}" value="{{ item.unit }}" style="width:100%;" onchange="this.form.requestSubmit()">{% endif %}
+          </td>
+          <td>
+            {% if item.status == 'AUTO' %}<span class="badge badge-success">AUTO {{ item.confidence }}%</span>
+            {% elif item.status == 'REVIEW' %}<span class="badge badge-warning">REVIEW {{ item.confidence }}%</span>
+            {% else %}<span class="badge badge-danger">MANUAL{% if item.confidence %} {{ item.confidence }}%{% endif %}</span>{% endif %}
+          </td>
+          {% if not requirement.confirmedAt %}
+          <td>
+            <button type="submit" form="{{ del_form }}" class="btn btn-sm">&times;</button>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Row forms live outside the table -- a <form> cannot legally wrap <tr>/<td>
+     elements; each input/button above references its form via the `form=""`
+     attribute instead (the spec-correct way to associate scattered controls
+     with a form that isn't their ancestor). #}
+  {% for item in items %}
+  {% if not requirement.confirmedAt %}
+  <form id="row-form-{{ item.id }}" method="post" action="{{ url_for('kitchen.update_item', requirement_id=requirement.id, item_id=item.id) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  </form>
+  <form id="del-form-{{ item.id }}" method="post" action="{{ url_for('kitchen.delete_item', requirement_id=requirement.id, item_id=item.id) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  </form>
+  {% endif %}
+  {% endfor %}
+</div>
+
+{% if not requirement.confirmedAt %}
+<div class="card">
+  <h3>Add row manually</h3>
+  <form method="post" action="{{ url_for('kitchen.add_item', requirement_id=requirement.id) }}" class="flex-row" style="align-items:flex-end;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="field" style="width:auto;"><span>Department</span><input type="text" name="departmentName" list="dept-list" style="width:140px;"></label>
+    <datalist id="dept-list">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
+    <label class="field" style="width:auto;"><span>Item text</span><input type="text" name="itemText" style="width:160px;"></label>
+    <label class="field" style="width:auto;">
+      <span>Matched item</span>
+      <select name="matchedItemId" style="width:180px;">
+        <option value="">-- select item --</option>
+        {% for it in all_items %}<option value="{{ it.id }}">{{ it.name }} ({{ it.unit }})</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field" style="width:auto;"><span>Qty</span><input type="number" name="qty" step="any" style="width:80px;"></label>
+    <label class="field" style="width:auto;"><span>Unit</span><input type="text" name="unit" style="width:80px;"></label>
+    <button type="submit" class="btn btn-sm">Add row</button>
+  </form>
+</div>
+
+<div class="flex-row" style="justify-content:space-between;margin-top:16px;">
+  <span class="text-muted">{{ unmatched_count }} row(s) still need an item selected</span>
+  <form method="post" action="{{ url_for('kitchen.confirm', requirement_id=requirement.id) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary" {{ 'disabled' if unmatched_count > 0 else '' }}>Confirm Requirement</button>
+  </form>
+</div>
+{% endif %}
+</div>
+{% endblock %}

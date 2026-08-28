@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Branches & Departments - {{ branding.appName }}{% endblock %}
+{% block content %}
+<h1>Branches &amp; Departments</h1>
+<div class="card-grid" style="grid-template-columns:1fr 1fr;max-width:800px;">
+  <div class="card">
+    <h2>Branches</h2>
+    {% for b in branches %}
+    <form method="post" action="{{ url_for('admin.branches_rename', branch_id=b.id) }}" class="flex-row" style="margin-bottom:8px;">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="name" value="{{ b.name }}" required style="flex:1;">
+      <button type="submit" class="btn btn-sm">Save</button>
+    </form>
+    {% endfor %}
+    <form method="post" action="{{ url_for('admin.branches_create') }}" class="flex-row">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="name" placeholder="New branch name" required style="flex:1;">
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Departments</h2>
+    <div class="flex-row" style="margin-bottom:12px;">
+      {% for d in departments %}
+      <form method="post" action="{{ url_for('admin.departments_delete', department_id=d.id) }}" style="display:inline;">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <span class="badge badge-muted" style="display:inline-flex;align-items:center;gap:4px;">
+          {{ d.name }}
+          {% if d.inUseCount > 0 %}<span style="font-size:9px;">({{ d.inUseCount }})</span>{% endif %}
+          <button type="submit" title="{{ 'In use — cannot delete' if d.inUseCount > 0 else 'Delete' }}" style="background:none;border:none;cursor:pointer;padding:0;">&times;</button>
+        </span>
+      </form>
+      {% endfor %}
+    </div>
+    <form method="post" action="{{ url_for('admin.departments_create') }}" class="flex-row">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="name" placeholder="New department name" required style="flex:1;">
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

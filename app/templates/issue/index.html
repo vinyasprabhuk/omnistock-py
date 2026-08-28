@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Stock Issue - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:760px;margin:0 auto;">
+  <h2>Issue to Kitchen</h2>
+  <form method="post">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <div class="flex-row" style="margin-bottom:16px;">
+      <label class="field" style="width:auto;"><span>Date</span><input type="date" name="date" required style="width:160px;"></label>
+      {% if not user_branch_id %}
+      <label class="field" style="width:auto;">
+        <span>Branch</span>
+        <select name="branchId" style="width:200px;">
+          {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      <label class="field" style="width:auto;">
+        <span>Department</span>
+        <input type="text" name="departmentName" list="department-list" placeholder="e.g. Dosa" required style="width:200px;">
+        <datalist id="department-list">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
+      </label>
+    </div>
+
+    <table>
+      <thead><tr><th>Item</th><th style="width:110px;">Qty</th><th style="width:40px;"></th></tr></thead>
+      <tbody id="issue-lines">
+        <tr>
+          <td><select name="itemId" required style="width:100%;"><option value="">Select item...</option>{% for it in items %}<option value="{{ it.id }}">{{ it.name }} ({{ it.unit }})</option>{% endfor %}</select></td>
+          <td><input type="number" name="qty" step="any" min="0" required></td>
+          <td><button type="button" class="btn btn-sm js-remove-line">&times;</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <template id="issue-lines-template">
+      <tr>
+        <td><select name="itemId" required style="width:100%;"><option value="">Select item...</option>{% for it in items %}<option value="{{ it.id }}">{{ it.name }} ({{ it.unit }})</option>{% endfor %}</select></td>
+        <td><input type="number" name="qty" step="any" min="0" required></td>
+        <td><button type="button" class="btn btn-sm js-remove-line">&times;</button></td>
+      </tr>
+    </template>
+
+    <div class="flex-row" style="justify-content:space-between;margin-top:12px;">
+      <button type="button" class="btn btn-sm js-add-line" data-target="issue-lines">+ Add line</button>
+      <button type="submit" class="btn btn-primary">Save Stock Issue</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="max-width:760px;margin:24px auto 0;">
+  <h2>Bulk Upload (Excel / Word)</h2>
+  <p class="text-muted">Upload a sheet or document; you'll review the matched items and departments before anything is saved.</p>
+  <form method="post" action="{{ url_for('issue.preview') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;">
+    <label class="field" style="width:auto;"><span>Date</span><input type="date" name="date" required style="width:160px;"></label>
+    <label class="field" style="width:auto;"><span>File</span><input type="file" name="file" accept=".xlsx,.xls,.docx,.doc" required style="width:260px;"></label>
+    <button type="submit" class="btn btn-sm">Preview</button>
+  </form>
+</div>
+{% endblock %}

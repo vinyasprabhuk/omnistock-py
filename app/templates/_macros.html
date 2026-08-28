@@ -1,0 +1,24 @@
+{% macro date_switcher(date, extra_qs='') %}
+<div class="flex-row">
+  <a class="btn btn-sm" href="?date={{ date | shift_date(-1) }}{{ extra_qs }}">&larr; Prev</a>
+  <input type="date" value="{{ date }}" class="date-switcher-input" style="width:auto"
+         onchange="location.href='?date=' + this.value + '{{ extra_qs }}'">
+  <a class="btn btn-sm" href="?date={{ date | shift_date(1) }}{{ extra_qs }}">Next &rarr;</a>
+  <a class="btn btn-sm" href="?date={{ today_key() }}{{ extra_qs }}">Today</a>
+</div>
+{% endmacro %}
+
+{% macro branch_switcher(branches, branch_id, extra_qs='') %}
+<form method="get" class="flex-row" style="display:inline-flex">
+  {% for k, v in request.args.items() %}{% if k != 'branchId' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+  <select name="branchId" onchange="this.form.submit()" style="width:auto">
+    {% for b in branches %}
+      <option value="{{ b.id }}" {{ 'selected' if b.id == branch_id else '' }}>{{ b.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% endmacro %}
+
+{% macro export_button(path) %}
+  <a class="btn btn-sm" href="{{ path }}">Export Excel</a>
+{% endmacro %}

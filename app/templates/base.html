@@ -1,0 +1,60 @@
+{% set header_is_light = branding.headerColor and (branding.headerColor | is_light_color) %}
+<!doctype html>
+<html lang="en" data-theme="{{ branding.themeMode if branding else 'system' }}" data-accent="{{ branding.themeColor if branding else 'navy' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ branding.appName if branding else 'OmniStock' }}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% if branding and branding.headerColor %}
+  <style>
+    :root {
+      --header-bg: {{ branding.headerColor }};
+      --header-fg: {{ '#0b1f44' if header_is_light else '#ffffff' }};
+    }
+  </style>
+  {% endif %}
+</head>
+<body>
+  {% if current_user %}
+  <header class="app-nav">
+    <div class="app-nav-inner">
+      <a href="/" class="brand brand-{{ branding.brandSize if branding else 'md' }}">
+        {% if branding and branding.logoPath %}
+          <img src="{{ branding.logoPath }}" alt="" class="brand-logo">
+        {% endif %}
+        <span class="brand-name">{{ (branding.appName if branding else 'OmniStock') | upper }}</span>
+      </a>
+      <nav class="nav-links">
+        {% for link in nav_links %}
+          <a href="{{ link.href }}" class="{{ 'active' if request.path.startswith(link.href) else '' }}">{{ link.label }}</a>
+        {% endfor %}
+      </nav>
+      <form action="/logout" method="post" class="nav-signout">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-link">Sign out</button>
+      </form>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="app-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{{ url_for('static', filename='js/table-search.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/line-items.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

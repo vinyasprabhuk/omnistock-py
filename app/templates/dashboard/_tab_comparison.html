@@ -1,0 +1,88 @@
+{% set qs = '?tab=comparison&branchId=' ~ branch.branchId %}
+<p class="text-muted">
+  Opening/Purchased/Issued/Closing/Usage Cost, per item &mdash; {{ period_a.label }}
+  ({{ period_a.from.strftime('%Y-%m-%d') }} to {{ period_a.to.strftime('%Y-%m-%d') }}) vs
+  {{ period_b.label }} ({{ period_b.from.strftime('%Y-%m-%d') }} to {{ period_b.to.strftime('%Y-%m-%d') }}).
+</p>
+
+<div class="card">
+  <div class="flex-row">
+    <a class="btn btn-sm {{ 'btn-primary' if cmp_mode == 'week' else '' }}" href="{{ qs }}&cmpMode=week">Last Week vs This Week</a>
+    <a class="btn btn-sm {{ 'btn-primary' if cmp_mode == 'month' else '' }}" href="{{ qs }}&cmpMode=month">Last Month vs This Month</a>
+    <a class="btn btn-sm {{ 'btn-primary' if cmp_mode == 'custom' else '' }}" href="{{ qs }}&cmpMode=custom">Custom</a>
+  </div>
+
+  {% if cmp_mode == 'custom' %}
+  <form method="get" class="flex-row" style="margin-top:12px;align-items:flex-end;">
+    <input type="hidden" name="tab" value="comparison"><input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <input type="hidden" name="cmpMode" value="custom">
+    <label class="field" style="width:auto"><span>Period A &mdash; From</span><input type="date" name="cmpAFrom" value="{{ cmp_a_from }}" style="width:auto"></label>
+    <label class="field" style="width:auto"><span>To</span><input type="date" name="cmpATo" value="{{ cmp_a_to }}" style="width:auto"></label>
+    <label class="field" style="width:auto"><span>Period B &mdash; From</span><input type="date" name="cmpBFrom" value="{{ cmp_b_from }}" style="width:auto"></label>
+    <label class="field" style="width:auto"><span>To</span><input type="date" name="cmpBTo" value="{{ cmp_b_to }}" style="width:auto"></label>
+    <div class="field" style="width:auto;"><span>&nbsp;</span><button type="submit" class="btn btn-sm">Apply</button></div>
+  </form>
+  {% endif %}
+
+  <form method="get" style="margin-top:12px;">
+    <input type="hidden" name="tab" value="comparison"><input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <input type="hidden" name="cmpMode" value="{{ cmp_mode }}">
+    <div class="field" style="width:auto;max-width:240px;">
+      <span>Items {{ '(' ~ (cmp_item_ids | length) ~ ' selected)' if cmp_item_ids else '' }}</span>
+      <div style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px 8px;background:var(--card);">
+        {% for it in all_items %}
+        <label style="display:flex;align-items:center;gap:6px;padding:2px 0;font-weight:400;font-size:0.85rem;">
+          <input type="checkbox" name="cmpItems" value="{{ it.id }}" {{ 'checked' if it.id in cmp_item_ids else '' }} style="width:auto;">
+          {{ it.name }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="flex-row" style="align-items:flex-end;margin-top:10px;">
+      <label class="field" style="width:auto">
+        <span>Department</span>
+        <select name="cmpDept" style="width:auto">
+          <option value="all">All departments</option>
+          {% for d in departments %}<option value="{{ d }}" {{ 'selected' if d == cmp_dept else '' }}>{{ d }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="field" style="width:auto;"><span>&nbsp;</span><button type="submit" class="btn btn-sm">Apply</button></div>
+      {% if cmp_item_ids or cmp_dept %}
+      <div class="field" style="width:auto;"><span>&nbsp;</span><a class="btn btn-sm" href="{{ qs }}&cmpMode={{ cmp_mode }}">Clear item/department filters</a></div>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <input type="text" class="js-search-input" data-target="cmp-table-body" placeholder="Search item..." style="width:260px;margin-bottom:12px;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th class="num">Purchased<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
+          <th class="num">Issued<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
+          <th class="num">Closing<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} &rarr; {{ period_b.label }}</span></th>
+          <th class="num">Usage Cost<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
+        </tr>
+      </thead>
+      <tbody id="cmp-table-body">
+        {% for row in tracker_compare_rows %}
+        <tr class="js-search-row" data-search="{{ row.b.itemName | lower }}">
+          <td>{{ row.b.itemName }} <span class="text-muted" style="font-size:0.8em;">({{ row.b.unit }})</span></td>
+          <td class="num">{{ row.a.purchased | fmt }} / {{ row.b.purchased | fmt }}</td>
+          <td class="num">{{ row.a.issued | fmt }} / {{ row.b.issued | fmt }}</td>
+          <td class="num">{{ row.a.closing | fmt }} &rarr; {{ row.b.closing | fmt }}</td>
+          <td class="num">{{ row.a.usageCost | money_grouped }} / {{ row.b.usageCost | money_grouped }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="js-search-empty" {{ 'hidden' if tracker_compare_rows else '' }}>
+          <td colspan="5" class="text-muted" style="text-align:center;padding:24px;">
+            {% if tracker_compare_rows | length == 0 %}No purchase or issue activity in either period.{% else %}No items match "<span class="js-search-query"></span>".{% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

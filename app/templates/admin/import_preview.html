@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Review Excel Import - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:700px;margin:0 auto;">
+  <h2>Review Import</h2>
+  <ul>
+    <li>{{ parsed['items'] | length }} item(s) found in Master Stock</li>
+    <li>Day sheets found: {{ parsed.daySheetsFound | join(', ') if parsed.daySheetsFound else 'none' }}</li>
+    <li>{{ parsed.dayTransactions | length }} day transaction(s) parsed</li>
+  </ul>
+
+  {% if parsed.warnings %}
+  <div class="flash flash-error" style="margin-bottom:12px;">
+    <strong>{{ parsed.warnings | length }} warning(s):</strong>
+    <ul style="margin:4px 0 0;padding-left:18px;">
+      {% for w in parsed.warnings[:10] %}<li>{{ w }}</li>{% endfor %}
+    </ul>
+    {% if parsed.warnings | length > 10 %}<p class="text-muted" style="margin:4px 0 0;">...and {{ parsed.warnings | length - 10 }} more</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="table-wrap" style="max-height:300px;overflow-y:auto;margin-bottom:16px;">
+    <table>
+      <thead><tr><th>Item</th><th>Unit</th><th class="num">Price</th><th class="num">Opening Stock</th></tr></thead>
+      <tbody>
+        {% for item in parsed['items'][:50] %}
+        <tr><td>{{ item.name }}</td><td>{{ item.unit }}</td><td class="num">{{ item.purchasePrice | money }}</td><td class="num">{{ item.openingStock | fmt }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if parsed['items'] | length > 50 %}<p class="text-muted" style="padding:8px;">...and {{ parsed['items'] | length - 50 }} more</p>{% endif %}
+  </div>
+
+  <form method="post" action="{{ url_for('admin.import_commit') }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <p class="text-muted" style="font-size:0.8rem;">Re-select the file to confirm (browsers don't allow carrying the file forward automatically):</p>
+    <div class="flex-row" style="align-items:flex-end;">
+      <input type="file" name="file" accept=".xlsx" required style="width:220px;">
+      <label class="field" style="width:auto;">
+        <span>Target branch</span>
+        <select name="branchId" style="width:auto;">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+      </label>
+      <button type="submit" class="btn btn-primary">Confirm Import</button>
+      <a class="btn" href="{{ url_for('admin.import_page') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

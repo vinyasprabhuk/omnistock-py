@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Possible Duplicate - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px;margin:24px auto;">
+  <h2>Possible Duplicate</h2>
+  <p class="text-muted">This exact file appears to have already been uploaded.</p>
+
+  {% if duplicate.existingRequirementId %}
+  <a class="btn btn-block" style="margin-bottom:8px;" href="{{ url_for('kitchen.review', requirement_id=duplicate.existingRequirementId) }}">View Existing</a>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('kitchen.upload') }}" enctype="multipart/form-data" style="margin-bottom:8px;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="branchId" value="{{ branch_id }}">
+    <input type="hidden" name="force" value="true">
+    <p class="text-muted" style="font-size:0.8rem;">Re-select the file ({{ filename }}) to add it anyway:</p>
+    <input type="file" name="file" accept="image/*,.pdf,.xlsx,.xls,.docx,.doc" required style="margin-bottom:8px;">
+    <button type="submit" class="btn btn-block">Add Anyway</button>
+  </form>
+
+  <a class="btn btn-block" href="{{ url_for('kitchen.index') }}">Cancel</a>
+</div>
+{% endblock %}

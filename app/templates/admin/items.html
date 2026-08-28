@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Item Master - {{ branding.appName }}{% endblock %}
+{% block content %}
+<h1>Item Master</h1>
+
+<form method="get" class="flex-row" style="margin-bottom:16px;">
+  <label class="field" style="width:auto;"><span>Opening stock context &mdash; branch</span>
+    <select name="branchId" onchange="this.form.submit()" style="width:auto;">
+      {% for b in branches %}<option value="{{ b.id }}" {{ 'selected' if b.id == branch_id else '' }}>{{ b.name }}</option>{% endfor %}
+    </select>
+  </label>
+</form>
+
+<div class="card">
+  <h2>Bulk Opening Stock Upload</h2>
+  <p class="text-muted">Upload a sheet with item names and opening stock quantities for the branch selected above.</p>
+  <form method="post" action="{{ url_for('admin.items_opening_stock_preview') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;">
+    <input type="hidden" name="branchId" value="{{ branch_id }}">
+    <label class="field" style="width:auto;"><span>File</span><input type="file" name="file" accept=".xlsx,.xls" required style="width:260px;"></label>
+    <button type="submit" class="btn btn-sm">Preview</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Add Item</h2>
+  <form method="post" action="{{ url_for('admin.items_create') }}" class="flex-row" style="align-items:flex-end;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="branchId" value="{{ branch_id }}">
+    <label class="field" style="width:auto;"><span>Name</span><input type="text" name="name" required style="width:180px;"></label>
+    <label class="field" style="width:auto;"><span>Unit</span><input type="text" name="unit" required placeholder="KG / LITRE / PACK" style="width:130px;"></label>
+    <label class="field" style="width:auto;"><span>Price</span><input type="number" name="purchasePrice" step="0.01" style="width:100px;"></label>
+    <label class="field" style="width:auto;"><span>Opening Stock (this branch)</span><input type="number" name="openingStock" step="any" style="width:120px;"></label>
+    <label class="field" style="width:auto;"><span>Category (optional)</span><input type="text" name="category" style="width:130px;"></label>
+    <button type="submit" class="btn btn-primary">Add</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Item Master ({{ items | length }})</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Unit</th><th>Price</th><th>Opening Stock</th><th>Aliases</th><th>Add alias</th><th></th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td><strong>{{ item.name }}</strong></td>
+          <td>{{ item.unit }}</td>
+          <td>{{ item.purchasePrice | money }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.items_opening_stock') }}" class="flex-row" style="gap:4px;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="itemId" value="{{ item.id }}">
+              <input type="hidden" name="branchId" value="{{ branch_id }}">
+              <input type="number" name="qty" step="any" value="{{ opening_by_item.get(item.id, 0) }}" style="width:90px;">
+              <button type="submit" class="btn btn-sm">Set</button>
+            </form>
+          </td>
+          <td>{% for a in item.aliases %}<span class="badge badge-muted">{{ a.alias }}</span>{% endfor %}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.items_add_alias', item_id=item.id) }}" class="flex-row" style="gap:4px;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="branchId" value="{{ branch_id }}">
+              <input type="text" name="alias" placeholder="e.g. URAD" style="width:100px;">
+              <button type="submit" class="btn btn-sm">Add</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('admin.items_deactivate', item_id=item.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="branchId" value="{{ branch_id }}">
+              <button type="submit" class="btn btn-sm">Deactivate</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

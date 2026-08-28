@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import branch_switcher, export_button %}
+{% block title %}Master Inventory - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="flex-row" style="justify-content:space-between;margin-bottom:16px;">
+  <h1 class="mt-0">Master Inventory &mdash; {{ branch.branchName }}</h1>
+  <div class="flex-row">
+    {% if is_admin %}{{ branch_switcher(branches, branch.branchId) }}{% endif %}
+    {{ export_button('/api/export/inventory?branchId=' ~ branch.branchId) }}
+  </div>
+</div>
+
+<div class="card">
+  <h3>Current as of today &middot; Total store value {{ total_store_value | money }}</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th><th>Unit</th><th class="num">Opening</th><th class="num">Price</th>
+          <th class="num">Purchased</th><th class="num">Kitchen Req.</th><th class="num">Issued</th>
+          <th class="num">Current Stock</th><th class="num">Usage Cost</th><th class="num">Store Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td><strong>{{ r.itemName }}</strong></td>
+          <td class="text-muted">{{ r.unit }}</td>
+          <td class="num">{{ r.opening | fmt }}</td>
+          <td class="num">{{ r.purchasePrice | money }}</td>
+          <td class="num">{{ r.totalPurchased | fmt }}</td>
+          <td class="num">{{ r.totalKitchenRequirement | fmt }}</td>
+          <td class="num">{{ r.totalIssued | fmt }}</td>
+          <td class="num"><strong>{{ r.currentStock | fmt }}</strong></td>
+          <td class="num">{{ r.usageCost | money }}</td>
+          <td class="num">{{ r.storeValue | money }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" class="text-muted" style="text-align:center;padding:32px;">No items yet &mdash; add items under Admin &rarr; Item Master.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

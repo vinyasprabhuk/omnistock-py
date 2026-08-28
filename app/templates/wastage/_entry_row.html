@@ -1,0 +1,19 @@
+<div class="flex-row" style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
+  {% if entry.photoPath %}
+  <img src="{{ url_for('files.' ~ mode ~ '_photo', entry_id=entry.id) }}" alt="" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0;">
+  {% endif %}
+  <div style="flex:1;min-width:0;">
+    <div style="font-weight:600;">{{ entry.description }}</div>
+    <div class="text-muted" style="font-size:0.8rem;">
+      {% if entry.pieces is not none %}{{ entry.pieces }} pcs{% else %}{{ entry.weight | fmt }} {{ entry.unit }}{% endif %}
+      &middot; logged by {{ entry.createdByName }}
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('wastage.delete', entry_id=entry.id) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="mode" value="{{ mode }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <button type="submit" class="btn btn-sm">&times;</button>
+  </form>
+</div>

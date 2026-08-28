@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}System Status - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;">
+  <h2>System Status</h2>
+  <div class="flex-row" style="justify-content:space-between;border-bottom:1px solid var(--border);padding:10px 0;">
+    <strong>Application</strong>
+    <span style="color:var(--success);">&#10003; Online</span>
+  </div>
+  <div class="flex-row" style="justify-content:space-between;padding:10px 0;">
+    <strong>Database</strong>
+    <span style="color: {{ 'var(--success)' if db_ok else 'var(--danger)' }};">{{ '✓' if db_ok else '✕' }} {{ db_detail }}</span>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Wastage Menu - {{ branding.appName }}{% endblock %}
+{% block content %}
+<h1>Wastage Menu</h1>
+<p class="text-muted">These are the quick-select dish buttons shown on the Wastage page, grouped by meal. Add new dishes here &mdash; no code change needed.</p>
+
+<div style="max-width:700px;">
+{% for section in sections %}
+<div class="card">
+  <h2>{{ meal_labels[section.mealPeriod] }}</h2>
+  <div class="flex-row" style="margin-bottom:12px;">
+    {% if section['items'] | length == 0 %}<p class="text-muted">No items yet.</p>{% endif %}
+    {% for item in section['items'] %}
+    <form method="post" action="{{ url_for('admin.wastage_menu_delete', item_id=item.id) }}" style="display:inline;">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <span class="badge badge-muted" style="display:inline-flex;align-items:center;gap:4px;">
+        {{ item.name }}{% if item.isPieceCounted %}<span style="font-size:9px;">(pcs)</span>{% endif %}
+        <button type="submit" style="background:none;border:none;cursor:pointer;padding:0;">&times;</button>
+      </span>
+    </form>
+    {% endfor %}
+  </div>
+  <form method="post" action="{{ url_for('admin.wastage_menu_create') }}" class="flex-row" style="align-items:center;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="mealPeriod" value="{{ section.mealPeriod }}">
+    <input type="text" name="name" placeholder="New dish name" required style="flex:1;">
+    <label class="text-muted" style="font-size:0.85rem;display:flex;align-items:center;gap:4px;white-space:nowrap;">
+      <input type="checkbox" name="isPieceCounted" style="width:auto;"> Count in pieces
+    </label>
+    <button type="submit" class="btn btn-primary">Add</button>
+  </form>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

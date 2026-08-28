@@ -1,0 +1,1445 @@
+{
+  "usageSummary_unfiltered": {
+    "totalSpend": 1122183.8470000022,
+    "spendThisMonth": 436464.80300000025,
+    "spendPreviousMonth": 685719.044,
+    "spendChangePercent": -36.349324578478495
+  },
+  "usageSummary_july": {
+    "totalSpend": 685719.044,
+    "spendThisMonth": 436464.80300000025,
+    "spendPreviousMonth": 685719.044,
+    "spendChangePercent": -36.349324578478495
+  },
+  "usageSummary_aug": {
+    "totalSpend": 436464.80300000025,
+    "spendThisMonth": 436464.80300000025,
+    "spendPreviousMonth": 685719.044,
+    "spendChangePercent": -36.349324578478495
+  },
+  "usageByIngredient_unfiltered": [
+    {
+      "itemId": "cmt3gss6q0000xqsxcxe5rn2a",
+      "itemName": "Sun FLower Oil",
+      "unit": "Litre",
+      "totalQty": 977,
+      "totalSpend": 166090
+    },
+    {
+      "itemId": "cmt3gsso10050xqsx6h64wjet",
+      "itemName": "Paneer",
+      "unit": "Kg",
+      "totalQty": 292,
+      "totalSpend": 94608
+    },
+    {
+      "itemId": "cmt3gssf1002sxqsxdf7zdpp7",
+      "itemName": "Urid Dhal",
+      "unit": "Kg",
+      "totalQty": 472.45,
+      "totalSpend": 56221.549999999996
+    },
+    {
+      "itemId": "cmt3gss8f0004xqsxb4xw08n0",
+      "itemName": "Toor Dhal",
+      "unit": "Kg",
+      "totalQty": 449.75,
+      "totalSpend": 55679.050000000025
+    },
+    {
+      "itemId": "cmt3gssst0078xqsx9pdlz6fg",
+      "itemName": "Milk",
+      "unit": "Litre",
+      "totalQty": 841.5,
+      "totalSpend": 54697.5
+    },
+    {
+      "itemId": "cmt3gssil0032xqsxhgd5mg80",
+      "itemName": "Rice Flour",
+      "unit": "Kg",
+      "totalQty": 629.2,
+      "totalSpend": 47819.2
+    },
+    {
+      "itemId": "cmt3gsskx003kxqsx16h1h8yo",
+      "itemName": "Ghee",
+      "unit": "Litre",
+      "totalQty": 134.5,
+      "totalSpend": 33625
+    },
+    {
+      "itemId": "cmt3gssak000wxqsxkdo2w6m7",
+      "itemName": "Red Chilli",
+      "unit": "Kg",
+      "totalQty": 119.48,
+      "totalSpend": 33454.4
+    },
+    {
+      "itemId": "cmt3gss870002xqsx0hrw22r1",
+      "itemName": "Meals Rice",
+      "unit": "Kg",
+      "totalQty": 723.1,
+      "totalSpend": 31093.300000000003
+    },
+    {
+      "itemId": "cmt3gssew002qxqsxljdlfmxi",
+      "itemName": "Raw Rice",
+      "unit": "Kg",
+      "totalQty": 812.8,
+      "totalSpend": 30073.600000000002
+    },
+    {
+      "itemId": "cmt3gssdj0024xqsx4c2zsz6v",
+      "itemName": "Basmati Rice",
+      "unit": "Kg",
+      "totalQty": 244.5,
+      "totalSpend": 29731.200000000008
+    },
+    {
+      "itemId": "cmt3gsso50052xqsx5syovrt4",
+      "itemName": "Mushroom",
+      "unit": "Packs",
+      "totalQty": 631,
+      "totalSpend": 25240
+    },
+    {
+      "itemId": "cmt3gsssx007axqsxflbr2qtv",
+      "itemName": "Curd",
+      "unit": "Litre",
+      "totalQty": 475,
+      "totalSpend": 23275
+    },
+    {
+      "itemId": "cmt3gssjg0036xqsx376gqm1n",
+      "itemName": "Coffee",
+      "unit": "Kg",
+      "totalQty": 50,
+      "totalSpend": 21500
+    },
+    {
+      "itemId": "cmt3gsse1002cxqsxuyp1jrvp",
+      "itemName": "Maidha",
+      "unit": "Kg",
+      "totalQty": 518.2,
+      "totalSpend": 17100.6
+    },
+    {
+      "itemId": "cmt3gssfd002wxqsx5mdxdpsz",
+      "itemName": "Idly Rice",
+      "unit": "Kg",
+      "totalQty": 473.6,
+      "totalSpend": 16973.823999999993
+    },
+    {
+      "itemId": "cmt3gssav0010xqsxysn7rnyd",
+      "itemName": "Coriander Powder",
+      "unit": "Kg",
+      "totalQty": 70.2,
+      "totalSpend": 16848
+    },
+    {
+      "itemId": "cmt3gssne004qxqsxujguq2l0",
+      "itemName": "Cashew",
+      "unit": "Kg",
+      "totalQty": 18.59999999999999,
+      "totalSpend": 16368
+    },
+    {
+      "itemId": "cmt3gss9b000gxqsxudqe0q6r",
+      "itemName": "Butter",
+      "unit": "Kg",
+      "totalQty": 56,
+      "totalSpend": 16240
+    },
+    {
+      "itemId": "cmt3gssdr0028xqsxagbsu7ex",
+      "itemName": "Atta",
+      "unit": "Kg",
+      "totalQty": 376,
+      "totalSpend": 14400.8
+    },
+    {
+      "itemId": "cmt3gssox005gxqsxqkn4xevl",
+      "itemName": "Gingely oil",
+      "unit": "Litre",
+      "totalQty": 36.5,
+      "totalSpend": 14016
+    },
+    {
+      "itemId": "cmt3gssb10012xqsxlbcmjvs5",
+      "itemName": "Pepper",
+      "unit": "Kg",
+      "totalQty": 16.59999999999999,
+      "totalSpend": 13977.200000000004
+    },
+    {
+      "itemId": "cmt3gss8q0008xqsxamzlur8j",
+      "itemName": "Moong Dhal",
+      "unit": "Kg",
+      "totalQty": 133.49999999999997,
+      "totalSpend": 13216.499999999998
+    },
+    {
+      "itemId": "cmt3gssd90020xqsx9a93ipky",
+      "itemName": "Kashmiri Chilly Powder",
+      "unit": "Kg",
+      "totalQty": 23.979999999999997,
+      "totalSpend": 13021.140000000001
+    },
+    {
+      "itemId": "cmt3gss9x000oxqsx0cd0irg9",
+      "itemName": "Jaggery",
+      "unit": "Kg",
+      "totalQty": 222.5,
+      "totalSpend": 12727.000000000002
+    },
+    {
+      "itemId": "cmt3gss96000exqsx7ozrvmpz",
+      "itemName": "Rava",
+      "unit": "Kg",
+      "totalQty": 214.2,
+      "totalSpend": 11995.199999999999
+    },
+    {
+      "itemId": "cmt3gssde0022xqsxhmpybw81",
+      "itemName": "Coconut oil",
+      "unit": "Litre",
+      "totalQty": 38.5,
+      "totalSpend": 11935
+    },
+    {
+      "itemId": "cmt3gssli003uxqsxjqtf1alt",
+      "itemName": "Idly and Dosa Podi",
+      "unit": "Kg",
+      "totalQty": 37.5,
+      "totalSpend": 11250
+    },
+    {
+      "itemId": "cmt3gssbq001cxqsx0z8fgt1t",
+      "itemName": "Chilly Powder",
+      "unit": "Kg",
+      "totalQty": 33.6,
+      "totalSpend": 10953.600000000002
+    },
+    {
+      "itemId": "cmt3gssdn0026xqsx2vss0ugs",
+      "itemName": "Broken Cashew",
+      "unit": "Kg",
+      "totalQty": 16.599999999999994,
+      "totalSpend": 10292
+    },
+    {
+      "itemId": "cmt3gss9t000mxqsx7s2h45eo",
+      "itemName": "Mustard",
+      "unit": "Kg",
+      "totalQty": 85.39999999999996,
+      "totalSpend": 9906.400000000007
+    },
+    {
+      "itemId": "cmt3gssla003qxqsxp42u9hj2",
+      "itemName": "Garlic",
+      "unit": "Kg",
+      "totalQty": 73.8,
+      "totalSpend": 9003.599999999999
+    },
+    {
+      "itemId": "cmt3gss8k0006xqsx5s2mc8v7",
+      "itemName": "Sugar",
+      "unit": "Kg",
+      "totalQty": 163.95,
+      "totalSpend": 8368.008
+    },
+    {
+      "itemId": "cmt3gssbg0018xqsxfim8yk3k",
+      "itemName": "Chana Dhal",
+      "unit": "Kg",
+      "totalQty": 100.57999999999998,
+      "totalSpend": 7342.339999999999
+    },
+    {
+      "itemId": "cmt3gssaf000uxqsxmj6uyh89",
+      "itemName": "Besan Flour",
+      "unit": "Kg",
+      "totalQty": 74.5,
+      "totalSpend": 7301
+    },
+    {
+      "itemId": "cmt3gssnp004uxqsx06mjv7re",
+      "itemName": "Gundu Chilly",
+      "unit": "Kg",
+      "totalQty": 17.6,
+      "totalSpend": 7216.000000000001
+    },
+    {
+      "itemId": "cmt3gsse5002exqsxdi44sg9e",
+      "itemName": "Corn Flour",
+      "unit": "Kg",
+      "totalQty": 125.5,
+      "totalSpend": 6526
+    },
+    {
+      "itemId": "cmt3gsskt003ixqsx5hue5a9j",
+      "itemName": "Appalam",
+      "unit": "pack",
+      "totalQty": 36,
+      "totalSpend": 6480
+    },
+    {
+      "itemId": "cmt3gssmb0048xqsx83ew10a3",
+      "itemName": "Kashmiri Chilly",
+      "unit": "Kg",
+      "totalQty": 15,
+      "totalSpend": 5940
+    },
+    {
+      "itemId": "cmt3gsscc001mxqsxtkzcgxyz",
+      "itemName": "Aromat Powder",
+      "unit": "Kg",
+      "totalQty": 16.6,
+      "totalSpend": 5810
+    },
+    {
+      "itemId": "cmt3gssbm001axqsxk0m4r6g2",
+      "itemName": "Turmeric Powder",
+      "unit": "Kg",
+      "totalQty": 21.3,
+      "totalSpend": 5708.400000000001
+    },
+    {
+      "itemId": "cmt3gssci001oxqsxtuvi8pgr",
+      "itemName": "Tomato Sauce",
+      "unit": "Bottles",
+      "totalQty": 106,
+      "totalSpend": 5278.800000000002
+    },
+    {
+      "itemId": "cmt3gssko003gxqsxwp5chtxq",
+      "itemName": "Baby Corn",
+      "unit": "pack",
+      "totalQty": 175,
+      "totalSpend": 5250
+    },
+    {
+      "itemId": "cmt3gssbb0016xqsx1iok5m4g",
+      "itemName": "White Pepper Powder",
+      "unit": "Kg",
+      "totalQty": 33.15,
+      "totalSpend": 5221.125
+    },
+    {
+      "itemId": "cmt3gssle003sxqsx5vqo3v5i",
+      "itemName": "fresh cream",
+      "unit": "Litre",
+      "totalQty": 20.65,
+      "totalSpend": 4852.749999999999
+    },
+    {
+      "itemId": "cmt3gssrn006wxqsxtev2j3oy",
+      "itemName": "vanaspati",
+      "unit": "Kg",
+      "totalQty": 29.5,
+      "totalSpend": 4838
+    },
+    {
+      "itemId": "cmt3gssja0034xqsx4m7j55dj",
+      "itemName": "Tea Powder",
+      "unit": "Kg",
+      "totalQty": 12.5,
+      "totalSpend": 4750
+    },
+    {
+      "itemId": "cmt3gssdx002axqsx8jzvb19g",
+      "itemName": "Tamarind",
+      "unit": "Kg",
+      "totalQty": 24.5,
+      "totalSpend": 4655
+    },
+    {
+      "itemId": "cmt3gssf8002uxqsx144yc5m9",
+      "itemName": "Aval",
+      "unit": "Kg",
+      "totalQty": 61.25000000000001,
+      "totalSpend": 4410.000000000001
+    },
+    {
+      "itemId": "cmt3gssa4000qxqsxtyjv5mod",
+      "itemName": "Jav arisi",
+      "unit": "Kg",
+      "totalQty": 42.109999999999985,
+      "totalSpend": 3907.807999999999
+    },
+    {
+      "itemId": "cmt3gssnb004oxqsx28ky4a8o",
+      "itemName": "Groundnut Podi",
+      "unit": "Kg",
+      "totalQty": 11,
+      "totalSpend": 3850
+    },
+    {
+      "itemId": "cmt3gssaa000sxqsxv7qe4t8c",
+      "itemName": "Masoor Dal",
+      "unit": "Kg",
+      "totalQty": 47.900000000000006,
+      "totalSpend": 3752.0069999999987
+    },
+    {
+      "itemId": "cmt3gss91000cxqsx1calen8p",
+      "itemName": "Jeera",
+      "unit": "Kg",
+      "totalQty": 12.749999999999993,
+      "totalSpend": 3646.499999999998
+    },
+    {
+      "itemId": "cmt3gssed002ixqsxidh53mgf",
+      "itemName": "Garam Masala",
+      "unit": "Kg",
+      "totalQty": 7.250000000000002,
+      "totalSpend": 3562.650000000001
+    },
+    {
+      "itemId": "cmt3gssei002kxqsx5wu6l5qq",
+      "itemName": "Chicken Masala",
+      "unit": "Kg",
+      "totalQty": 9.799999999999999,
+      "totalSpend": 3498.6
+    },
+    {
+      "itemId": "cmt3gssl1003mxqsxcxcx9hxu",
+      "itemName": "Ragi Powder",
+      "unit": "Kg",
+      "totalQty": 43,
+      "totalSpend": 3440
+    },
+    {
+      "itemId": "cmt3gss9h000ixqsx7xfu6qnd",
+      "itemName": "fried gram",
+      "unit": "Kg",
+      "totalQty": 35.3,
+      "totalSpend": 3247.6
+    },
+    {
+      "itemId": "cmt3gss9n000kxqsxg5zwd2x1",
+      "itemName": "Rock Salt",
+      "unit": "Kg",
+      "totalQty": 174,
+      "totalSpend": 2958
+    },
+    {
+      "itemId": "cmt3gssp5005kxqsxewveu5am",
+      "itemName": "Mustard Oil",
+      "unit": "Litre",
+      "totalQty": 14,
+      "totalSpend": 2940
+    },
+    {
+      "itemId": "cmt3gss8w000axqsxh05fa0j5",
+      "itemName": "Salt",
+      "unit": "Kg",
+      "totalQty": 101.1,
+      "totalSpend": 2931.8999999999996
+    },
+    {
+      "itemId": "cmt3gsscv001uxqsxeiyugkh0",
+      "itemName": "Noodles",
+      "unit": "pack",
+      "totalQty": 65,
+      "totalSpend": 2866.5
+    },
+    {
+      "itemId": "cmt3gssr6006oxqsx7atrc9x7",
+      "itemName": "French Fries",
+      "unit": "Kg",
+      "totalQty": 22.5,
+      "totalSpend": 2767.5
+    },
+    {
+      "itemId": "cmt3gssap000yxqsxugwko3zu",
+      "itemName": "Coriander whole",
+      "unit": "Kg",
+      "totalQty": 17.2,
+      "totalSpend": 2648.8
+    },
+    {
+      "itemId": "cmt3gssb70014xqsx1abxac7p",
+      "itemName": "Black pepper powder",
+      "unit": "Kg",
+      "totalQty": 3.6999999999999997,
+      "totalSpend": 2630.7
+    },
+    {
+      "itemId": "cmt3gssen002mxqsxdhgj3zzh",
+      "itemName": "Kasuri Methi",
+      "unit": "Kg",
+      "totalQty": 9.599999999999998,
+      "totalSpend": 2515.2000000000003
+    },
+    {
+      "itemId": "cmt3gssl6003oxqsxn3pro7zg",
+      "itemName": "Dry Grapes",
+      "unit": "Kg",
+      "totalQty": 5.050000000000001,
+      "totalSpend": 2338.655
+    },
+    {
+      "itemId": "cmt3gssmy004ixqsx6ts5k5h9",
+      "itemName": "Sombu",
+      "unit": "Kg",
+      "totalQty": 11.129999999999997,
+      "totalSpend": 2192.6099999999997
+    },
+    {
+      "itemId": "cmt3gsscm001qxqsxmw1nyz78",
+      "itemName": "Chilly Sauce",
+      "unit": "Bottles",
+      "totalQty": 37.5,
+      "totalSpend": 1867.4999999999995
+    },
+    {
+      "itemId": "cmt3gssmk004cxqsx3m9za22j",
+      "itemName": "Green Peas",
+      "unit": "Kg",
+      "totalQty": 17.25,
+      "totalSpend": 1863
+    },
+    {
+      "itemId": "cmt3gsslu0040xqsxrf1ac9c6",
+      "itemName": "White Channa",
+      "unit": "Kg",
+      "totalQty": 16.5,
+      "totalSpend": 1498.1999999999996
+    },
+    {
+      "itemId": "cmt3gsskf003cxqsxyp6kfv88",
+      "itemName": "Kitchen King",
+      "unit": "Kg",
+      "totalQty": 3.2999999999999994,
+      "totalSpend": 1491.5999999999997
+    },
+    {
+      "itemId": "cmt3gssd0001wxqsxn495pu96",
+      "itemName": "Jeera Powder",
+      "unit": "Kg",
+      "totalQty": 5.649999999999998,
+      "totalSpend": 1406.8499999999997
+    },
+    {
+      "itemId": "cmt3gssri006uxqsxgyo5fh6e",
+      "itemName": "groundnut",
+      "unit": "Kg",
+      "totalQty": 13.299999999999999,
+      "totalSpend": 1330
+    },
+    {
+      "itemId": "cmt3gssfm0030xqsx5hz3ocsm",
+      "itemName": "Cloves",
+      "unit": "Kg",
+      "totalQty": 1.4500000000000004,
+      "totalSpend": 1323.125
+    },
+    {
+      "itemId": "cmt3gssfi002yxqsxokmx8nq1",
+      "itemName": "Fenugreek",
+      "unit": "Kg",
+      "totalQty": 11.339999999999996,
+      "totalSpend": 1270.0800000000006
+    },
+    {
+      "itemId": "cmt3gssoc0056xqsx84v6k1kh",
+      "itemName": "Chat masala",
+      "unit": "Kg",
+      "totalQty": 3.900000000000001,
+      "totalSpend": 1263.6
+    },
+    {
+      "itemId": "cmt3gssrb006qxqsxi8txqslo",
+      "itemName": "Elaichi",
+      "unit": "Kg",
+      "totalQty": 2.4000000000000004,
+      "totalSpend": 1123.1999999999998
+    },
+    {
+      "itemId": "cmt3gssc4001ixqsxuur7slrd",
+      "itemName": "Lg Solid 25g",
+      "unit": "Box",
+      "totalQty": 50,
+      "totalSpend": 1050
+    },
+    {
+      "itemId": "cmt3gssnj004sxqsxem45dldz",
+      "itemName": "Bread Crumb",
+      "unit": "Kg",
+      "totalQty": 7,
+      "totalSpend": 952
+    },
+    {
+      "itemId": "cmt3gssbv001exqsxgyuh6i52",
+      "itemName": "Cinnamon",
+      "unit": "Kg",
+      "totalQty": 1.9,
+      "totalSpend": 933.6599999999999
+    },
+    {
+      "itemId": "cmt3gssd5001yxqsx6cm24o0m",
+      "itemName": "Peri Peri Powder",
+      "unit": "Kg",
+      "totalQty": 1.6,
+      "totalSpend": 892.8
+    },
+    {
+      "itemId": "cmt3gsskb003axqsx0cstn4mk",
+      "itemName": "Badam Mix",
+      "unit": "Kg",
+      "totalQty": 6,
+      "totalSpend": 840
+    },
+    {
+      "itemId": "cmt3gsslm003wxqsxsbphjqbo",
+      "itemName": "Honey",
+      "unit": "Litre",
+      "totalQty": 2.15,
+      "totalSpend": 829.9
+    },
+    {
+      "itemId": "cmt3gssp1005ixqsxwt5gmzhi",
+      "itemName": "Vinegar",
+      "unit": "Bottles",
+      "totalQty": 15.75,
+      "totalSpend": 669.0600000000001
+    },
+    {
+      "itemId": "cmt3gssr1006mxqsxj1v2u4fl",
+      "itemName": "sweet corn",
+      "unit": "pack/tin",
+      "totalQty": 4.8500000000000005,
+      "totalSpend": 514.1000000000006
+    },
+    {
+      "itemId": "cmt3gsskj003exqsxt65pfypj",
+      "itemName": "Biriyani Masala",
+      "unit": "Kg",
+      "totalQty": 0.8,
+      "totalSpend": 470.4000000000001
+    },
+    {
+      "itemId": "cmt3gsse9002gxqsxmuok513g",
+      "itemName": "Vim bar",
+      "unit": "piece",
+      "totalQty": 38,
+      "totalSpend": 361
+    },
+    {
+      "itemId": "cmt3gsscq001sxqsxjuhm5her",
+      "itemName": "Soya Sauce",
+      "unit": "Bottles",
+      "totalQty": 9.7,
+      "totalSpend": 351.625
+    },
+    {
+      "itemId": "cmt3gssmg004axqsx0x7si2ki",
+      "itemName": "Green Gram",
+      "unit": "Kg",
+      "totalQty": 1.75,
+      "totalSpend": 192.14999999999998
+    },
+    {
+      "itemId": "cmt3gssly0042xqsx39bynivc",
+      "itemName": "Dates",
+      "unit": "Kg",
+      "totalQty": 0.7999999999999999,
+      "totalSpend": 176
+    },
+    {
+      "itemId": "cmt3gssc8001kxqsxfstryufp",
+      "itemName": "Lg Powder",
+      "unit": "Kg",
+      "totalQty": 0.1,
+      "totalSpend": 155.4
+    },
+    {
+      "itemId": "cmt3gssn3004kxqsxx17ngn4l",
+      "itemName": "Sweet Sombu",
+      "unit": "Kg",
+      "totalQty": 1,
+      "totalSpend": 134
+    },
+    {
+      "itemId": "cmt3gssol005axqsxxk98j77k",
+      "itemName": "Star Anise",
+      "unit": "Kg",
+      "totalQty": 0.30000000000000004,
+      "totalSpend": 129
+    },
+    {
+      "itemId": "cmt3gssm20044xqsx95uznbvy",
+      "itemName": "Channa Masala",
+      "unit": "Kg",
+      "totalQty": 0.30000000000000004,
+      "totalSpend": 119.70000000000002
+    },
+    {
+      "itemId": "cmt3gsssk0074xqsx558yec0j",
+      "itemName": "red color",
+      "unit": "Kg",
+      "totalQty": 0.02,
+      "totalSpend": 0.78
+    },
+    {
+      "itemId": "cmt3gsst1007cxqsxpmks3lqa",
+      "itemName": "cucumber seeds",
+      "unit": "Kg",
+      "totalQty": 11.05,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gsstf007kxqsxh3rh92dq",
+      "itemName": "badam",
+      "unit": "Kg",
+      "totalQty": 0.5,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gssti007mxqsxpkd20suy",
+      "itemName": "pista",
+      "unit": "Kg",
+      "totalQty": 0.4,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gssre006sxqsxx0vtn4da",
+      "itemName": "Tandoori Papad",
+      "unit": "pack",
+      "totalQty": 11,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gssu0007wxqsxw6ah0bht",
+      "itemName": "Kara boondhi",
+      "unit": "Kg",
+      "totalQty": 4.3999999999999995,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt67p9ys0002u9sx56sl5rij",
+      "itemName": "OMA PODI",
+      "unit": "KG",
+      "totalQty": 1.3,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gsstb007ixqsx8xcitf1e",
+      "itemName": "pori",
+      "unit": "Kg",
+      "totalQty": 6,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gsst8007gxqsxp9j48uv4",
+      "itemName": "pav bun",
+      "unit": "pack",
+      "totalQty": 4,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gssu3007yxqsxgtxbydbw",
+      "itemName": "pav bhaji masala",
+      "unit": "Kg",
+      "totalQty": 0.1,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gsstm007oxqsxz6uy6i5f",
+      "itemName": "tuty fruity",
+      "unit": "Kg",
+      "totalQty": 0.1,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gsstp007qxqsxwefvwf68",
+      "itemName": "akroot",
+      "unit": "Kg",
+      "totalQty": 0.1,
+      "totalSpend": 0
+    }
+  ],
+  "usageByIngredient_july": [
+    {
+      "itemId": "cmt3gss6q0000xqsxcxe5rn2a",
+      "itemName": "Sun FLower Oil",
+      "unit": "Litre",
+      "totalQty": 577,
+      "totalSpend": 98090
+    },
+    {
+      "itemId": "cmt3gsso10050xqsx6h64wjet",
+      "itemName": "Paneer",
+      "unit": "Kg",
+      "totalQty": 158,
+      "totalSpend": 51192
+    },
+    {
+      "itemId": "cmt3gssf1002sxqsxdf7zdpp7",
+      "itemName": "Urid Dhal",
+      "unit": "Kg",
+      "totalQty": 340.35,
+      "totalSpend": 40501.649999999994
+    },
+    {
+      "itemId": "cmt3gssil0032xqsxhgd5mg80",
+      "itemName": "Rice Flour",
+      "unit": "Kg",
+      "totalQty": 488.5,
+      "totalSpend": 37126
+    },
+    {
+      "itemId": "cmt3gss8f0004xqsxb4xw08n0",
+      "itemName": "Toor Dhal",
+      "unit": "Kg",
+      "totalQty": 255,
+      "totalSpend": 31568.999999999993
+    },
+    {
+      "itemId": "cmt3gssst0078xqsx9pdlz6fg",
+      "itemName": "Milk",
+      "unit": "Litre",
+      "totalQty": 451,
+      "totalSpend": 29315
+    },
+    {
+      "itemId": "cmt3gssak000wxqsxkdo2w6m7",
+      "itemName": "Red Chilli",
+      "unit": "Kg",
+      "totalQty": 101.18,
+      "totalSpend": 28330.4
+    },
+    {
+      "itemId": "cmt3gss870002xqsx0hrw22r1",
+      "itemName": "Meals Rice",
+      "unit": "Kg",
+      "totalQty": 475,
+      "totalSpend": 20425
+    },
+    {
+      "itemId": "cmt3gssdj0024xqsx4c2zsz6v",
+      "itemName": "Basmati Rice",
+      "unit": "Kg",
+      "totalQty": 165.5,
+      "totalSpend": 20124.799999999996
+    },
+    {
+      "itemId": "cmt3gsskx003kxqsx16h1h8yo",
+      "itemName": "Ghee",
+      "unit": "Litre",
+      "totalQty": 76,
+      "totalSpend": 19000
+    },
+    {
+      "itemId": "cmt3gssew002qxqsxljdlfmxi",
+      "itemName": "Raw Rice",
+      "unit": "Kg",
+      "totalQty": 454.4,
+      "totalSpend": 16812.8
+    },
+    {
+      "itemId": "cmt3gsso50052xqsx5syovrt4",
+      "itemName": "Mushroom",
+      "unit": "Packs",
+      "totalQty": 396,
+      "totalSpend": 15840
+    },
+    {
+      "itemId": "cmt3gssav0010xqsxysn7rnyd",
+      "itemName": "Coriander Powder",
+      "unit": "Kg",
+      "totalQty": 57,
+      "totalSpend": 13680
+    },
+    {
+      "itemId": "cmt3gsssx007axqsxflbr2qtv",
+      "itemName": "Curd",
+      "unit": "Litre",
+      "totalQty": 272.5,
+      "totalSpend": 13352.5
+    },
+    {
+      "itemId": "cmt3gssjg0036xqsx376gqm1n",
+      "itemName": "Coffee",
+      "unit": "Kg",
+      "totalQty": 25,
+      "totalSpend": 10750
+    },
+    {
+      "itemId": "cmt3gss9x000oxqsx0cd0irg9",
+      "itemName": "Jaggery",
+      "unit": "Kg",
+      "totalQty": 187,
+      "totalSpend": 10696.4
+    },
+    {
+      "itemId": "cmt3gssd90020xqsx9a93ipky",
+      "itemName": "Kashmiri Chilly Powder",
+      "unit": "Kg",
+      "totalQty": 19.35,
+      "totalSpend": 10507.05
+    },
+    {
+      "itemId": "cmt3gssfd002wxqsx5mdxdpsz",
+      "itemName": "Idly Rice",
+      "unit": "Kg",
+      "totalQty": 286,
+      "totalSpend": 10250.240000000002
+    },
+    {
+      "itemId": "cmt3gssb10012xqsxlbcmjvs5",
+      "itemName": "Pepper",
+      "unit": "Kg",
+      "totalQty": 11.7,
+      "totalSpend": 9851.4
+    },
+    {
+      "itemId": "cmt3gsse1002cxqsxuyp1jrvp",
+      "itemName": "Maidha",
+      "unit": "Kg",
+      "totalQty": 296.5,
+      "totalSpend": 9784.5
+    },
+    {
+      "itemId": "cmt3gssox005gxqsxqkn4xevl",
+      "itemName": "Gingely oil",
+      "unit": "Litre",
+      "totalQty": 25,
+      "totalSpend": 9600
+    },
+    {
+      "itemId": "cmt3gss9t000mxqsx7s2h45eo",
+      "itemName": "Mustard",
+      "unit": "Kg",
+      "totalQty": 78.95,
+      "totalSpend": 9158.2
+    },
+    {
+      "itemId": "cmt3gssne004qxqsxujguq2l0",
+      "itemName": "Cashew",
+      "unit": "Kg",
+      "totalQty": 10.149999999999995,
+      "totalSpend": 8932
+    },
+    {
+      "itemId": "cmt3gss96000exqsx7ozrvmpz",
+      "itemName": "Rava",
+      "unit": "Kg",
+      "totalQty": 154.2,
+      "totalSpend": 8635.199999999999
+    },
+    {
+      "itemId": "cmt3gssdr0028xqsxagbsu7ex",
+      "itemName": "Atta",
+      "unit": "Kg",
+      "totalQty": 197,
+      "totalSpend": 7545.099999999996
+    },
+    {
+      "itemId": "cmt3gss8q0008xqsxamzlur8j",
+      "itemName": "Moong Dhal",
+      "unit": "Kg",
+      "totalQty": 74.95,
+      "totalSpend": 7420.05
+    },
+    {
+      "itemId": "cmt3gssbq001cxqsx0z8fgt1t",
+      "itemName": "Chilly Powder",
+      "unit": "Kg",
+      "totalQty": 20,
+      "totalSpend": 6520.000000000001
+    },
+    {
+      "itemId": "cmt3gssde0022xqsxhmpybw81",
+      "itemName": "Coconut oil",
+      "unit": "Litre",
+      "totalQty": 20.5,
+      "totalSpend": 6355
+    },
+    {
+      "itemId": "cmt3gssaf000uxqsxmj6uyh89",
+      "itemName": "Besan Flour",
+      "unit": "Kg",
+      "totalQty": 63,
+      "totalSpend": 6174
+    },
+    {
+      "itemId": "cmt3gssnp004uxqsx06mjv7re",
+      "itemName": "Gundu Chilly",
+      "unit": "Kg",
+      "totalQty": 13.600000000000001,
+      "totalSpend": 5576.000000000001
+    },
+    {
+      "itemId": "cmt3gssla003qxqsxp42u9hj2",
+      "itemName": "Garlic",
+      "unit": "Kg",
+      "totalQty": 44,
+      "totalSpend": 5367.999999999999
+    },
+    {
+      "itemId": "cmt3gssdn0026xqsx2vss0ugs",
+      "itemName": "Broken Cashew",
+      "unit": "Kg",
+      "totalQty": 8.549999999999995,
+      "totalSpend": 5301
+    },
+    {
+      "itemId": "cmt3gssli003uxqsxjqtf1alt",
+      "itemName": "Idly and Dosa Podi",
+      "unit": "Kg",
+      "totalQty": 17,
+      "totalSpend": 5100
+    },
+    {
+      "itemId": "cmt3gssbb0016xqsx1iok5m4g",
+      "itemName": "White Pepper Powder",
+      "unit": "Kg",
+      "totalQty": 29.15,
+      "totalSpend": 4591.125
+    },
+    {
+      "itemId": "cmt3gssbg0018xqsxfim8yk3k",
+      "itemName": "Chana Dhal",
+      "unit": "Kg",
+      "totalQty": 62.500000000000014,
+      "totalSpend": 4562.5
+    },
+    {
+      "itemId": "cmt3gsse5002exqsxdi44sg9e",
+      "itemName": "Corn Flour",
+      "unit": "Kg",
+      "totalQty": 84.5,
+      "totalSpend": 4394
+    },
+    {
+      "itemId": "cmt3gssci001oxqsxtuvi8pgr",
+      "itemName": "Tomato Sauce",
+      "unit": "Bottles",
+      "totalQty": 80,
+      "totalSpend": 3983.999999999999
+    },
+    {
+      "itemId": "cmt3gssmb0048xqsx83ew10a3",
+      "itemName": "Kashmiri Chilly",
+      "unit": "Kg",
+      "totalQty": 10,
+      "totalSpend": 3960
+    },
+    {
+      "itemId": "cmt3gssaa000sxqsxv7qe4t8c",
+      "itemName": "Masoor Dal",
+      "unit": "Kg",
+      "totalQty": 47.900000000000006,
+      "totalSpend": 3752.0069999999987
+    },
+    {
+      "itemId": "cmt3gsscc001mxqsxtkzcgxyz",
+      "itemName": "Aromat Powder",
+      "unit": "Kg",
+      "totalQty": 9.900000000000002,
+      "totalSpend": 3465
+    },
+    {
+      "itemId": "cmt3gssbm001axqsxk0m4r6g2",
+      "itemName": "Turmeric Powder",
+      "unit": "Kg",
+      "totalQty": 12.399999999999999,
+      "totalSpend": 3323.2
+    },
+    {
+      "itemId": "cmt3gss8k0006xqsx5s2mc8v7",
+      "itemName": "Sugar",
+      "unit": "Kg",
+      "totalQty": 62.35,
+      "totalSpend": 3182.3440000000005
+    },
+    {
+      "itemId": "cmt3gssko003gxqsxwp5chtxq",
+      "itemName": "Baby Corn",
+      "unit": "pack",
+      "totalQty": 97,
+      "totalSpend": 2910
+    },
+    {
+      "itemId": "cmt3gssf8002uxqsx144yc5m9",
+      "itemName": "Aval",
+      "unit": "Kg",
+      "totalQty": 39.05000000000001,
+      "totalSpend": 2811.6000000000004
+    },
+    {
+      "itemId": "cmt3gss91000cxqsx1calen8p",
+      "itemName": "Jeera",
+      "unit": "Kg",
+      "totalQty": 9.65,
+      "totalSpend": 2759.9
+    },
+    {
+      "itemId": "cmt3gssle003sxqsx5vqo3v5i",
+      "itemName": "fresh cream",
+      "unit": "Litre",
+      "totalQty": 11.649999999999999,
+      "totalSpend": 2737.7499999999995
+    },
+    {
+      "itemId": "cmt3gssrn006wxqsxtev2j3oy",
+      "itemName": "vanaspati",
+      "unit": "Kg",
+      "totalQty": 16,
+      "totalSpend": 2624
+    },
+    {
+      "itemId": "cmt3gssdx002axqsx8jzvb19g",
+      "itemName": "Tamarind",
+      "unit": "Kg",
+      "totalQty": 13.5,
+      "totalSpend": 2565
+    },
+    {
+      "itemId": "cmt3gsskt003ixqsx5hue5a9j",
+      "itemName": "Appalam",
+      "unit": "pack",
+      "totalQty": 14,
+      "totalSpend": 2520
+    },
+    {
+      "itemId": "cmt3gss9n000kxqsxg5zwd2x1",
+      "itemName": "Rock Salt",
+      "unit": "Kg",
+      "totalQty": 147,
+      "totalSpend": 2499
+    },
+    {
+      "itemId": "cmt3gssei002kxqsx5wu6l5qq",
+      "itemName": "Chicken Masala",
+      "unit": "Kg",
+      "totalQty": 6.4,
+      "totalSpend": 2284.7999999999997
+    },
+    {
+      "itemId": "cmt3gssl1003mxqsxcxcx9hxu",
+      "itemName": "Ragi Powder",
+      "unit": "Kg",
+      "totalQty": 28,
+      "totalSpend": 2240
+    },
+    {
+      "itemId": "cmt3gssp5005kxqsxewveu5am",
+      "itemName": "Mustard Oil",
+      "unit": "Litre",
+      "totalQty": 10,
+      "totalSpend": 2100
+    },
+    {
+      "itemId": "cmt3gssja0034xqsx4m7j55dj",
+      "itemName": "Tea Powder",
+      "unit": "Kg",
+      "totalQty": 5.5,
+      "totalSpend": 2090
+    },
+    {
+      "itemId": "cmt3gssmy004ixqsx6ts5k5h9",
+      "itemName": "Sombu",
+      "unit": "Kg",
+      "totalQty": 10.43,
+      "totalSpend": 2054.71
+    },
+    {
+      "itemId": "cmt3gssa4000qxqsxtyjv5mod",
+      "itemName": "Jav arisi",
+      "unit": "Kg",
+      "totalQty": 21.310000000000002,
+      "totalSpend": 1977.5680000000002
+    },
+    {
+      "itemId": "cmt3gssr6006oxqsx7atrc9x7",
+      "itemName": "French Fries",
+      "unit": "Kg",
+      "totalQty": 15,
+      "totalSpend": 1845
+    },
+    {
+      "itemId": "cmt3gssmk004cxqsx3m9za22j",
+      "itemName": "Green Peas",
+      "unit": "Kg",
+      "totalQty": 16.25,
+      "totalSpend": 1755
+    },
+    {
+      "itemId": "cmt3gsscv001uxqsxeiyugkh0",
+      "itemName": "Noodles",
+      "unit": "pack",
+      "totalQty": 38.5,
+      "totalSpend": 1697.8500000000004
+    },
+    {
+      "itemId": "cmt3gssed002ixqsxidh53mgf",
+      "itemName": "Garam Masala",
+      "unit": "Kg",
+      "totalQty": 3.200000000000001,
+      "totalSpend": 1572.4799999999998
+    },
+    {
+      "itemId": "cmt3gssap000yxqsxugwko3zu",
+      "itemName": "Coriander whole",
+      "unit": "Kg",
+      "totalQty": 9.5,
+      "totalSpend": 1463
+    },
+    {
+      "itemId": "cmt3gssb70014xqsx1abxac7p",
+      "itemName": "Black pepper powder",
+      "unit": "Kg",
+      "totalQty": 1.9,
+      "totalSpend": 1350.9
+    },
+    {
+      "itemId": "cmt3gsscm001qxqsxmw1nyz78",
+      "itemName": "Chilly Sauce",
+      "unit": "Bottles",
+      "totalQty": 26.75,
+      "totalSpend": 1332.15
+    },
+    {
+      "itemId": "cmt3gssri006uxqsxgyo5fh6e",
+      "itemName": "groundnut",
+      "unit": "Kg",
+      "totalQty": 12.5,
+      "totalSpend": 1250
+    },
+    {
+      "itemId": "cmt3gssen002mxqsxdhgj3zzh",
+      "itemName": "Kasuri Methi",
+      "unit": "Kg",
+      "totalQty": 4.4,
+      "totalSpend": 1152.8
+    },
+    {
+      "itemId": "cmt3gss8w000axqsxh05fa0j5",
+      "itemName": "Salt",
+      "unit": "Kg",
+      "totalQty": 38.09999999999999,
+      "totalSpend": 1104.8999999999996
+    },
+    {
+      "itemId": "cmt3gssnb004oxqsx28ky4a8o",
+      "itemName": "Groundnut Podi",
+      "unit": "Kg",
+      "totalQty": 3,
+      "totalSpend": 1050
+    },
+    {
+      "itemId": "cmt3gssl6003oxqsxn3pro7zg",
+      "itemName": "Dry Grapes",
+      "unit": "Kg",
+      "totalQty": 2.25,
+      "totalSpend": 1041.9750000000001
+    },
+    {
+      "itemId": "cmt3gssoc0056xqsx84v6k1kh",
+      "itemName": "Chat masala",
+      "unit": "Kg",
+      "totalQty": 3,
+      "totalSpend": 972
+    },
+    {
+      "itemId": "cmt3gssd0001wxqsxn495pu96",
+      "itemName": "Jeera Powder",
+      "unit": "Kg",
+      "totalQty": 3.849999999999999,
+      "totalSpend": 958.6499999999995
+    },
+    {
+      "itemId": "cmt3gssfm0030xqsx5hz3ocsm",
+      "itemName": "Cloves",
+      "unit": "Kg",
+      "totalQty": 1.05,
+      "totalSpend": 958.125
+    },
+    {
+      "itemId": "cmt3gssc4001ixqsxuur7slrd",
+      "itemName": "Lg Solid 25g",
+      "unit": "Box",
+      "totalQty": 45,
+      "totalSpend": 945
+    },
+    {
+      "itemId": "cmt3gsskf003cxqsxyp6kfv88",
+      "itemName": "Kitchen King",
+      "unit": "Kg",
+      "totalQty": 1.9999999999999998,
+      "totalSpend": 903.9999999999999
+    },
+    {
+      "itemId": "cmt3gssd5001yxqsx6cm24o0m",
+      "itemName": "Peri Peri Powder",
+      "unit": "Kg",
+      "totalQty": 1.6,
+      "totalSpend": 892.8
+    },
+    {
+      "itemId": "cmt3gsslu0040xqsxrf1ac9c6",
+      "itemName": "White Channa",
+      "unit": "Kg",
+      "totalQty": 9.5,
+      "totalSpend": 862.5999999999999
+    },
+    {
+      "itemId": "cmt3gssfi002yxqsxokmx8nq1",
+      "itemName": "Fenugreek",
+      "unit": "Kg",
+      "totalQty": 6.830000000000001,
+      "totalSpend": 764.96
+    },
+    {
+      "itemId": "cmt3gssrb006qxqsxi8txqslo",
+      "itemName": "Elaichi",
+      "unit": "Kg",
+      "totalQty": 1.4,
+      "totalSpend": 655.2
+    },
+    {
+      "itemId": "cmt3gssp1005ixqsxwt5gmzhi",
+      "itemName": "Vinegar",
+      "unit": "Bottles",
+      "totalQty": 11.75,
+      "totalSpend": 499.14
+    },
+    {
+      "itemId": "cmt3gsskb003axqsx0cstn4mk",
+      "itemName": "Badam Mix",
+      "unit": "Kg",
+      "totalQty": 3,
+      "totalSpend": 420
+    },
+    {
+      "itemId": "cmt3gssnj004sxqsxem45dldz",
+      "itemName": "Bread Crumb",
+      "unit": "Kg",
+      "totalQty": 3,
+      "totalSpend": 408
+    },
+    {
+      "itemId": "cmt3gssbv001exqsxgyuh6i52",
+      "itemName": "Cinnamon",
+      "unit": "Kg",
+      "totalQty": 0.8,
+      "totalSpend": 393.11999999999995
+    },
+    {
+      "itemId": "cmt3gsskj003exqsxt65pfypj",
+      "itemName": "Biriyani Masala",
+      "unit": "Kg",
+      "totalQty": 0.6000000000000001,
+      "totalSpend": 352.80000000000007
+    },
+    {
+      "itemId": "cmt3gsslm003wxqsxsbphjqbo",
+      "itemName": "Honey",
+      "unit": "Litre",
+      "totalQty": 0.65,
+      "totalSpend": 250.9
+    },
+    {
+      "itemId": "cmt3gssr1006mxqsxj1v2u4fl",
+      "itemName": "sweet corn",
+      "unit": "pack/tin",
+      "totalQty": 2.100000000000001,
+      "totalSpend": 222.6000000000003
+    },
+    {
+      "itemId": "cmt3gsscq001sxqsxjuhm5her",
+      "itemName": "Soya Sauce",
+      "unit": "Bottles",
+      "totalQty": 6,
+      "totalSpend": 217.5
+    },
+    {
+      "itemId": "cmt3gssmg004axqsx0x7si2ki",
+      "itemName": "Green Gram",
+      "unit": "Kg",
+      "totalQty": 1,
+      "totalSpend": 109.8
+    },
+    {
+      "itemId": "cmt3gssly0042xqsx39bynivc",
+      "itemName": "Dates",
+      "unit": "Kg",
+      "totalQty": 0.2,
+      "totalSpend": 44
+    },
+    {
+      "itemId": "cmt3gsst1007cxqsxpmks3lqa",
+      "itemName": "cucumber seeds",
+      "unit": "Kg",
+      "totalQty": 7.050000000000001,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gsstf007kxqsxh3rh92dq",
+      "itemName": "badam",
+      "unit": "Kg",
+      "totalQty": 0.2,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gssti007mxqsxpkd20suy",
+      "itemName": "pista",
+      "unit": "Kg",
+      "totalQty": 0.2,
+      "totalSpend": 0
+    },
+    {
+      "itemId": "cmt3gssre006sxqsxx0vtn4da",
+      "itemName": "Tandoori Papad",
+      "unit": "pack",
+      "totalQty": 6,
+      "totalSpend": 0
+    }
+  ],
+  "usageByDepartment_unfiltered": [
+    {
+      "department": "Historical Import",
+      "totalSpend": 1122183.8470000022
+    }
+  ],
+  "usageByDepartment_july": [
+    {
+      "department": "Historical Import",
+      "totalSpend": 685719.044
+    }
+  ],
+  "usageByBranch_unfiltered": [
+    {
+      "branchId": "cmt3dnjqx000086sx9p2btcs0",
+      "branchName": "Moksham Medavakkam",
+      "totalSpend": 1122183.8470000022
+    }
+  ],
+  "usageByMonth_unfiltered": [
+    {
+      "monthKey": "2026-07",
+      "monthLabel": "Jul 2026",
+      "totalSpend": 685719.044
+    },
+    {
+      "monthKey": "2026-08",
+      "monthLabel": "Aug 2026",
+      "totalSpend": 436464.80300000025
+    }
+  ],
+  "periodComparison": {
+    "thisMonth": 436464.80300000025,
+    "lastMonth": 685719.044,
+    "monthChangePercent": -36.349324578478495,
+    "thisWeek": 0,
+    "lastWeek": 134882.21799999996,
+    "weekChangePercent": -100,
+    "thisWeekendAvg": 0,
+    "lastWeekendAvg": 28923.343999999997,
+    "weekendChangePercent": -100
+  }
+}

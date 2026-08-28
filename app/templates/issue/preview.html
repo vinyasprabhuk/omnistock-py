@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Review Stock Issue Upload - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px;margin:0 auto;">
+  <h2>Review Stock Issue Upload</h2>
+  <p class="text-muted">{{ rows | length }} row(s) extracted. Confirm the matched item and quantity for each before saving.</p>
+
+  <form method="post" action="{{ url_for('issue.commit') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    {% if not user_branch_id %}
+    <label class="field" style="width:auto;margin-bottom:16px;">
+      <span>Branch</span>
+      <select name="branchId" style="width:200px;">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    </label>
+    {% endif %}
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Department</th><th>Extracted</th><th>Matched Item</th><th style="width:100px;">Qty</th><th>Unit</th><th>Confidence</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td><input type="text" name="departmentName" value="{{ row.departmentName }}" style="width:100%;"></td>
+            <td>{{ row.extractedText }}</td>
+            <td>
+              <select name="itemId" style="width:100%;">
+                <option value="">-- select item --</option>
+                {% for it in items %}<option value="{{ it.id }}" {{ 'selected' if it.id == row.matchedItemId else '' }}>{{ it.name }} ({{ it.unit }})</option>{% endfor %}
+              </select>
+            </td>
+            <td><input type="number" name="qty" step="any" value="{{ row.qty }}" style="width:100%;"></td>
+            <td class="text-muted">{{ row.unit }}</td>
+            <td>
+              {% if row.confidence >= 90 %}<span class="badge badge-success">AUTO {{ row.confidence }}%</span>
+              {% elif row.confidence >= 70 %}<span class="badge badge-warning">REVIEW {{ row.confidence }}%</span>
+              {% else %}<span class="badge badge-danger">MANUAL {{ row.confidence }}%</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex-row" style="justify-content:space-between;margin-top:16px;">
+      <a class="btn btn-sm" href="{{ url_for('issue.index') }}">Cancel</a>
+      <button type="submit" class="btn btn-primary">Confirm &amp; Save Stock Issue</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

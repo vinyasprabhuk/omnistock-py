@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# Real business data -- never commit
+instance/dev.db
+instance/reference/dev.db.pristine
+instance/secret_key
+uploads/
+
+# Local/generated
+.DS_Store
+tests/parity_out/
+*.log
+
+# Editor
+.vscode/
+.idea/

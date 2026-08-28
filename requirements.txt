@@ -1,0 +1,17 @@
+# Every package here must have a pure-Python (py3-none-any) wheel, or a
+# compiled one whose baseline GLIBC is safely below the target host's (see
+# README.md). Install with:
+#   pip install --only-binary=:all: --no-cache-dir -r requirements.txt
+# so any accidental compiled dependency fails loudly instead of trying to
+# build silently on a host with no compiler.
+
+Flask==3.1.0
+Werkzeug==3.1.3
+Jinja2==3.1.5
+itsdangerous==2.2.0
+click==8.1.8
+blinker==1.9.0
+MarkupSafe==3.0.2
+openpyxl==3.1.5
+et-xmlfile==2.0.0
+waitress==3.0.2

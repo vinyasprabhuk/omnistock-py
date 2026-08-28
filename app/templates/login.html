@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-brand">
+    {% if branding.logoPath %}
+      <img src="{{ branding.logoPath }}" alt="" class="login-logo">
+    {% endif %}
+    <h1 class="login-appname">{{ branding.appName | upper }}</h1>
+    {% if branding.tagline %}<p class="login-tagline">{{ branding.tagline }}</p>{% endif %}
+  </div>
+
+  <form method="post" class="card login-card">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    {% if callback_url %}<input type="hidden" name="callback_url" value="{{ callback_url }}">{% endif %}
+
+    {% if error %}<div class="flash flash-error">{{ error }}</div>{% endif %}
+
+    <label class="field">
+      <span>Username</span>
+      <input type="text" name="username" autocomplete="username" autofocus required>
+    </label>
+    <label class="field">
+      <span>Password</span>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+  </form>
+</div>
+{% endblock %}

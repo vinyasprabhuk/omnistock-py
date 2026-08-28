@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Branding - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div style="max-width:700px;">
+<h1>Branding</h1>
+
+<div class="card">
+  <h2>App Name &amp; Tagline</h2>
+  <form method="post" action="{{ url_for('admin.branding_app_name') }}" class="flex-row" style="align-items:flex-end;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="field" style="flex:1;"><span>Name shown in the top-left of every screen, and on the login page</span><input type="text" name="appName" value="{{ branding.appName }}" required></label>
+    <label class="field" style="flex:1;"><span>Tagline (shown below the logo on the login screen only)</span><input type="text" name="tagline" value="{{ branding.tagline or '' }}" placeholder="e.g. Restaurant Inventory, Simplified"></label>
+    <button type="submit" class="btn btn-primary">Save</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Logo</h2>
+  <p class="text-muted">Shown in the top-left of every screen, and above the sign-in form on the login page.</p>
+  {% if branding.logoPath %}<img src="{{ branding.logoPath }}" alt="" style="height:40px;margin-bottom:10px;">{% endif %}
+  <form method="post" action="{{ url_for('admin.branding_logo') }}" enctype="multipart/form-data" class="flex-row">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="file" name="logo" accept="image/*" required>
+    <button type="submit" class="btn btn-primary">Upload</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Header Color</h2>
+  <p class="text-muted">Pick any custom color for the top navigation bar. Leave unset to use the selected theme's default header color.</p>
+  <form method="post" action="{{ url_for('admin.branding_header_color') }}" class="flex-row" style="align-items:center;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="color" name="headerColor" value="{{ branding.headerColor or '#0b1f44' }}" style="width:60px;">
+    <button type="submit" class="btn btn-primary">Save Header Color</button>
+    {% if branding.headerColor %}<button type="submit" name="reset" value="1" class="btn">Reset to theme default</button>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <h2>Theme</h2>
+
+  <h3>Custom accent color</h3>
+  <p class="text-muted">Pick any color for buttons, links, and highlights &mdash; overrides the preset below when set.</p>
+  <form method="post" action="{{ url_for('admin.branding_accent_color') }}" class="flex-row" style="align-items:center;margin-bottom:20px;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="color" name="accentColor" value="{{ branding.accentColor or '#315bff' }}" style="width:60px;">
+    <button type="submit" class="btn btn-primary">Save Accent Color</button>
+    {% if branding.accentColor %}<button type="submit" name="reset" value="1" class="btn">Reset to preset below</button>{% endif %}
+  </form>
+
+  <form method="post" action="{{ url_for('admin.branding_theme') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+    <h3>Accent color preset</h3>
+    <div class="flex-row" style="margin-bottom:16px;">
+      {% for color in theme_colors %}
+      <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+        <input type="radio" name="themeColor" value="{{ color }}" {{ 'checked' if branding.themeColor == color else '' }} style="width:auto;">
+        <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:{{ color_swatch[color] }};border:1px solid var(--border);"></span>
+        <span class="text-muted" style="font-size:0.7rem;">{{ color_label[color] }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <h3>Appearance</h3>
+    <div class="flex-row" style="margin-bottom:16px;">
+      {% for mode in theme_modes %}
+      <label class="btn btn-sm" style="cursor:pointer;{{ 'background:var(--secondary);' if branding.themeMode == mode else '' }}">
+        <input type="radio" name="themeMode" value="{{ mode }}" {{ 'checked' if branding.themeMode == mode else '' }} style="width:auto;margin-right:4px;">{{ mode_label[mode] }}
+      </label>
+      {% endfor %}
+    </div>
+
+    <h3>Logo &amp; name size</h3>
+    <div class="flex-row" style="margin-bottom:16px;">
+      {% for size in brand_sizes %}
+      <label class="btn btn-sm" style="cursor:pointer;{{ 'background:var(--secondary);' if branding.brandSize == size else '' }}">
+        <input type="radio" name="brandSize" value="{{ size }}" {{ 'checked' if branding.brandSize == size else '' }} style="width:auto;margin-right:4px;">{{ size_label[size] }}
+      </label>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Theme</button>
+  </form>
+</div>
+</div>
+{% endblock %}

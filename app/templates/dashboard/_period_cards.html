@@ -1,0 +1,24 @@
+<div class="card-grid card-grid-4">
+  <div class="card stat">
+    <div class="stat-label">This Week</div>
+    <div class="stat-value">{{ comparison.thisWeek | money_grouped }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">This Week vs Last Week</div>
+    <div class="stat-value" style="color: {{ 'var(--danger)' if comparison.weekChangePercent and comparison.weekChangePercent > 0 else ('var(--success)' if comparison.weekChangePercent and comparison.weekChangePercent < 0 else 'inherit') }};">
+      {{ comparison.weekChangePercent | pct }}
+      <span class="text-muted" style="font-size:0.7em;"> (last week {{ comparison.lastWeek | money_grouped }})</span>
+    </div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">This Weekend (avg/day)</div>
+    <div class="stat-value">{{ comparison.thisWeekendAvg | money_grouped }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">This Weekend vs Last Weekend</div>
+    <div class="stat-value" style="color: {{ 'var(--danger)' if comparison.weekendChangePercent and comparison.weekendChangePercent > 0 else ('var(--success)' if comparison.weekendChangePercent and comparison.weekendChangePercent < 0 else 'inherit') }};">
+      {{ comparison.weekendChangePercent | pct }}
+      <span class="text-muted" style="font-size:0.7em;"> (last {{ comparison.lastWeekendAvg | money_grouped }})</span>
+    </div>
+  </div>
+</div>

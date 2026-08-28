@@ -1,0 +1,31 @@
+---
+# cPanel Git Version Control deployment file.
+#
+# Setup (one-time, in cPanel):
+#   1. cPanel -> Git(TM) Version Control -> Create/connect this repository.
+#   2. Point the repo's clone URL at wherever this project is hosted
+#      (e.g. your GitHub repo) or push directly to the cPanel-hosted repo.
+#   3. After the repo is connected, click "Manage" -> "Pull or Deploy" ->
+#      "Deploy HEAD Commit" to run the tasks below. (cPanel does not
+#      auto-run this on every push unless you separately configure a
+#      webhook -- see the note at the bottom.)
+#
+# Deliberately does NOT run `pip install` on every deploy. This host has a
+# tight memory limit that has previously OOM-killed dependency installs
+# (see README.md) -- so deploys here are just "copy the new files", not
+# "reinstall the world". When a dependency genuinely changes, install it
+# manually once via Terminal (with --only-binary=:all:), the same way the
+# original working environment was built.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/wattsupc/inventory.mokshamveg.com/
+    - /bin/cp -R app $DEPLOYPATH
+    - /bin/cp -R config.py $DEPLOYPATH
+    - /bin/cp -R passenger_wsgi.py $DEPLOYPATH
+    - /bin/cp -R wsgi.py $DEPLOYPATH
+    - /bin/cp -R requirements.txt $DEPLOYPATH
+    - /bin/cp -R tools $DEPLOYPATH
+    # NOT copied on purpose -- these hold real data / secrets / local
+    # working files and must never be overwritten by a deploy:
+    #   instance/dev.db, instance/secret_key, uploads/, .venv/
+    - touch /home/wattsupc/inventory.mokshamveg.com/tmp/restart.txt

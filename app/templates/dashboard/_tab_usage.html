@@ -1,0 +1,83 @@
+<p class="text-muted">Estimated cost of what was actually issued to departments (qty issued &times; each item's average purchase price) &mdash; this can differ a lot from purchase spend, e.g. stocking up in bulk one month vs. steady daily use.</p>
+
+<div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px,1fr));">
+  <div class="card stat">
+    <div class="stat-label">{{ 'Usage Spend in Selected Period' if is_filtered else 'Total Usage Spend' }}</div>
+    <div class="stat-value">{{ usage_summary.totalSpend | money_grouped }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">Usage Spend This Month</div>
+    <div class="stat-value">{{ usage_summary.spendThisMonth | money_grouped }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">Usage vs Previous Month</div>
+    <div class="stat-value" style="color: {{ 'var(--danger)' if usage_summary.spendChangePercent and usage_summary.spendChangePercent > 0 else ('var(--success)' if usage_summary.spendChangePercent and usage_summary.spendChangePercent < 0 else 'inherit') }};">
+      {{ usage_summary.spendChangePercent | pct }}
+    </div>
+  </div>
+</div>
+
+{% set comparison = usage_period %}
+{% include "dashboard/_period_cards.html" %}
+
+<div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(280px,1fr));">
+  <div class="card">
+    <h3>Usage by Month</h3>
+    {% if usage_by_month | length == 0 %}<p class="text-muted">No stock issue history yet.</p>{% endif %}
+    {% for m in usage_by_month %}
+    <div style="margin-bottom:8px;">
+      <div class="flex-row" style="justify-content:space-between;font-size:0.85rem;"><span>{{ m.monthLabel }}</span><strong>{{ m.totalSpend | money_grouped }}</strong></div>
+      <div style="height:8px;border-radius:4px;background:var(--muted);overflow:hidden;"><div style="height:100%;background:var(--primary);width:{{ (m.totalSpend / max_usage_month * 100) }}%;"></div></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h3>Usage by Department</h3>
+    {% if usage_by_department | length == 0 %}<p class="text-muted">No stock issue history yet.</p>{% endif %}
+    {% for d in usage_by_department %}
+    <div style="margin-bottom:8px;">
+      <div class="flex-row" style="justify-content:space-between;font-size:0.85rem;"><span>{{ d.department }}</span><strong>{{ d.totalSpend | money_grouped }}</strong></div>
+      <div style="height:8px;border-radius:4px;background:var(--muted);overflow:hidden;"><div style="height:100%;background:var(--primary);width:{{ (d.totalSpend / max_usage_department * 100) }}%;"></div></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if is_admin %}
+  <div class="card">
+    <h3>Usage by Branch</h3>
+    {% if usage_by_branch | length == 0 %}<p class="text-muted">No stock issue history yet.</p>{% endif %}
+    {% for b in usage_by_branch %}
+    <div class="flex-row" style="justify-content:space-between;font-size:0.85rem;border-bottom:1px solid var(--border);padding:4px 0;">
+      <span>{{ b.branchName }}</span><strong>{{ b.totalSpend | money_grouped }}</strong>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<details class="card">
+  <summary style="cursor:pointer;font-weight:600;">Usage by Ingredient</summary>
+  <div style="margin-top:12px;">
+    {% if usage_by_ingredient | length == 0 %}
+      <p class="text-muted">No stock issue history yet.</p>
+    {% else %}
+      <input type="text" class="js-search-input" data-target="usage-ing-body" placeholder="Search item..." style="width:260px;margin-bottom:12px;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th class="num">Qty Issued</th><th class="num">Estimated Spend</th></tr></thead>
+          <tbody id="usage-ing-body">
+            {% for row in usage_by_ingredient %}
+            <tr class="js-search-row" data-search="{{ row.itemName | lower }}">
+              <td>{{ row.itemName }}</td>
+              <td class="num">{{ row.totalQty | fmt }} {{ row.unit }}</td>
+              <td class="num">{{ row.totalSpend | money_grouped }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="js-search-empty" hidden><td colspan="3" class="text-muted" style="text-align:center;padding:24px;">No items match "<span class="js-search-query"></span>".</td></tr>
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</details>
