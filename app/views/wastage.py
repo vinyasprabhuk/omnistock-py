@@ -8,6 +8,7 @@ from app.dates import today_key
 from app.security import require_write
 from app.services import production, wastage
 from app.services.meal_periods import MEAL_LABELS, MEAL_PERIODS
+from app.services.wastage_ingredients import compute_wasted_ingredients
 from app.services.wastage_menu import get_wastage_menu
 
 bp = Blueprint("wastage", __name__)
@@ -39,6 +40,9 @@ def index():
         entries = production.get_production_for_date(conn, branch["branchId"], date)
     menu = get_wastage_menu(conn)
 
+    ingredients = compute_wasted_ingredients(conn, entries)
+    entries = ingredients["entries"]  # same rows, each now carries matchedRecipeName/matchStatus
+
     grouped = {mp: [e for e in entries if e["mealPeriod"] == mp] for mp in MEAL_PERIODS}
     other = [e for e in entries if not e["mealPeriod"]]
 
@@ -46,6 +50,7 @@ def index():
         "wastage/index.html", date=date, mode=mode, branch=branch, is_admin=is_admin,
         branches=branches, branch_param=branch_param or "", entries=entries, menu=menu,
         grouped=grouped, other=other, meal_labels=MEAL_LABELS, total_kg=_total_kg(entries),
+        ingredient_lines=ingredients["lines"], ingredient_gaps=ingredients["gaps"],
     )
 
 

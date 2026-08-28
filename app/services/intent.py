@@ -98,7 +98,7 @@ def _recipe_by_name(conn: sqlite3.Connection, name: str):
     return conn.execute("SELECT * FROM Recipe WHERE name = ?", (name,)).fetchone()
 
 
-def _expand_recipe_items(conn: sqlite3.Connection, recipe_id: str, multiplier: float) -> dict[str, float]:
+def expand_recipe_items(conn: sqlite3.Connection, recipe_id: str, multiplier: float) -> dict[str, float]:
     totals: dict[str, float] = defaultdict(float)
     for line in conn.execute(
         "SELECT itemId, qty FROM RecipeLine WHERE recipeId = ? AND itemId IS NOT NULL", (recipe_id,)
@@ -136,7 +136,7 @@ def generate_intent_day(
 
         if own_recipe and own_recipe["servesQty"]:
             multiplier = d["finalQty"] / own_recipe["servesQty"]
-            for item_id, qty in _expand_recipe_items(conn, own_recipe["id"], multiplier).items():
+            for item_id, qty in expand_recipe_items(conn, own_recipe["id"], multiplier).items():
                 item_totals[(item_id, own_recipe["name"])] += qty
             dish_counts.append(d)
         elif d["category"] not in ("OTHER",):
@@ -174,7 +174,7 @@ def generate_intent_day(
                 continue
             ml_needed = d["finalQty"] * entry["qty"]
             multiplier = ml_needed / batch_ml
-            for item_id, qty in _expand_recipe_items(conn, recipe["id"], multiplier).items():
+            for item_id, qty in expand_recipe_items(conn, recipe["id"], multiplier).items():
                 item_totals[(item_id, recipe["name"])] += qty
 
     existing = conn.execute(

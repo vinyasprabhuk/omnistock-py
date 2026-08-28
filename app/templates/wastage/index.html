@@ -57,6 +57,40 @@
   </div>
 </div>
 
+{% if entries | length > 0 %}
+<div class="card" style="margin-top:16px;">
+  <h3>Ingredients {{ 'wasted' if mode == 'wastage' else 'used in production' }}</h3>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-6px;">Based on each logged item's recipe, grouped by recipe the same way as Intent.</p>
+  {% if ingredient_lines | length == 0 %}
+    <p class="text-muted">No ingredients computed yet &mdash; none of today's entries confidently matched a loaded recipe.</p>
+  {% else %}
+  {% set ns = namespace(current_group='') %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Item</th><th>Unit</th><th style="width:110px;">Qty</th></tr></thead>
+      <tbody>
+        {% for line in ingredient_lines %}
+        {% if line.groupLabel != ns.current_group %}
+        {% set ns.current_group = line.groupLabel %}
+        <tr class="dept-row"><td colspan="3">{{ line.groupLabel }}</td></tr>
+        {% endif %}
+        <tr><td>{{ line.itemName }}</td><td class="text-muted">{{ line.unit }}</td><td class="qty">{{ line.qty }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if ingredient_gaps | length > 0 %}
+  <details style="margin-top:10px;">
+    <summary class="text-muted" style="font-size:0.85rem;cursor:pointer;">{{ ingredient_gaps | length }} item{{ 's' if ingredient_gaps|length != 1 else '' }} not counted</summary>
+    <ul style="font-size:0.85rem;color:var(--muted-foreground);margin-top:6px;">
+      {% for gap in ingredient_gaps %}<li>{{ gap.description }} &mdash; {{ gap.reason }}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>
+{% endif %}
+
 <dialog id="entry-dialog" style="border-radius:10px;border:1px solid var(--border);padding:0;max-width:400px;width:90%;">
   <form method="post" action="{{ url_for('wastage.create') }}" enctype="multipart/form-data" style="padding:20px;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">

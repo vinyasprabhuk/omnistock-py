@@ -3,7 +3,12 @@
   <img src="{{ url_for('files.' ~ mode ~ '_photo', entry_id=entry.id) }}" alt="" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0;">
   {% endif %}
   <div style="flex:1;min-width:0;">
-    <div style="font-weight:600;">{{ entry.description }}</div>
+    <div style="font-weight:600;">
+      {{ entry.description }}
+      {% if entry.matchStatus == 'AUTO' %}<span class="badge badge-success" style="font-weight:500;">{{ entry.matchedRecipeName }}</span>
+      {% elif entry.matchedRecipeName %}<span class="badge badge-warning" style="font-weight:500;" title="Best guess only, not confident enough to compute ingredients">{{ entry.matchedRecipeName }}?</span>
+      {% else %}<span class="badge badge-muted" style="font-weight:500;">no recipe match</span>{% endif %}
+    </div>
     <div class="text-muted" style="font-size:0.8rem;">
       {% if entry.pieces is not none %}{{ entry.pieces }} pcs{% else %}{{ entry.weight | fmt }} {{ entry.unit }}{% endif %}
       &middot; logged by {{ entry.createdByName }}
