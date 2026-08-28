@@ -54,7 +54,7 @@
   <form method="post" action="{{ url_for('issue.preview') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;">
     <label class="field" style="width:auto;"><span>Date</span><input type="date" name="date" required style="width:160px;"></label>
     <label class="field" style="width:auto;"><span>File</span><input type="file" name="file" accept=".xlsx,.xls,.docx,.doc" required style="width:260px;"></label>
-    <button type="submit" class="btn btn-sm">Preview</button>
+    <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
   </form>
 </div>
 {% endblock %}

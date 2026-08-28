@@ -30,3 +30,17 @@ document.addEventListener("click", (e) => {
     }
   }
 });
+
+// Unit auto-populate: selecting an item (via a <select class="js-item-select">
+// whose <option>s carry data-unit="...") fills in the read-only unit display
+// in that same row (a cell with class "js-unit-display"). Delegated so it
+// works on rows cloned in later via the +Add line handler above.
+document.addEventListener("change", (e) => {
+  if (!e.target.classList.contains("js-item-select")) return;
+  const row = e.target.closest("tr");
+  if (!row) return;
+  const unitDisplay = row.querySelector(".js-unit-display");
+  if (!unitDisplay) return;
+  const selectedOption = e.target.options[e.target.selectedIndex];
+  unitDisplay.textContent = selectedOption ? selectedOption.getAttribute("data-unit") || "" : "";
+});

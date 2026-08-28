@@ -20,4 +20,62 @@
     <button type="submit" class="btn btn-primary btn-block" style="height:56px;font-size:1rem;">&#128247; Upload Kitchen Requirement</button>
   </form>
 </div>
+
+<div class="card" style="max-width:640px;margin:24px auto;">
+  <h2>Or Add Items Manually</h2>
+  <p class="text-muted">Skip the file — pick items directly from the list and enter quantities.</p>
+  <form method="post" action="{{ url_for('kitchen.manual_entry') }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="flex-row" style="margin-bottom:16px;">
+      <label class="field" style="width:auto;"><span>Date</span><input type="date" name="date" value="{{ today }}" required style="width:160px;"></label>
+      {% if not user_branch_id %}
+      <label class="field" style="width:auto;">
+        <span>Branch</span>
+        <select name="branchId" style="width:200px;">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+      </label>
+      {% endif %}
+    </div>
+
+    <datalist id="dept-list-manual">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Department</th><th>Item</th><th style="width:90px;">Qty</th><th style="width:70px;">Unit</th><th style="width:40px;"></th></tr></thead>
+        <tbody id="manual-kitchen-lines">
+          <tr>
+            <td><input type="text" name="departmentName" list="dept-list-manual" required style="width:100%;"></td>
+            <td>
+              <select name="itemId" class="js-item-select" required style="width:100%;">
+                <option value="">-- select item --</option>
+                {% for it in items %}<option value="{{ it.id }}" data-unit="{{ it.unit }}">{{ it.name }}</option>{% endfor %}
+              </select>
+            </td>
+            <td><input type="number" name="qty" step="any" min="0" required style="width:100%;"></td>
+            <td class="js-unit-display text-muted"></td>
+            <td><button type="button" class="btn btn-sm js-remove-line">&times;</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <template id="manual-kitchen-lines-template">
+      <tr>
+        <td><input type="text" name="departmentName" list="dept-list-manual" required style="width:100%;"></td>
+        <td>
+          <select name="itemId" class="js-item-select" required style="width:100%;">
+            <option value="">-- select item --</option>
+            {% for it in items %}<option value="{{ it.id }}" data-unit="{{ it.unit }}">{{ it.name }}</option>{% endfor %}
+          </select>
+        </td>
+        <td><input type="number" name="qty" step="any" min="0" required style="width:100%;"></td>
+        <td class="js-unit-display text-muted"></td>
+        <td><button type="button" class="btn btn-sm js-remove-line">&times;</button></td>
+      </tr>
+    </template>
+
+    <div class="flex-row" style="justify-content:space-between;margin-top:12px;">
+      <button type="button" class="btn btn-sm js-add-line" data-target="manual-kitchen-lines">+ Add item</button>
+      <button type="submit" class="btn btn-primary">Save Items</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

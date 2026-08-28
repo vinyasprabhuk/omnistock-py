@@ -9,6 +9,7 @@ from app.security import require_write
 from app.services.kitchen_requirement import (
     add_manual_requirement_item,
     confirm_kitchen_requirement,
+    create_manual_requirement,
     delete_requirement_item,
     get_requirement_for_review,
     update_requirement_item,
@@ -25,7 +26,44 @@ def index():
     conn = g.conn
     user_branch_id = g.user.get("branchId")
     branches = list_branches_for_admin(conn) if not user_branch_id else []
-    return render_template("kitchen/index.html", branches=branches, user_branch_id=user_branch_id, today=today_key())
+    items = [dict(r) for r in conn.execute("SELECT id, name, unit FROM Item WHERE active = 1 ORDER BY name ASC")]
+    departments = [r["name"] for r in conn.execute("SELECT name FROM Department WHERE active = 1 ORDER BY name ASC")]
+    return render_template(
+        "kitchen/index.html", branches=branches, user_branch_id=user_branch_id, today=today_key(),
+        items=items, departments=departments,
+    )
+
+
+@bp.route("/kitchen/manual-entry", methods=["POST"])
+@require_write
+def manual_entry():
+    conn = g.conn
+    user_branch_id = g.user.get("branchId")
+    branch_id = user_branch_id or request.form.get("branchId")
+    date_key = request.form.get("date") or today_key()
+
+    if not branch_id:
+        flash("Select a branch first.", "error")
+        return redirect(url_for("kitchen.index"))
+
+    department_names = request.form.getlist("departmentName")
+    item_ids = request.form.getlist("itemId")
+    qtys = request.form.getlist("qty")
+
+    lines = []
+    for dept, item_id, qty in zip(department_names, item_ids, qtys):
+        if item_id and qty:
+            try:
+                lines.append({"departmentName": dept, "itemId": item_id, "qty": float(qty)})
+            except ValueError:
+                continue
+
+    if not lines:
+        flash("Add at least one item with a quantity.", "error")
+        return redirect(url_for("kitchen.index"))
+
+    requirement_id = create_manual_requirement(conn, g.user["id"], branch_id, date_key, lines)
+    return redirect(url_for("kitchen.review", requirement_id=requirement_id))
 
 
 @bp.route("/kitchen/upload", methods=["POST"])

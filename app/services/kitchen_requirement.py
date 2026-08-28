@@ -65,6 +65,45 @@ def upload_kitchen_screenshot(conn: sqlite3.Connection, user_id: str, branch_id:
     return {"requirementId": requirement_id}
 
 
+def create_manual_requirement(conn: sqlite3.Connection, user_id: str, branch_id: str,
+                               date_key: str, lines: list[dict]) -> str:
+    """
+    Skip-the-file path: user picks real items directly from a dropdown (no
+    OCR/text-matching involved at all, since there's no extracted text to
+    match against) and enters quantities themselves. Each line already
+    carries a confirmed itemId, so every row is created at AUTO/100
+    confidence -- there's nothing to "review" in the matching sense, though
+    the requirement still opens on the review screen so admin can double
+    check quantities/departments and add more before confirming.
+
+    lines: [{"departmentName": str, "itemId": str, "qty": float}, ...]
+    Matches KitchenRequirement's schema-documented uploadId=NULL case
+    ("manual entry fallback -- no upload").
+    """
+    if not lines:
+        raise ValueError("Add at least one item")
+
+    requirement_id = new_id()
+    conn.execute(
+        "INSERT INTO KitchenRequirement (id, uploadId, branchId, date, createdAt) VALUES (?, NULL, ?, ?, ?)",
+        (requirement_id, branch_id, date_key_to_db(date_key), now_db()),
+    )
+    for line in lines:
+        item = conn.execute("SELECT name, unit FROM Item WHERE id = ?", (line["itemId"],)).fetchone()
+        if item is None:
+            continue
+        department = find_or_create_department(conn, line["departmentName"])
+        conn.execute(
+            "INSERT INTO KitchenRequirementItem (id, requirementId, departmentId, extractedText, "
+            "matchedItemId, qty, unit, confidence, status, createdAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 100, 'AUTO', ?)",
+            (new_id(), requirement_id, department["id"], item["name"], line["itemId"],
+             line["qty"], item["unit"], now_db()),
+        )
+    conn.commit()
+    return requirement_id
+
+
 def get_requirement_for_review(conn: sqlite3.Connection, requirement_id: str) -> dict:
     req = conn.execute("SELECT * FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
     if req is None:

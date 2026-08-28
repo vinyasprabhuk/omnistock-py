@@ -17,7 +17,7 @@
   <form method="post" action="{{ url_for('admin.items_opening_stock_preview') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;">
     <input type="hidden" name="branchId" value="{{ branch_id }}">
     <label class="field" style="width:auto;"><span>File</span><input type="file" name="file" accept=".xlsx,.xls" required style="width:260px;"></label>
-    <button type="submit" class="btn btn-sm">Preview</button>
+    <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
   </form>
 </div>
 
