@@ -51,6 +51,7 @@ def index():
         branches=branches, branch_param=branch_param or "", entries=entries, menu=menu,
         grouped=grouped, other=other, meal_labels=MEAL_LABELS, total_kg=_total_kg(entries),
         ingredient_lines=ingredients["lines"], ingredient_gaps=ingredients["gaps"],
+        ingredient_total_spend=ingredients["totalSpend"],
     )
 
 
@@ -100,7 +101,7 @@ def delete(entry_id: str):
     branch_id = request.form.get("branchId") or ""
 
     getter = wastage.get_branch_id if mode == "wastage" else production.get_branch_id
-    deleter = wastage.delete_wastage if mode == "wastage" else production.delete_wastage
+    deleter = wastage.delete_wastage if mode == "wastage" else production.delete_production
 
     entry_branch_id = getter(conn, entry_id)
     if entry_branch_id is None:

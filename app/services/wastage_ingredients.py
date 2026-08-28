@@ -29,6 +29,7 @@ class IngredientLine(TypedDict):
     unit: str
     qty: float
     groupLabel: str
+    spend: float
 
 
 def compute_wasted_ingredients(conn: sqlite3.Connection, entries: list[dict]) -> dict:
@@ -77,11 +78,15 @@ def compute_wasted_ingredients(conn: sqlite3.Connection, entries: list[dict]) ->
             item_totals[(item_id, recipe["name"])] += qty
 
     lines: list[IngredientLine] = []
+    total_spend = 0.0
     for (item_id, group_label), qty in item_totals.items():
-        item = conn.execute("SELECT name, unit FROM Item WHERE id = ?", (item_id,)).fetchone()
+        item = conn.execute("SELECT name, unit, purchasePrice FROM Item WHERE id = ?", (item_id,)).fetchone()
         if item is None:
             continue
-        lines.append({"itemName": item["name"], "unit": item["unit"], "qty": round(qty, 3), "groupLabel": group_label})
+        spend = round(qty * float(item["purchasePrice"]), 2)
+        total_spend += spend
+        lines.append({"itemName": item["name"], "unit": item["unit"], "qty": round(qty, 3),
+                      "groupLabel": group_label, "spend": spend})
     lines.sort(key=lambda l: (l["groupLabel"], -l["qty"]))
 
-    return {"entries": matched_entries, "lines": lines, "gaps": gaps}
+    return {"entries": matched_entries, "lines": lines, "gaps": gaps, "totalSpend": round(total_spend, 2)}
