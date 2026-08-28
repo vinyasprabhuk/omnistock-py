@@ -5,6 +5,7 @@
   <h2>Import Existing Excel</h2>
   <p class="text-muted">One-time import from your old "Track of Grocery_Stock_31_Days" workbook. This does not modify the original file.</p>
   <form method="post" action="{{ url_for('admin.import_preview') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <label class="field" style="width:auto;"><span>File</span><input type="file" name="file" accept=".xlsx" required style="width:260px;"></label>
     <button type="submit" class="btn btn-primary">Preview</button>
   </form>
