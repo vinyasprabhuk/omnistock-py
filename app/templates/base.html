@@ -39,6 +39,26 @@
         {% endif %}
         <span class="brand-name">{{ (branding.appName if branding else 'OmniStock') | upper }}</span>
       </a>
+      <nav class="nav-desktop">
+        {% for entry in nav_groups %}
+          {% if entry.type == 'link' %}
+            <a href="{{ entry.href }}" class="{{ 'active' if request.path.startswith(entry.href) else '' }}">{{ entry.label }}</a>
+          {% else %}
+            {% set ns = namespace(active=false) %}
+            {% for item in entry['items'] %}{% if request.path.startswith(item.href) %}{% set ns.active = true %}{% endif %}{% endfor %}
+            <div class="nav-dd" tabindex="0">
+              <span class="nav-dd-label {{ 'active' if ns.active else '' }}">
+                {{ entry.label }} <span class="nav-dd-caret">&#9662;</span>
+              </span>
+              <div class="nav-dd-panel">
+                {% for item in entry['items'] %}
+                  <a href="{{ item.href }}" class="{{ 'active' if request.path.startswith(item.href) else '' }}">{{ item.label }}</a>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </nav>
       <nav class="nav-links">
         {% for link in nav_links %}
           <a href="{{ link.href }}" class="{{ 'active' if request.path.startswith(link.href) else '' }}">{{ link.label }}</a>

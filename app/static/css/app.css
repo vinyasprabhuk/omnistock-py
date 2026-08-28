@@ -136,8 +136,8 @@ h3 { font-size: 0.95rem; }
 .brand-sm .brand-logo { height: 22px; }
 .brand-lg .brand-logo { height: 36px; }
 .brand-name { font-weight: 800; letter-spacing: 0.02em; font-size: 0.95rem; }
-.nav-links { display: flex; gap: 2px; flex-wrap: wrap; flex: 1; }
-.nav-links a {
+.nav-desktop, .nav-links { display: flex; gap: 2px; flex-wrap: wrap; flex: 1; align-items: center; }
+.nav-desktop a, .nav-links a, .nav-dd-label {
   color: inherit;
   opacity: 0.75;
   padding: 8px 12px;
@@ -146,8 +146,33 @@ h3 { font-size: 0.95rem; }
   font-weight: 500;
   transition: opacity 0.15s var(--ease), background-color 0.15s var(--ease);
 }
-.nav-links a:hover { opacity: 1; background: rgba(255, 255, 255, 0.08); text-decoration: none; }
-.nav-links a.active { opacity: 1; background: rgba(255, 255, 255, 0.16); font-weight: 600; }
+.nav-desktop a:hover, .nav-links a:hover, .nav-dd-label:hover { opacity: 1; background: rgba(255, 255, 255, 0.08); text-decoration: none; }
+.nav-desktop a.active, .nav-links a.active, .nav-dd-label.active { opacity: 1; background: rgba(255, 255, 255, 0.16); font-weight: 600; }
+
+/* Desktop dropdown groups (Operations, Planning, ...) -- pure hover/focus,
+   no click-to-pin state, so the panel closes as soon as the pointer (or
+   keyboard focus) leaves rather than staying stuck open. */
+.nav-dd { position: relative; }
+.nav-dd-label { display: inline-flex; align-items: center; gap: 4px; cursor: default; }
+.nav-dd-caret { font-size: 0.6rem; opacity: 0.8; }
+.nav-dd-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 180px;
+  margin-top: 4px;
+  background: var(--header-bg);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 30;
+}
+.nav-dd:hover .nav-dd-panel, .nav-dd:focus-within .nav-dd-panel { display: flex; }
+.nav-dd:hover .nav-dd-label, .nav-dd:focus-within .nav-dd-label { opacity: 1; background: rgba(255, 255, 255, 0.08); }
+.nav-dd-panel a { padding: 10px 12px; border-radius: 8px; }
 .btn-link {
   background: none; border: none; color: inherit; opacity: 0.7; cursor: pointer;
   font-size: 0.84rem; padding: 6px 10px; border-radius: 999px;
@@ -321,53 +346,59 @@ tr:hover td { background: var(--muted); }
 .nav-toggle-checkbox:checked ~ .app-nav-inner .nav-toggle-label span:nth-child(2) { opacity: 0; }
 .nav-toggle-checkbox:checked ~ .app-nav-inner .nav-toggle-label span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
-/* Hamburger nav at every width now -- eleven tabs stopped fitting a single
-   row cleanly even on desktop, and a wrapped two-row nav read as cluttered.
-   One consistent dropdown menu everywhere beats "wraps on desktop, drops
-   down on mobile" as two different behaviors to reason about. */
-.app-nav-inner {
-  padding: 10px 16px;
-  padding-left: max(16px, env(safe-area-inset-left));
-  padding-right: max(16px, env(safe-area-inset-right));
-  position: relative; /* anchors the dropdown panel below */
-  min-height: 52px;
-}
-.nav-toggle-label { display: flex; width: 40px; height: 40px; } /* real tap target, not a cramped 32px */
-.nav-signout .btn-link { min-height: 40px; display: inline-flex; align-items: center; }
-
-/* A proper dropdown PANEL anchored below the header, full-width and out of
-   the flex-sibling flow entirely -- avoids fighting the brand/hamburger/
-   sign-out items for row space, and reads as a native app menu rather than
-   a squeezed-in flex item. */
-.nav-links {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  max-height: 0;
-  overflow: hidden;
-  background: var(--header-bg);
-  box-shadow: var(--shadow-lg);
-  transition: max-height 0.25s var(--ease);
-  z-index: 30;
-}
-.nav-toggle-checkbox:checked ~ .app-nav-inner .nav-links {
-  max-height: calc(100vh - 52px);
-  overflow-y: auto;
-  padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
-}
-.nav-links a {
-  border-radius: 10px;
-  padding: 14px 16px; /* >=44px tall tap target, matches iOS/Android guidelines */
-  font-size: 0.95rem;
-  width: 100%;
-  max-width: 320px;
-}
+/* Desktop: grouped bar (direct links + dropdowns) visible, hamburger and
+   the flat mobile panel hidden -- there's room for a real horizontal nav,
+   so nothing needs to hide behind an extra click. */
+.nav-links { display: none; }
 
 @media (max-width: 640px) {
+  /* Mobile: swap to the flat hamburger panel -- no room for a grouped
+     horizontal bar or hover/click dropdowns at this width. */
+  .nav-desktop { display: none; }
+  .nav-links { display: flex; }
+
+  .app-nav-inner {
+    padding: 10px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    position: relative; /* anchors the dropdown panel below */
+    min-height: 52px;
+  }
+  .nav-toggle-label { display: flex; width: 40px; height: 40px; } /* real tap target, not a cramped 32px */
+  .nav-signout .btn-link { min-height: 40px; display: inline-flex; align-items: center; }
+
+  /* A proper dropdown PANEL anchored below the header, full-width and out of
+     the flex-sibling flow entirely -- avoids fighting the brand/hamburger/
+     sign-out items for row space, and reads as a native app menu rather than
+     a squeezed-in flex item. */
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    max-height: 0;
+    overflow: hidden;
+    background: var(--header-bg);
+    box-shadow: var(--shadow-lg);
+    transition: max-height 0.25s var(--ease);
+    z-index: 30;
+  }
+  .nav-toggle-checkbox:checked ~ .app-nav-inner .nav-links {
+    max-height: calc(100vh - 52px);
+    overflow-y: auto;
+    padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
+  }
+  .nav-links a {
+    border-radius: 10px;
+    padding: 14px 16px; /* >=44px tall tap target, matches iOS/Android guidelines */
+    font-size: 0.95rem;
+    width: 100%;
+    max-width: 320px;
+  }
+
   /* Prevent iOS Safari's auto-zoom-on-focus (triggers below 16px) and give
      every tappable control a comfortable, standard mobile hit target. */
   input, select, textarea { font-size: 16px; padding: 11px 12px; }

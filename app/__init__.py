@@ -128,25 +128,68 @@ def create_app(config_object: str = "config.Config") -> Flask:
             "current_user": getattr(g, "user", None),
             "csrf_token": get_csrf_token,
             "nav_links": _nav_links(getattr(g, "user", None)),
+            "nav_groups": _nav_groups(getattr(g, "user", None)),
         }
 
     return app
 
 
+_ALL_NAV_LINKS = [
+    {"href": "/dashboard", "label": "Dashboard", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
+    {"href": "/inventory", "label": "Master Inventory", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
+    {"href": "/kitchen", "label": "Kitchen Upload", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
+    {"href": "/intent", "label": "Intent", "roles": ["ADMIN"]},
+    {"href": "/recipe", "label": "Recipe", "roles": ["ADMIN"]},
+    {"href": "/requirements", "label": "Requirements", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
+    {"href": "/tracker", "label": "Daily Tracker", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
+    {"href": "/issue", "label": "Stock Issue", "roles": ["ADMIN", "MANAGER", "STORE"]},
+    {"href": "/wastage", "label": "Wastage", "roles": ["ADMIN", "MANAGER", "STORE", "KITCHEN"]},
+    {"href": "/purchases", "label": "Purchases", "roles": ["ADMIN", "MANAGER", "STORE"]},
+    {"href": "/admin", "label": "Admin", "roles": ["ADMIN"]},
+]
+
+# Desktop nav order: items people use many times a day sit directly in the
+# bar (single click), with the rest tucked into two labeled dropdowns
+# instead of hiding everything behind a hamburger -- that's reserved for
+# narrow screens (see base.html), where there's no room for a horizontal
+# bar at all. Slots not covered here fall back into a trailing "More"
+# group so a future addition never silently disappears from the nav.
+_DESKTOP_SLOTS = [
+    ("link", "/dashboard"),
+    ("link", "/inventory"),
+    ("link", "/tracker"),
+    ("group", "Operations", ["/purchases", "/issue", "/wastage"]),
+    ("group", "Planning", ["/intent", "/recipe", "/kitchen", "/requirements"]),
+    ("link", "/admin"),
+]
+
+
 def _nav_links(user: dict | None) -> list[dict]:
     if user is None:
         return []
-    all_links = [
-        {"href": "/dashboard", "label": "Dashboard", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
-        {"href": "/inventory", "label": "Master Inventory", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
-        {"href": "/kitchen", "label": "Kitchen Upload", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
-        {"href": "/intent", "label": "Intent", "roles": ["ADMIN"]},
-        {"href": "/recipe", "label": "Recipe", "roles": ["ADMIN"]},
-        {"href": "/requirements", "label": "Requirements", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
-        {"href": "/tracker", "label": "Daily Tracker", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
-        {"href": "/issue", "label": "Stock Issue", "roles": ["ADMIN", "MANAGER", "STORE"]},
-        {"href": "/wastage", "label": "Wastage", "roles": ["ADMIN", "MANAGER", "STORE", "KITCHEN"]},
-        {"href": "/purchases", "label": "Purchases", "roles": ["ADMIN", "MANAGER", "STORE"]},
-        {"href": "/admin", "label": "Admin", "roles": ["ADMIN"]},
-    ]
-    return [link for link in all_links if user["role"] in link["roles"]]
+    return [link for link in _ALL_NAV_LINKS if user["role"] in link["roles"]]
+
+
+def _nav_groups(user: dict | None) -> list[dict]:
+    """Desktop nav structure: a mix of direct links and labeled dropdown
+    groups, built from the same role-filtered link set as the mobile
+    hamburger so the two never drift out of sync on what's visible."""
+    visible = _nav_links(user)
+    by_href = {link["href"]: link for link in visible}
+    slotted_hrefs = {href for slot in _DESKTOP_SLOTS for href in (slot[1:2] if slot[0] == "link" else slot[2])}
+
+    structure: list[dict] = []
+    for slot in _DESKTOP_SLOTS:
+        if slot[0] == "link":
+            href = slot[1]
+            if href in by_href:
+                structure.append({"type": "link", **by_href[href]})
+        else:
+            _, label, hrefs = slot
+            items = [by_href[href] for href in hrefs if href in by_href]
+            if items:
+                structure.append({"type": "group", "label": label, "items": items})
+    leftover = [link for link in visible if link["href"] not in slotted_hrefs]
+    if leftover:
+        structure.append({"type": "group", "label": "More", "items": leftover})
+    return structure
