@@ -322,49 +322,54 @@ tr:hover td { background: var(--muted); }
 .nav-toggle-checkbox:checked ~ .app-nav-inner .nav-toggle-label span:nth-child(2) { opacity: 0; }
 .nav-toggle-checkbox:checked ~ .app-nav-inner .nav-toggle-label span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
+/* Hamburger nav at every width now -- eleven tabs stopped fitting a single
+   row cleanly even on desktop, and a wrapped two-row nav read as cluttered.
+   One consistent dropdown menu everywhere beats "wraps on desktop, drops
+   down on mobile" as two different behaviors to reason about. */
+.app-nav-inner {
+  padding: 10px 16px;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  position: relative; /* anchors the dropdown panel below */
+  min-height: 52px;
+}
+.nav-toggle-label { display: flex; width: 40px; height: 40px; } /* real tap target, not a cramped 32px */
+.nav-signout { margin-left: auto; order: 2; }
+.nav-signout .btn-link { min-height: 40px; display: inline-flex; align-items: center; }
+
+/* A proper dropdown PANEL anchored below the header, full-width and out of
+   the flex-sibling flow entirely -- avoids fighting the brand/hamburger/
+   sign-out items for row space, and reads as a native app menu rather than
+   a squeezed-in flex item. */
+.nav-links {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  max-height: 0;
+  overflow: hidden;
+  background: var(--header-bg);
+  box-shadow: var(--shadow-lg);
+  transition: max-height 0.25s var(--ease);
+  z-index: 30;
+}
+.nav-toggle-checkbox:checked ~ .app-nav-inner .nav-links {
+  max-height: calc(100vh - 52px);
+  overflow-y: auto;
+  padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
+}
+.nav-links a {
+  border-radius: 10px;
+  padding: 14px 16px; /* >=44px tall tap target, matches iOS/Android guidelines */
+  font-size: 0.95rem;
+  width: 100%;
+  max-width: 320px;
+}
+
 @media (max-width: 640px) {
-  .app-nav-inner {
-    padding: 10px 16px;
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-    position: relative; /* anchors the dropdown panel below */
-    min-height: 52px;
-  }
-  .nav-toggle-label { display: flex; width: 40px; height: 40px; } /* real tap target, not a cramped 32px */
-  .nav-signout { margin-left: auto; order: 2; }
-  .nav-signout .btn-link { min-height: 40px; display: inline-flex; align-items: center; }
-
-  /* A proper dropdown PANEL anchored below the header, full-width and out of
-     the flex-sibling flow entirely -- avoids fighting the brand/hamburger/
-     sign-out items for row space (the earlier flex:1-inherited-width bug),
-     and reads as a native mobile app menu rather than a squeezed-in flex item. */
-  .nav-links {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    max-height: 0;
-    overflow: hidden;
-    background: var(--header-bg);
-    box-shadow: var(--shadow-lg);
-    transition: max-height 0.25s var(--ease);
-    z-index: 30;
-  }
-  .nav-toggle-checkbox:checked ~ .app-nav-inner .nav-links {
-    max-height: calc(100vh - 52px);
-    overflow-y: auto;
-    padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
-  }
-  .nav-links a {
-    border-radius: 10px;
-    padding: 14px 16px; /* >=44px tall tap target, matches iOS/Android guidelines */
-    font-size: 0.95rem;
-    width: 100%;
-  }
-
   /* Prevent iOS Safari's auto-zoom-on-focus (triggers below 16px) and give
      every tappable control a comfortable, standard mobile hit target. */
   input, select, textarea { font-size: 16px; padding: 11px 12px; }
