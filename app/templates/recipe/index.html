@@ -4,6 +4,16 @@
 <h1>Recipe</h1>
 <p class="text-muted">The ingredient makeup of every dish, used by Intent to translate planned production into raw material needs.</p>
 
+<div class="card" style="max-width:640px;">
+  <h2>Upload Recipes</h2>
+  <p class="text-muted">Upload the recipe Word document. Re-uploading an updated version replaces each recipe's ingredients by name &mdash; safe to run again after correcting quantities.</p>
+  <form method="post" action="{{ url_for('recipe.upload') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label class="field" style="width:auto;"><span>File</span><input type="file" name="file" accept=".docx" required style="width:260px;"></label>
+    <button type="submit" class="btn btn-primary">Upload &amp; Load</button>
+  </form>
+</div>
+
 <div class="card">
   <h2>Dishes with a recipe ({{ dish_recipes | length }})</h2>
   <div class="recipe-list">

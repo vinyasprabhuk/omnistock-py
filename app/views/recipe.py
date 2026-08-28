@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import tempfile
 from collections import defaultdict
+from pathlib import Path
 
-from flask import Blueprint, g, render_template
+from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+
+from app.security import require_write
+from app.services.recipe_loader import load_recipes_from_docx
 
 bp = Blueprint("recipe", __name__)
 
@@ -59,3 +64,39 @@ def index():
         "recipe/index.html", dish_recipes=dish_recipes, accompaniment_recipes=accompaniment_recipes,
         recipe_lines=recipe_lines, dishes_without_recipe_by_group=dishes_without_recipe_by_group,
     )
+
+
+@bp.route("/recipe/upload", methods=["POST"])
+@require_write
+def upload():
+    conn = g.conn
+    file = request.files.get("file")
+    if not file or not file.filename:
+        flash("Choose a file first.", "error")
+        return redirect(url_for("recipe.index"))
+    if not file.filename.lower().endswith(".docx"):
+        flash("Only .docx recipe files are supported.", "error")
+        return redirect(url_for("recipe.index"))
+
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+        file.save(tmp.name)
+        tmp_path = Path(tmp.name)
+
+    try:
+        summary = load_recipes_from_docx(conn, str(tmp_path))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        flash(f"Couldn't read that file: {e}", "error")
+        return redirect(url_for("recipe.index"))
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    new_count = summary["recipesLoaded"] - summary["recipesUpdated"]
+    flash(
+        f"Loaded {summary['recipesLoaded']} recipes ({new_count} new, {summary['recipesUpdated']} updated), "
+        f"{summary['dishesLinked']} linked to a sold dish, {summary['linesMatched']} ingredient lines matched, "
+        f"{len(summary['linesUnmatched'])} still need an item added or matched.",
+        "message" if summary["linesUnmatched"] else "success",
+    )
+    return redirect(url_for("recipe.index"))

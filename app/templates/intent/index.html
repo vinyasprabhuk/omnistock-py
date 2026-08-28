@@ -13,13 +13,18 @@
     <strong>Week of {{ week_label }}</strong>
     <a class="btn btn-sm" href="?week={{ next_week }}&branchId={{ branch.branchId }}">&rsaquo;</a>
   </div>
-  <form method="post" action="{{ url_for('intent.generate') }}">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
-    <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
-    <input type="hidden" name="date" value="{{ selected.dateKey }}">
-    <button type="submit" class="btn btn-primary">Regenerate {{ selected.label }}</button>
-  </form>
+  <div class="flex-row" style="gap:8px;">
+    {% if intent_day %}
+    <a class="btn btn-sm" href="{{ url_for('export.intent', date=selected.dateKey, branchId=branch.branchId) }}">Export Excel</a>
+    {% endif %}
+    <form method="post" action="{{ url_for('intent.generate') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+      <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
+      <input type="hidden" name="date" value="{{ selected.dateKey }}">
+      <button type="submit" class="btn btn-primary">Regenerate {{ selected.label }}</button>
+    </form>
+  </div>
 </div>
 
 <div class="flex-row" style="gap:6px;margin-bottom:18px;flex-wrap:wrap;">

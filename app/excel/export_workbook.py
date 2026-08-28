@@ -67,3 +67,22 @@ def build_consolidated_requirement_workbook(date: str, rows: list[dict]) -> byte
         breakdown = ", ".join(f"{d['departmentName']}: {d['qty']}" for d in r["byDepartment"])
         sheet.append([r["itemName"], r["unit"], r["total"], breakdown])
     return _to_bytes(wb)
+
+
+def build_intent_workbook(date: str, dish_counts: list[dict], ingredients: list[dict]) -> bytes:
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    dish_sheet = _sheet(wb, "Predicted Dish Counts", [
+        ("Dish", 32), ("Category", 18), ("Final Qty", 12), ("Source", 10),
+    ])
+    for d in dish_counts:
+        dish_sheet.append([d["dishName"], d["category"], d["finalQty"], d["source"]])
+
+    ing_sheet = _sheet(wb, "Ingredient Requirement", [
+        ("Department", 20), ("Item", 24), ("Unit", 10), ("Qty", 12), ("Source", 10),
+    ])
+    for i in ingredients:
+        ing_sheet.append([i["departmentName"], i["itemName"], i["unit"], i["qty"], i["source"]])
+
+    return _to_bytes(wb)

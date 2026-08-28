@@ -6,6 +6,14 @@ the matched Item actually uses. A line whose ingredient has no confident
 Item Master match keeps itemId NULL and its raw name/qty/unit intact, so it
 can be resolved later (see matchStatus) once the missing item is added --
 nothing about it is guessed at import time.
+
+Upsert by Recipe.name, so re-uploading an updated recipe doc (the same
+dish with corrected quantities, say) replaces that recipe's lines instead
+of duplicating it -- safe to run repeatedly from the Recipe tab's upload
+form. A recipe is linked to a Dish only when a Dish with that exact name
+already exists (created from real POS sales) -- never fabricated here, so
+an accompaniment-only recipe (Sambar, Kootu, ...) stays unlinked until the
+matching dish genuinely shows up in sales.
 """
 from __future__ import annotations
 
@@ -14,20 +22,7 @@ import sqlite3
 from app.db import new_id
 from app.dates import now_db
 from app.parsing.recipe_docx import ParsedRecipe, parse_recipe_docx
-from app.services.dish_classify import guess_menu_group
 from app.services.match_item import match_item
-
-# Recipes that are themselves sellable dishes (confirmed against the real
-# POS sale report -- see the "add it" conversation this was built from).
-# Every other recipe in the doc is an accompaniment / sub-recipe only,
-# referenced by intent_rules.py rather than sold on its own.
-DISH_RECIPES: dict[str, str] = {
-    "Kara Bath": "PONGAL_KARABATH",
-    "Ghee Pongal": "PONGAL_KARABATH",
-    "Kesari": "OTHER",
-    "Curd Rice": "VARIETY_RICE",
-    "Sambar Rice": "VARIETY_RICE",
-}
 
 _WEIGHT = {"g": 1.0, "gram": 1.0, "grams": 1.0, "kg": 1000.0}
 _VOLUME = {"ml": 1.0, "l": 1000.0, "litre": 1000.0, "liter": 1000.0, "ltr": 1000.0}
@@ -58,37 +53,42 @@ def _convert_qty(value: float, raw_unit: str, target_unit: str) -> float | None:
     return None
 
 
-def load_recipes_from_docx(conn: sqlite3.Connection, docx_path: str, department_id: str) -> dict:
-    """department_id is used for every newly-created Dish (see DISH_RECIPES) --
-    all 5 land under the same kitchen department for now; correct per-dish
-    later via the Recipe tab once it exists."""
+def load_recipes_from_docx(conn: sqlite3.Connection, docx_path: str) -> dict:
     recipes = parse_recipe_docx(docx_path)
-    summary = {"recipesLoaded": 0, "linesMatched": 0, "linesUnmatched": []}
+    summary = {"recipesLoaded": 0, "recipesUpdated": 0, "dishesLinked": 0,
+               "linesMatched": 0, "linesUnmatched": []}
 
     for r in recipes:
         r: ParsedRecipe
-        dish_id = None
-        if r["name"] in DISH_RECIPES:
-            existing = conn.execute("SELECT id FROM Dish WHERE name = ?", (r["name"],)).fetchone()
-            if existing:
-                dish_id = existing["id"]
-            else:
-                dish_id = new_id()
-                ts = now_db()
-                menu_group = guess_menu_group("", r["name"])
-                conn.execute(
-                    "INSERT INTO Dish (id, name, departmentId, category, menuGroup, active, createdAt, updatedAt) "
-                    "VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
-                    (dish_id, r["name"], department_id, DISH_RECIPES[r["name"]], menu_group, ts, ts),
-                )
+        # Exact (case-insensitive) name match only -- fuzzy matching here
+        # risks linking an accompaniment-only recipe (e.g. "Tamilnadu
+        # Sambar") to an unrelated real dish that merely sounds similar
+        # (e.g. a standalone "Sambar" item).
+        dish_row = conn.execute(
+            "SELECT id FROM Dish WHERE lower(name) = lower(?) AND active = 1", (r["name"],)
+        ).fetchone()
+        dish_id = dish_row["id"] if dish_row else None
+        if dish_id:
+            summary["dishesLinked"] += 1
 
-        recipe_id = new_id()
+        existing_recipe = conn.execute("SELECT id FROM Recipe WHERE name = ?", (r["name"],)).fetchone()
         ts = now_db()
-        conn.execute(
-            "INSERT INTO Recipe (id, dishId, name, servesQty, servesVolumeLitre, portionSizeMl, createdAt, updatedAt) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (recipe_id, dish_id, r["name"], r["servesQty"], r["servesVolumeLitre"], r["portionSizeMl"], ts, ts),
-        )
+        if existing_recipe:
+            recipe_id = existing_recipe["id"]
+            conn.execute(
+                "UPDATE Recipe SET dishId = ?, servesQty = ?, servesVolumeLitre = ?, portionSizeMl = ?, updatedAt = ? "
+                "WHERE id = ?",
+                (dish_id, r["servesQty"], r["servesVolumeLitre"], r["portionSizeMl"], ts, recipe_id),
+            )
+            conn.execute("DELETE FROM RecipeLine WHERE recipeId = ?", (recipe_id,))
+            summary["recipesUpdated"] += 1
+        else:
+            recipe_id = new_id()
+            conn.execute(
+                "INSERT INTO Recipe (id, dishId, name, servesQty, servesVolumeLitre, portionSizeMl, createdAt, updatedAt) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (recipe_id, dish_id, r["name"], r["servesQty"], r["servesVolumeLitre"], r["portionSizeMl"], ts, ts),
+            )
         summary["recipesLoaded"] += 1
 
         for ing in r["ingredients"]:
