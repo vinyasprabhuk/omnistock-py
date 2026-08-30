@@ -23,7 +23,7 @@ EXPECTED_TABLES = {
     "AppSettings": {"id", "appName", "tagline", "logoPath", "headerColor", "accentColor",
                      "themeColor", "themeMode", "brandSize", "updatedAt"},
     "Branch": {"id", "name", "active", "createdAt", "updatedAt"},
-    "User": {"id", "name", "email", "passwordHash", "role", "branchId", "active",
+    "User": {"id", "name", "email", "passwordHash", "role", "branchId", "departmentId", "active",
               "createdAt", "updatedAt"},
     "Item": {"id", "name", "unit", "purchasePrice", "category", "reorderLevel",
              "active", "createdAt", "updatedAt"},
@@ -49,6 +49,8 @@ EXPECTED_TABLES = {
                        "createdAt"},
     "WastageMenuItem": {"id", "mealPeriod", "name", "isPieceCounted", "sortOrder",
                          "active", "createdAt"},
+    "WorkstationPhoto": {"id", "branchId", "departmentId", "photoPath", "photoMimeType",
+                          "createdById", "createdAt"},
     "AuditLog": {"id", "userId", "branchId", "action", "entity", "entityId", "itemId",
                  "oldValue", "newValue", "at"},
 }
@@ -71,6 +73,7 @@ DATETIME_COLUMNS = {
     "Wastage": ["createdAt"],
     "ProductionLog": ["createdAt"],
     "WastageMenuItem": ["createdAt"],
+    "WorkstationPhoto": ["createdAt"],
     "AuditLog": ["at"],
     "AppSettings": ["updatedAt"],
 }

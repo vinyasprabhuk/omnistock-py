@@ -21,15 +21,23 @@
         {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
       </select>
     </label>
+    <label class="field" style="width:auto;">
+      <span>Department</span>
+      <select name="departmentId" style="width:auto;">
+        <option value="">(none &mdash; Department Lead only)</option>
+        {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+      </select>
+    </label>
     <button type="submit" class="btn btn-primary">Create</button>
   </form>
+  <p class="text-muted" style="font-size:0.8rem;margin-top:8px;margin-bottom:0;">Department only applies to the Department Lead role &mdash; it's ignored for every other role.</p>
 </div>
 
 <div class="card">
   <h2>Users ({{ users | length }})</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Branch</th><th>Reset Password</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Branch</th><th>Department</th><th>Reset Password</th><th></th></tr></thead>
       <tbody>
         {% for u in users %}
         <tr>
@@ -37,6 +45,7 @@
           <td>{{ u.email }}</td>
           <td>{{ u.role }}</td>
           <td>{{ u.branchName or '— (all branches)' }}</td>
+          <td>{{ u.departmentName or '—' }}</td>
           <td>
             <form method="post" action="{{ url_for('admin.users_reset_password', user_id=u.id) }}" class="flex-row" style="gap:4px;">
               <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">

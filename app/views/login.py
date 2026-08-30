@@ -25,7 +25,7 @@ def login():
         error = "Enter a username and password."
     else:
         row = g.conn.execute(
-            "SELECT id, name, passwordHash, role, branchId, active FROM User WHERE email = ?", (username,)
+            "SELECT id, name, passwordHash, role, branchId, departmentId, active FROM User WHERE email = ?", (username,)
         ).fetchone()
         if row is None or not row["active"]:
             error = "Invalid username or password."
@@ -44,7 +44,7 @@ def login():
                     # logged in, rather than the pre-login "no user" state
                     # that was already computed for this request.
                     g.user = {"id": row["id"], "name": row["name"], "email": username,
-                              "role": row["role"], "branchId": row["branchId"]}
+                              "role": row["role"], "branchId": row["branchId"], "departmentId": row["departmentId"]}
                     flash(f"Authenticated as {username} ({row['role']}).", "success")
                     dest = callback_url if callback_url and callback_url.startswith("/") else default_route_for_role(row["role"])
                     return redirect(dest)

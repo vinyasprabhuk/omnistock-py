@@ -94,13 +94,14 @@ def delete_department(conn: sqlite3.Connection, department_id: str) -> None:
 
 
 def create_user(conn: sqlite3.Connection, name: str, email: str, password: str,
-                 role: str, branch_id: str | None) -> None:
+                 role: str, branch_id: str | None, department_id: str | None = None) -> None:
     password_hash = hash_password(password)
     conn.execute(
-        "INSERT INTO User (id, name, email, passwordHash, role, branchId, active, createdAt, updatedAt) "
-        "VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)",
+        "INSERT INTO User (id, name, email, passwordHash, role, branchId, departmentId, active, createdAt, updatedAt) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
         (new_id(), name.strip(), email.strip().lower(), password_hash, role,
-         None if role == "ADMIN" else branch_id, now_db(), now_db()),
+         None if role == "ADMIN" else branch_id,
+         department_id if role == "DEPARTMENT_LEAD" else None, now_db(), now_db()),
     )
     conn.commit()
 

@@ -19,6 +19,17 @@
 </form>
 {% endmacro %}
 
+{% macro department_switcher(departments, department_id, extra_qs='') %}
+<form method="get" class="flex-row" style="display:inline-flex">
+  {% for k, v in request.args.items() %}{% if k != 'departmentId' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+  <select name="departmentId" onchange="this.form.submit()" style="width:auto">
+    {% for d in departments %}
+      <option value="{{ d.id }}" {{ 'selected' if d.id == department_id else '' }}>{{ d.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% endmacro %}
+
 {% macro export_button(path) %}
   <a class="btn btn-sm" href="{{ path }}">Export Excel</a>
 {% endmacro %}

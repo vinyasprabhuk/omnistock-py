@@ -19,7 +19,7 @@ from app.services.meal_periods import MEAL_LABELS, MEAL_PERIODS
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-ROLES = ["ADMIN", "MANAGER", "STORE", "KITCHEN", "VIEWER"]
+ROLES = ["ADMIN", "MANAGER", "STORE", "KITCHEN", "DEPARTMENT_LEAD", "VIEWER"]
 
 THEME_COLOR_SWATCH = {
     "navy": "#0b1f44", "neutral": "#71717a", "blue": "#2563eb", "green": "#16a34a",
@@ -235,11 +235,14 @@ def wastage_menu_delete(item_id: str):
 def users():
     conn = g.conn
     user_rows = conn.execute(
-        "SELECT u.*, b.name AS branchName FROM User u LEFT JOIN Branch b ON b.id = u.branchId "
+        "SELECT u.*, b.name AS branchName, d.name AS departmentName FROM User u "
+        "LEFT JOIN Branch b ON b.id = u.branchId LEFT JOIN Department d ON d.id = u.departmentId "
         "WHERE u.active = 1 ORDER BY u.name ASC"
     ).fetchall()
     branch_rows = [dict(r) for r in conn.execute("SELECT id, name FROM Branch WHERE active = 1 ORDER BY name ASC")]
-    return render_template("admin/users.html", users=[dict(r) for r in user_rows], branches=branch_rows, roles=ROLES)
+    dept_rows = [dict(r) for r in conn.execute("SELECT id, name FROM Department WHERE active = 1 ORDER BY name ASC")]
+    return render_template("admin/users.html", users=[dict(r) for r in user_rows], branches=branch_rows,
+                            departments=dept_rows, roles=ROLES)
 
 
 @bp.route("/users/create", methods=["POST"])
@@ -249,6 +252,7 @@ def users_create():
     admin_service.create_user(
         g.conn, request.form.get("name", ""), request.form.get("email", ""),
         request.form.get("password", ""), role, request.form.get("branchId") or None,
+        request.form.get("departmentId") or None,
     )
     flash("User created.", "success")
     return redirect(url_for("admin.users"))
@@ -288,7 +292,7 @@ def status():
 
 # --- Audit Log ---
 
-AUDIT_ROLES = ["ADMIN", "MANAGER", "STORE", "KITCHEN", "VIEWER"]
+AUDIT_ROLES = ["ADMIN", "MANAGER", "STORE", "KITCHEN", "DEPARTMENT_LEAD", "VIEWER"]
 
 
 @bp.route("/audit-log")

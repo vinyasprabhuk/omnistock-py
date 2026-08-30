@@ -41,6 +41,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
     from app.views.pwa import bp as pwa_bp
     from app.views.intent import bp as intent_bp
     from app.views.recipe import bp as recipe_bp
+    from app.views.workstation import bp as workstation_bp
 
     app.register_blueprint(login_bp)
     app.register_blueprint(files_bp)
@@ -57,6 +58,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
     app.register_blueprint(wastage_bp)
     app.register_blueprint(intent_bp)
     app.register_blueprint(recipe_bp)
+    app.register_blueprint(workstation_bp)
 
     from app.services.color import is_light_color
     from app.formatting import fmt, money, money_grouped, pct
@@ -77,12 +79,12 @@ def create_app(config_object: str = "config.Config") -> Flask:
         g.user = None
         if user_id:
             row = g.conn.execute(
-                "SELECT id, name, email, role, branchId, active FROM User WHERE id = ?", (user_id,)
+                "SELECT id, name, email, role, branchId, departmentId, active FROM User WHERE id = ?", (user_id,)
             ).fetchone()
             if row and row["active"]:
                 g.user = {
                     "id": row["id"], "name": row["name"], "email": row["email"],
-                    "role": row["role"], "branchId": row["branchId"],
+                    "role": row["role"], "branchId": row["branchId"], "departmentId": row["departmentId"],
                 }
             else:
                 # Account deactivated/deleted since login -- drop the stale session.
@@ -174,6 +176,7 @@ _ALL_NAV_LINKS = [
     {"href": "/issue", "label": "Stock Issue", "roles": ["ADMIN", "MANAGER", "STORE"]},
     {"href": "/wastage", "label": "Wastage", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
     {"href": "/purchases", "label": "Purchases", "roles": ["ADMIN", "MANAGER", "STORE"]},
+    {"href": "/workstation", "label": "Workstation Photos", "roles": ["ADMIN", "DEPARTMENT_LEAD"]},
     {"href": "/admin", "label": "Admin", "roles": ["ADMIN"]},
 ]
 

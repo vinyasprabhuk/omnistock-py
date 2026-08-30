@@ -63,3 +63,8 @@ def wastage_photo(entry_id: str):
 @bp.route("/api/production/photo/<entry_id>")
 def production_photo(entry_id: str):
     return _serve_log_photo("ProductionLog", entry_id)
+
+
+@bp.route("/api/workstation/photo/<entry_id>")
+def workstation_photo(entry_id: str):
+    return _serve_log_photo("WorkstationPhoto", entry_id)
