@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
 from app.auth.page_branch import list_branches_for_admin
 from app.auth.session import ForbiddenError, resolve_branch_scope
@@ -12,7 +12,9 @@ from app.services.kitchen_requirement import (
     create_manual_requirement,
     delete_requirement_item,
     get_pending_requirements,
+    get_rejected_requirements,
     get_requirement_for_review,
+    reject_kitchen_requirement,
     update_requirement_item,
     upload_kitchen_screenshot,
 )
@@ -32,9 +34,12 @@ def index():
     pending = get_pending_requirements(conn, g.user)
     for req in pending:
         req["date"] = from_db(req["date"]).strftime("%Y-%m-%d")
+    rejected = get_rejected_requirements(conn, g.user)
+    for req in rejected:
+        req["date"] = from_db(req["date"]).strftime("%Y-%m-%d")
     return render_template(
         "kitchen/index.html", branches=branches, user_branch_id=user_branch_id, today=today_key(),
-        items=items, departments=departments, pending=pending,
+        items=items, departments=departments, pending=pending, rejected=rejected,
     )
 
 
@@ -180,11 +185,30 @@ def delete_item(requirement_id: str, item_id: str):
 @bp.route("/kitchen/review/<requirement_id>/confirm", methods=["POST"])
 @require_write
 def confirm(requirement_id: str):
+    if g.user["role"] not in ("ADMIN", "MANAGER"):
+        abort(403, description="Only Admin/Manager can approve a requirement")
     conn = g.conn
+    comment = request.form.get("comment") or None
     try:
-        confirm_kitchen_requirement(conn, g.user["id"], requirement_id)
+        confirm_kitchen_requirement(conn, g.user["id"], requirement_id, comment)
     except ValueError as e:
         flash(str(e), "error")
         return redirect(url_for("kitchen.review", requirement_id=requirement_id))
     flash("Requirement confirmed.", "success")
     return redirect(url_for("requirements.index"))
+
+
+@bp.route("/kitchen/review/<requirement_id>/reject", methods=["POST"])
+@require_write
+def reject(requirement_id: str):
+    if g.user["role"] not in ("ADMIN", "MANAGER"):
+        abort(403, description="Only Admin/Manager can reject a requirement")
+    conn = g.conn
+    comment = request.form.get("comment") or ""
+    try:
+        reject_kitchen_requirement(conn, g.user["id"], requirement_id, comment)
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("kitchen.review", requirement_id=requirement_id))
+    flash("Requirement rejected and sent back.", "success")
+    return redirect(url_for("kitchen.index"))

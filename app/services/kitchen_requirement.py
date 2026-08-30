@@ -208,6 +208,31 @@ def get_pending_requirements(conn: sqlite3.Connection, user: dict) -> list[dict]
     return [dict(r) for r in conn.execute(sql, params).fetchall()]
 
 
+def get_rejected_requirements(conn: sqlite3.Connection, user: dict | None) -> list[dict]:
+    """Requirements a reviewer sent back with a reason, not yet
+    re-approved -- surfaced as a banner on the Kitchen Upload page so
+    whoever has access there sees the reason and can fix the rows via the
+    same review screen (rejected rows stay editable, same as any other
+    not-yet-confirmed requirement)."""
+    if user is None:
+        return []
+    conditions = ["kr.rejectedAt IS NOT NULL", "kr.confirmedAt IS NULL"]
+    params: list = []
+    if user.get("branchId"):
+        conditions.append("kr.branchId = ?")
+        params.append(user["branchId"])
+    sql = (
+        "SELECT kr.id AS id, kr.date AS date, kr.reviewComment AS comment, "
+        "b.name AS branchName, u.name AS rejectedByName "
+        "FROM KitchenRequirement kr "
+        "JOIN Branch b ON b.id = kr.branchId "
+        "LEFT JOIN User u ON u.id = kr.rejectedById "
+        f"WHERE {' AND '.join(conditions)} "
+        "ORDER BY kr.rejectedAt DESC"
+    )
+    return [dict(r) for r in conn.execute(sql, params).fetchall()]
+
+
 def get_confirmed_requirement_items(conn: sqlite3.Connection, branch_id: str, date_db: str) -> list[dict]:
     """Row-addressable (keyed by KitchenRequirementItem.id) confirmed rows
     for a branch/date, so the Requirements page can edit qty on the exact
@@ -219,7 +244,8 @@ def get_confirmed_requirement_items(conn: sqlite3.Connection, branch_id: str, da
     by the upload ("batch") they came from -- if the kitchen team uploads
     a second sheet for the same date, its rows must stay visually
     separated from the first upload's, not interleaved into the same
-    department card as if they were one entry."""
+    department card as if they were one entry (callers filter to a single
+    requirementId themselves for a per-batch export)."""
     rows = conn.execute(
         "SELECT kri.id AS id, kri.qty AS qty, kri.unit AS unit, "
         "kr.id AS requirementId, kr.createdAt AS requirementCreatedAt, "
@@ -252,7 +278,8 @@ def update_confirmed_requirement_item_qty(conn: sqlite3.Connection, item_id: str
     conn.commit()
 
 
-def confirm_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirement_id: str) -> None:
+def confirm_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirement_id: str,
+                                 comment: str | None = None) -> None:
     req = conn.execute("SELECT * FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
     if req is None:
         raise ValueError("Requirement not found")
@@ -262,10 +289,34 @@ def confirm_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirem
     if unmatched:
         raise ValueError(f"{len(unmatched)} row(s) still need an item selected before confirming")
 
+    # Approving clears any earlier rejection -- a requirement can only be
+    # in one state (pending / rejected / confirmed) at a time.
     conn.execute(
-        "UPDATE KitchenRequirement SET confirmedById = ?, confirmedAt = ? WHERE id = ?",
-        (user_id, now_db(), requirement_id),
+        "UPDATE KitchenRequirement SET confirmedById = ?, confirmedAt = ?, "
+        "rejectedAt = NULL, rejectedById = NULL, reviewComment = ? WHERE id = ?",
+        (user_id, now_db(), comment or None, requirement_id),
     )
     audit.write(conn, user_id, req["branchId"], "KITCHEN_REQUIREMENT_CONFIRMED",
                 "KitchenRequirement", requirement_id, {"itemCount": len(items)})
+    conn.commit()
+
+
+def reject_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirement_id: str,
+                                comment: str) -> None:
+    """Sends a requirement back to Kitchen with a reason instead of
+    confirming it. Rows stay exactly as they are (still editable, same as
+    any other not-yet-confirmed requirement) -- there's no separate
+    resubmit step, whoever fixes the rows (Kitchen or Admin/Manager) just
+    confirms it afterward like normal."""
+    if not comment or not comment.strip():
+        raise ValueError("A comment is required when rejecting")
+    req = conn.execute("SELECT id, confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+    if req is None:
+        raise ValueError("Requirement not found")
+
+    conn.execute(
+        "UPDATE KitchenRequirement SET rejectedAt = ?, rejectedById = ?, reviewComment = ?, "
+        "confirmedAt = NULL, confirmedById = NULL WHERE id = ?",
+        (now_db(), user_id, comment.strip(), requirement_id),
+    )
     conn.commit()

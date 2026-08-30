@@ -40,7 +40,7 @@ def index():
         req_id = r["requirementId"]
         if req_id not in batch_numbers:
             batch_numbers[req_id] = len(batches) + 1
-            batches.append({"batchNumber": batch_numbers[req_id], "departments": {}})
+            batches.append({"batchNumber": batch_numbers[req_id], "requirementId": req_id, "departments": {}})
         batch = batches[batch_numbers[req_id] - 1]
         batch["departments"].setdefault(r["departmentName"], []).append({
             **r, "total": totals_by_item[r["itemId"]],

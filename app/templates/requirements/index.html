@@ -8,6 +8,7 @@
     {% if is_admin %}{{ branch_switcher(branches, branch.branchId) }}{% endif %}
     {{ date_switcher(date) }}
     {{ export_button('/api/export/requirements?date=' ~ date ~ '&branchId=' ~ branch.branchId) }}
+    {% if batches | length > 1 %}<span class="text-muted" style="font-size:0.78rem;">(all batches combined)</span>{% endif %}
   </div>
 </div>
 
@@ -20,7 +21,10 @@
 {% for batch in batches %}
 <div style="margin-bottom:24px;">
   {% if batches | length > 1 %}
-  <h3 style="margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--border);">Batch {{ batch.batchNumber }}</h3>
+  <div class="flex-row" style="justify-content:space-between;align-items:baseline;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--border);">
+    <h3 style="margin-bottom:0;">Batch {{ batch.batchNumber }}</h3>
+    {{ export_button('/api/export/requirements?date=' ~ date ~ '&branchId=' ~ branch.branchId ~ '&requirementId=' ~ batch.requirementId) }}
+  </div>
   {% endif %}
   <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
     {% for dept in batch.departmentSections %}

@@ -1,6 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Kitchen Upload - {{ branding.appName }}{% endblock %}
 {% block content %}
+{% if rejected %}
+<div class="card" style="max-width:640px;margin:0 auto 24px;border-color:var(--danger);background:var(--danger-bg);">
+  <h3 style="margin-top:0;">Rejected &mdash; needs fixing ({{ rejected | length }})</h3>
+  {% for req in rejected %}
+  <div style="border-bottom:1px solid var(--border);padding:8px 0;">
+    <div class="flex-row" style="justify-content:space-between;align-items:center;">
+      <span>{{ req.branchName }} &mdash; {{ req.date }}{% if req.rejectedByName %} <span class="text-muted" style="font-size:0.8rem;">(by {{ req.rejectedByName }})</span>{% endif %}</span>
+      <a class="btn btn-sm btn-primary" href="{{ url_for('kitchen.review', requirement_id=req.id) }}">Fix &amp; Resubmit</a>
+    </div>
+    {% if req.comment %}<p style="font-size:0.85rem;margin:4px 0 0;">{{ req.comment }}</p>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% if pending %}
 <div class="card" style="max-width:640px;margin:0 auto 24px;border-color:var(--danger);">
   <h3 style="margin-top:0;">Pending Review ({{ pending | length }})</h3>

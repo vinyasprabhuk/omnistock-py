@@ -48,9 +48,25 @@ def inventory():
 def requirements():
     date = request.args.get("date") or today_key()
     branch = page_resolve_branch(g.conn, g.user, request.args.get("branchId"))
+    requirement_id = request.args.get("requirementId") or None
     date_db = date_key_to_db(date)
 
-    items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
+    # Batch number for the filename comes from the *unfiltered* upload
+    # order for the date, same ordinal the Requirements page shows --
+    # computed even for a combined (non-batch-scoped) export so a
+    # single-batch day's filename stays plain.
+    all_items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
+    batch_suffix = ""
+    if requirement_id:
+        seen_order = []
+        for r in all_items:
+            if r["requirementId"] not in seen_order:
+                seen_order.append(r["requirementId"])
+        if requirement_id in seen_order:
+            batch_suffix = f"-batch{seen_order.index(requirement_id) + 1}"
+        items = [r for r in all_items if r["requirementId"] == requirement_id]
+    else:
+        items = all_items
 
     departments: dict[str, list[dict]] = {}
     for r in items:
@@ -62,7 +78,7 @@ def requirements():
     department_sections.sort(key=lambda s: s["departmentName"])
 
     data = build_kitchen_requirement_workbook(date, department_sections)
-    return _xlsx_response(data, f"kitchen-requirement-{date}.xlsx")
+    return _xlsx_response(data, f"kitchen-requirement-{date}{batch_suffix}.xlsx")
 
 
 @bp.route("/purchase-order")
