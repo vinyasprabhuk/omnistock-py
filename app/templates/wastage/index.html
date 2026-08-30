@@ -15,7 +15,8 @@
   <a class="btn {{ 'btn-primary' if mode == 'wastage' else '' }}" style="border-radius:6px 6px 0 0;" href="?date={{ date }}&mode=wastage&branchId={{ branch.branchId }}">Wastage</a>
 </div>
 
-<div style="display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:16px;align-items:start;">
+<div style="display:grid;grid-template-columns:{{ 'minmax(280px,360px) 1fr' if can_log else '1fr' }};gap:16px;align-items:start;">
+  {% if can_log %}
   <div class="card">
     <h3>Log {{ 'Wastage' if mode == 'wastage' else 'Production' }}</h3>
     {% for section in menu %}
@@ -30,6 +31,7 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
 
   <div class="card">
     <h3>{{ date }} &middot; {{ entries | length }} entr{{ 'y' if entries | length == 1 else 'ies' }} &middot; {{ total_kg | fmt }} KG total</h3>
@@ -57,7 +59,7 @@
   </div>
 </div>
 
-{% if entries | length > 0 %}
+{% if can_see_analysis and entries | length > 0 %}
 <div class="card" style="margin-top:16px;">
   <div class="flex-row" style="justify-content:space-between;align-items:baseline;">
     <h3 style="margin-bottom:0;">Ingredients {{ 'wasted' if mode == 'wastage' else 'used in production' }}</h3>
@@ -94,6 +96,7 @@
 </div>
 {% endif %}
 
+{% if can_see_analysis %}
 <div class="card" style="margin-top:16px;">
   <h3>Produced vs Sold vs Wasted &mdash; {{ date }}</h3>
   <p class="text-muted" style="font-size:0.85rem;margin-top:-6px;">
@@ -127,7 +130,9 @@
   </div>
   {% endif %}
 </div>
+{% endif %}
 
+{% if can_log %}
 <dialog id="entry-dialog" data-username="{{ current_user.name if current_user else '' }}" style="border-radius:10px;border:1px solid var(--border);padding:0;max-width:400px;width:90%;">
   <form method="post" action="{{ url_for('wastage.create') }}" enctype="multipart/form-data" style="padding:20px;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
@@ -190,8 +195,11 @@
     </div>
   </form>
 </dialog>
+{% endif %}
 {% endblock %}
 {% block scripts %}
+{% if can_log %}
 <script src="{{ url_for('static', filename='js/camera-capture.js') }}"></script>
 <script src="{{ url_for('static', filename='js/quantity-modal.js') }}"></script>
+{% endif %}
 {% endblock %}

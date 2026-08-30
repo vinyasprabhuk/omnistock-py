@@ -172,7 +172,7 @@ _ALL_NAV_LINKS = [
     {"href": "/requirements", "label": "Requirements", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
     {"href": "/tracker", "label": "Daily Tracker", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
     {"href": "/issue", "label": "Stock Issue", "roles": ["ADMIN", "MANAGER", "STORE"]},
-    {"href": "/wastage", "label": "Wastage", "roles": ["ADMIN", "MANAGER", "STORE", "KITCHEN"]},
+    {"href": "/wastage", "label": "Wastage", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
     {"href": "/purchases", "label": "Purchases", "roles": ["ADMIN", "MANAGER", "STORE"]},
     {"href": "/admin", "label": "Admin", "roles": ["ADMIN"]},
 ]

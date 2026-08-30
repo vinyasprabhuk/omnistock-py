@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.auth.session import ForbiddenError, resolve_branch_scope
@@ -47,21 +47,31 @@ def index():
     grouped = {mp: [e for e in entries if e["mealPeriod"] == mp] for mp in MEAL_PERIODS}
     other = [e for e in entries if not e["mealPeriod"]]
 
-    variance = compute_variance(conn, date_key_to_db(date), branch["branchId"])
+    can_log = g.user["role"] == "KITCHEN"
+    can_see_analysis = g.user["role"] in ("ADMIN", "MANAGER")
+
+    variance_rows, sales_available = [], True
+    if can_see_analysis:
+        variance = compute_variance(conn, date_key_to_db(date), branch["branchId"])
+        variance_rows, sales_available = variance["rows"], variance["salesAvailable"]
 
     return render_template(
         "wastage/index.html", date=date, mode=mode, branch=branch, is_admin=is_admin,
         branches=branches, branch_param=branch_param or "", entries=entries, menu=menu,
         grouped=grouped, other=other, meal_labels=MEAL_LABELS, total_kg=_total_kg(entries),
+        can_log=can_log, can_see_analysis=can_see_analysis,
         ingredient_lines=ingredients["lines"], ingredient_gaps=ingredients["gaps"],
         ingredient_total_spend=ingredients["totalSpend"],
-        variance_rows=variance["rows"], sales_available=variance["salesAvailable"],
+        variance_rows=variance_rows, sales_available=sales_available,
     )
 
 
 @bp.route("/wastage/create", methods=["POST"])
 @require_write
 def create():
+    if g.user["role"] != "KITCHEN":
+        abort(403, description="Only Kitchen can log production/wastage entries")
+
     conn = g.conn
     mode = request.form.get("mode") or "production"
     user_branch_id = g.user.get("branchId")
