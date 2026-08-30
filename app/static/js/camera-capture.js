@@ -13,6 +13,7 @@
   let stream = null;
   let geoPosition = null;
   let geoStatus = "pending";
+  let tokenRefreshed = false;
 
   function requestGeo() {
     geoStatus = "pending";
@@ -105,6 +106,7 @@
     stopStream();
     geoPosition = null;
     geoStatus = "pending";
+    tokenRefreshed = false;
     dialog.querySelector(".js-photo-input").value = "";
     dialog.querySelector(".js-camera-idle").hidden = false;
     dialog.querySelector(".js-camera-live").hidden = true;
@@ -139,7 +141,29 @@
         const statusEl = dialog.querySelector(".js-camera-status");
         statusEl.textContent = "Take a photo first -- it's required for every entry.";
         statusEl.style.color = "var(--danger)";
+        return;
       }
+
+      // The dialog can sit open a minute or more while camera/location
+      // permissions are granted -- long enough for the CSRF token embedded
+      // at page-load time to go stale on some mobile browsers. Fetch a
+      // token current as of right now before actually submitting.
+      if (tokenRefreshed) return; // already refreshed, let this submit through
+      e.preventDefault();
+      const csrfInput = form.querySelector('input[name="_csrf_token"]');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      fetch("/api/csrf-token", { credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && data.csrfToken) csrfInput.value = data.csrfToken;
+        })
+        .catch(() => {})
+        .finally(() => {
+          tokenRefreshed = true;
+          if (submitBtn) submitBtn.disabled = false;
+          form.requestSubmit ? form.requestSubmit(submitBtn) : form.submit();
+        });
     });
   });
 })();

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from flask import Blueprint, flash, g, redirect, render_template, request, session
+from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, session
 
 from app.auth.permissions import default_route_for_role
-from app.security import LegacyBcryptHash, verify_password
+from app.security import LegacyBcryptHash, get_csrf_token, verify_password
 
 bp = Blueprint("login", __name__)
 
@@ -56,3 +56,16 @@ def login():
 def logout():
     session.clear()
     return redirect("/login")
+
+
+@bp.route("/api/csrf-token")
+def csrf_token_api():
+    """Lets a long-lived form (e.g. the Wastage/Production camera-capture
+    dialog, which can stay open a minute or more while camera/location
+    permissions are granted) fetch a token current as of submit time
+    instead of trusting whatever was embedded when the page first loaded --
+    cheap insurance against any session/cookie staleness over that gap,
+    regardless of the exact cause."""
+    if g.user is None:
+        return jsonify({"error": "Not authenticated"}), 401
+    return jsonify({"csrfToken": get_csrf_token()})
