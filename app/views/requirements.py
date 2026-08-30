@@ -21,13 +21,6 @@ def index():
     date_db = date_key_to_db(date)
     items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
 
-    # Grand total per item, across every batch uploaded for this date --
-    # shown as a badge so a split across two uploads is still visible at a
-    # glance without merging the rows themselves.
-    totals_by_item: dict[str, float] = {}
-    for r in items:
-        totals_by_item[r["itemId"]] = totals_by_item.get(r["itemId"], 0.0) + r["qty"]
-
     # Rows already come back ordered by requirementCreatedAt (see
     # get_confirmed_requirement_items), so the first requirementId
     # encountered is batch 1, the next distinct one is batch 2, etc. --
@@ -42,9 +35,7 @@ def index():
             batch_numbers[req_id] = len(batches) + 1
             batches.append({"batchNumber": batch_numbers[req_id], "requirementId": req_id, "departments": {}})
         batch = batches[batch_numbers[req_id] - 1]
-        batch["departments"].setdefault(r["departmentName"], []).append({
-            **r, "total": totals_by_item[r["itemId"]],
-        })
+        batch["departments"].setdefault(r["departmentName"], []).append(r)
 
     for batch in batches:
         department_sections = [

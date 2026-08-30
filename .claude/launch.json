@@ -5,7 +5,8 @@
       "name": "omnistock-flask",
       "runtimeExecutable": "/Users/Vinyas/omnistock-py/.venv/bin/python",
       "runtimeArgs": ["run_dev.py"],
-      "port": 5050
+      "port": 5050,
+      "autoPort": true
     }
   ]
 }
