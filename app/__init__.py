@@ -166,16 +166,16 @@ def create_app(config_object: str = "config.Config") -> Flask:
 
 
 _ALL_NAV_LINKS = [
-    {"href": "/dashboard", "label": "Dashboard", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
+    {"href": "/dashboard", "label": "Dashboard", "roles": ["ADMIN", "VIEWER"]},
     {"href": "/inventory", "label": "Master Inventory", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
     {"href": "/kitchen", "label": "Kitchen Upload", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
     {"href": "/intent", "label": "Intent", "roles": ["ADMIN"]},
     {"href": "/recipe", "label": "Recipe", "roles": ["ADMIN"]},
     {"href": "/requirements", "label": "Requirements", "roles": ["ADMIN", "MANAGER", "VIEWER"]},
-    {"href": "/tracker", "label": "Daily Tracker", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
+    {"href": "/tracker", "label": "Daily Tracker", "roles": ["ADMIN", "STORE", "VIEWER"]},
     {"href": "/issue", "label": "Stock Issue", "roles": ["ADMIN", "MANAGER", "STORE"]},
     {"href": "/wastage", "label": "Wastage", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
-    {"href": "/purchases", "label": "Purchases", "roles": ["ADMIN", "MANAGER", "STORE"]},
+    {"href": "/purchases", "label": "Purchases", "roles": ["ADMIN", "STORE"]},
     {"href": "/workstation", "label": "Workstation Photos", "roles": ["ADMIN", "MANAGER", "DEPARTMENT_LEAD"]},
     {"href": "/admin", "label": "Admin", "roles": ["ADMIN"]},
 ]

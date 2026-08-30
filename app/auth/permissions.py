@@ -12,15 +12,15 @@ from __future__ import annotations
 
 ROUTE_ACCESS: list[tuple[str, list[str]]] = [
     ("/admin", ["ADMIN"]),
-    ("/dashboard", ["ADMIN", "MANAGER", "VIEWER"]),
-    ("/tracker", ["ADMIN", "MANAGER", "STORE", "VIEWER"]),
+    ("/dashboard", ["ADMIN", "VIEWER"]),
+    ("/tracker", ["ADMIN", "STORE", "VIEWER"]),
     ("/wastage", ["ADMIN", "MANAGER", "KITCHEN"]),
     ("/kitchen", ["ADMIN", "MANAGER", "KITCHEN"]),
     ("/intent", ["ADMIN"]),
     ("/recipe", ["ADMIN"]),
     ("/requirements", ["ADMIN", "MANAGER", "VIEWER"]),
     ("/inventory", ["ADMIN", "MANAGER", "STORE", "VIEWER"]),
-    ("/purchases", ["ADMIN", "MANAGER", "STORE"]),
+    ("/purchases", ["ADMIN", "STORE"]),
     ("/issue", ["ADMIN", "MANAGER", "STORE"]),
     ("/reports", ["ADMIN", "MANAGER", "VIEWER"]),
     ("/workstation", ["ADMIN", "MANAGER", "DEPARTMENT_LEAD"]),
@@ -45,4 +45,6 @@ def default_route_for_role(role: str) -> str:
         return "/tracker"
     if role == "DEPARTMENT_LEAD":
         return "/workstation"
+    if role == "MANAGER":
+        return "/requirements"
     return "/dashboard"
