@@ -94,7 +94,7 @@
 </div>
 {% endif %}
 
-<dialog id="entry-dialog" style="border-radius:10px;border:1px solid var(--border);padding:0;max-width:400px;width:90%;">
+<dialog id="entry-dialog" data-username="{{ current_user.name if current_user else '' }}" style="border-radius:10px;border:1px solid var(--border);padding:0;max-width:400px;width:90%;">
   <form method="post" action="{{ url_for('wastage.create') }}" enctype="multipart/form-data" style="padding:20px;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="mode" value="{{ mode }}">
@@ -124,7 +124,31 @@
       </div>
     </div>
 
-    <label class="field"><span>Photo (required)</span><input type="file" name="photo" accept="image/*"></label>
+    <div class="field">
+      <span>Photo (required) &mdash; live camera only</span>
+      <input type="file" name="photo" class="js-photo-input" accept="image/*" hidden>
+
+      <div class="js-camera-idle">
+        <button type="button" class="btn btn-sm js-camera-open">&#128247; Open Camera</button>
+        <p class="text-muted js-camera-status" style="font-size:0.78rem;margin:4px 0 0;"></p>
+      </div>
+
+      <div class="js-camera-live" hidden>
+        <video class="js-camera-video" autoplay playsinline muted style="width:100%;border-radius:8px;background:#000;"></video>
+        <div class="flex-row" style="justify-content:center;margin-top:8px;">
+          <button type="button" class="btn btn-primary btn-sm js-camera-capture">Capture</button>
+        </div>
+      </div>
+
+      <div class="js-camera-captured" hidden>
+        <img class="js-camera-preview" style="width:100%;border-radius:8px;" alt="Captured photo">
+        <div class="flex-row" style="justify-content:center;margin-top:8px;">
+          <button type="button" class="btn btn-sm js-camera-retake">Retake</button>
+        </div>
+      </div>
+
+      <canvas class="js-camera-canvas" hidden></canvas>
+    </div>
 
     <div class="flex-row" style="justify-content:flex-end;margin-top:12px;">
       <button type="button" class="btn btn-sm js-close-dialog">Cancel</button>
@@ -134,5 +158,6 @@
 </dialog>
 {% endblock %}
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/camera-capture.js') }}"></script>
 <script src="{{ url_for('static', filename='js/quantity-modal.js') }}"></script>
 {% endblock %}

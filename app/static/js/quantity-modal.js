@@ -46,7 +46,7 @@ document.addEventListener("click", (e) => {
     weightInput.required = true;
   }
 
-  dialog.querySelector('input[name="photo"]').value = "";
+  if (window.resetEntryCamera) window.resetEntryCamera(dialog);
   dialog.showModal();
 });
 
