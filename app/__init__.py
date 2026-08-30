@@ -113,6 +113,32 @@ def create_app(config_object: str = "config.Config") -> Flask:
 
         return None
 
+    @app.after_request
+    def log_audit_event(response):
+        if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+            return response
+        if request.path.startswith("/static/"):
+            return response
+        try:
+            from app.services.audit_log import write_event
+            write_event(
+                app.config["AUDIT_DB_PATH"],
+                user=getattr(g, "user", None),
+                method=request.method,
+                path=request.path,
+                endpoint=request.endpoint,
+                status_code=response.status_code,
+                form=request.form.to_dict() if request.form else None,
+                view_args=request.view_args,
+                ip=request.headers.get("X-Forwarded-For", request.remote_addr),
+            )
+        except Exception:
+            # Audit logging must never break the actual request -- a
+            # missing/locked audit.db is a problem to notice and fix, not
+            # a reason to 500 every write in the app.
+            app.logger.exception("Failed to write audit event")
+        return response
+
     @app.teardown_request
     def close_db(exc):
         conn = g.pop("conn", None)

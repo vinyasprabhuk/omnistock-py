@@ -10,6 +10,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 
 from app.security import require_role
 from app.services import admin as admin_service
+from app.services.audit_log import distinct_users, query_events
 from app.services import branding as branding_service
 from app.services.excel_upload import commit_opening_stock_excel, preview_opening_stock_excel
 from app.services.excel_import import commit_excel_import, preview_excel_import
@@ -41,6 +42,7 @@ def hub():
         {"href": "/admin/wastage-menu", "label": "Wastage Menu", "desc": "Add or remove the dish buttons on the Wastage page"},
         {"href": "/admin/users", "label": "Users", "desc": "Create logins, assign roles and branches"},
         {"href": "/admin/status", "label": "System Status", "desc": "Database health check"},
+        {"href": "/admin/audit-log", "label": "Audit Log", "desc": "Who did what, when -- every write action across every role"},
         {"href": "/admin/import", "label": "Import Existing Excel", "desc": "One-time import from your old workbook"},
         {"href": "/admin/branding", "label": "Branding", "desc": "App name, logo, and theme"},
     ]
@@ -282,6 +284,42 @@ def status():
     except Exception:
         db_ok, db_detail = False, "Could not connect"
     return render_template("admin/status.html", db_ok=db_ok, db_detail=db_detail)
+
+
+# --- Audit Log ---
+
+AUDIT_ROLES = ["ADMIN", "MANAGER", "STORE", "KITCHEN", "VIEWER"]
+
+
+@bp.route("/audit-log")
+@require_role("ADMIN")
+def audit_log():
+    from flask import current_app
+
+    db_path = current_app.config["AUDIT_DB_PATH"]
+    user_id = request.args.get("userId") or None
+    role = request.args.get("role") or None
+    action = request.args.get("action") or None
+    date_from = request.args.get("from") or None
+    date_to = request.args.get("to") or None
+
+    from app.dates import date_key_to_db
+    date_from_db = date_key_to_db(date_from) if date_from else None
+    date_to_db = date_key_to_db(date_to) if date_to else None
+    if date_to_db:
+        date_to_db = date_to_db[:10] + "T23:59:59.999+00:00"
+
+    events = query_events(
+        db_path, user_id=user_id, role=role, action=action,
+        date_from=date_from_db, date_to=date_to_db, limit=300,
+    )
+    users = distinct_users(db_path)
+
+    return render_template(
+        "admin/audit_log.html", events=events, users=users, roles=AUDIT_ROLES,
+        filter_user_id=user_id or "", filter_role=role or "", filter_action=action or "",
+        filter_from=date_from or "", filter_to=date_to or "",
+    )
 
 
 # --- Branding ---

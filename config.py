@@ -34,6 +34,11 @@ def _load_or_create_secret_key() -> str:
 
 class Config:
     DATABASE_PATH = os.environ.get("DATABASE_PATH", str(BASE_DIR / "instance" / "dev.db"))
+    # Deliberately a separate SQLite file from DATABASE_PATH, not just a
+    # separate table -- an audit trail that lives in the same file as the
+    # data it's auditing is weaker evidence (anyone who can edit business
+    # data can edit its own history in the same transaction).
+    AUDIT_DB_PATH = os.environ.get("AUDIT_DB_PATH", str(BASE_DIR / "instance" / "audit.db"))
     UPLOAD_DIR = os.environ.get("UPLOAD_DIR", str(BASE_DIR / "uploads"))
     SECRET_KEY = _load_or_create_secret_key()
     # Override "today" for reproducible local testing (see app/dates.py). Format: YYYY-MM-DD.

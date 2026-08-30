@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Audit Log - {{ branding.appName }}{% endblock %}
+{% block content %}
+<h1>Audit Log</h1>
+<p class="text-muted">Every write action across every role, from a separate database not touched by regular app writes. Showing the most recent {{ events | length }}.</p>
+
+<form method="get" class="card flex-row" style="align-items:flex-end;">
+  <label class="field" style="width:auto;">
+    <span>User</span>
+    <select name="userId" style="width:auto;">
+      <option value="">All users</option>
+      {% for u in users %}<option value="{{ u.userId }}" {{ 'selected' if u.userId == filter_user_id else '' }}>{{ u.userName }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field" style="width:auto;">
+    <span>Role</span>
+    <select name="role" style="width:auto;">
+      <option value="">All roles</option>
+      {% for r in roles %}<option value="{{ r }}" {{ 'selected' if r == filter_role else '' }}>{{ r }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field" style="width:auto;"><span>Action contains</span><input type="text" name="action" value="{{ filter_action }}" placeholder="e.g. wastage, delete" style="width:160px;"></label>
+  <label class="field" style="width:auto;"><span>From</span><input type="date" name="from" value="{{ filter_from }}" style="width:auto;"></label>
+  <label class="field" style="width:auto;"><span>To</span><input type="date" name="to" value="{{ filter_to }}" style="width:auto;"></label>
+  <button type="submit" class="btn btn-primary">Filter</button>
+  {% if filter_user_id or filter_role or filter_action or filter_from or filter_to %}
+  <a class="btn" href="{{ url_for('admin.audit_log') }}">Clear</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:150px;">When</th><th>User</th><th style="width:90px;">Role</th><th>Action</th><th style="width:70px;">Status</th><th>Detail</th></tr></thead>
+      <tbody>
+        {% for ev in events %}
+        <tr>
+          <td class="text-muted" style="white-space:nowrap;font-size:0.78rem;">{{ ev.at[:19].replace('T', ' ') }}</td>
+          <td>{{ ev.userName or 'Unknown' }}</td>
+          <td class="text-muted">{{ ev.userRole or '' }}</td>
+          <td><code style="font-size:0.8rem;">{{ ev.action }}</code></td>
+          <td>
+            {% if ev.statusCode and ev.statusCode < 400 %}<span class="badge badge-success">{{ ev.statusCode }}</span>
+            {% else %}<span class="badge badge-danger">{{ ev.statusCode }}</span>{% endif %}
+          </td>
+          <td>
+            {% if ev.detail %}
+            <details>
+              <summary class="text-muted" style="font-size:0.78rem;cursor:pointer;">view</summary>
+              <pre style="font-size:0.72rem;white-space:pre-wrap;word-break:break-all;margin:4px 0 0;">{{ ev.detail }}</pre>
+            </details>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if events | length == 0 %}
+        <tr><td colspan="6" class="text-muted">No events match these filters.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

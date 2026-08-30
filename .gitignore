@@ -10,6 +10,7 @@ venv/
 instance/dev.db
 instance/reference/dev.db.pristine
 instance/secret_key
+instance/audit.db
 uploads/
 
 # Local/generated
