@@ -23,7 +23,7 @@ ROUTE_ACCESS: list[tuple[str, list[str]]] = [
     ("/purchases", ["ADMIN", "MANAGER", "STORE"]),
     ("/issue", ["ADMIN", "MANAGER", "STORE"]),
     ("/reports", ["ADMIN", "MANAGER", "VIEWER"]),
-    ("/workstation", ["ADMIN", "DEPARTMENT_LEAD"]),
+    ("/workstation", ["ADMIN", "MANAGER", "DEPARTMENT_LEAD"]),
 ]
 
 

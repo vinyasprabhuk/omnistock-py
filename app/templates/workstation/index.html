@@ -4,7 +4,7 @@
 {% block content %}
 <div class="flex-row" style="justify-content:space-between;margin-bottom:16px;">
   <h1 class="mt-0">Workstation Photos &mdash; {{ department.departmentName }}</h1>
-  {% if is_admin %}{{ department_switcher(departments, department.departmentId) }}{% endif %}
+  {% if can_view_all %}{{ department_switcher(departments, department.departmentId) }}{% endif %}
 </div>
 
 <div class="card">

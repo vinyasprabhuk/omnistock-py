@@ -1,12 +1,14 @@
 """
 Department-scoped counterpart to page_branch.py, for the Workstation Photos
 tab. DEPARTMENT_LEAD is locked to their assigned department (no query-param
-override); ADMIN gets a sensible default (first active department) with an
-optional ?departmentId= override, matching page_resolve_branch's shape.
+override); ADMIN and MANAGER get a sensible default (first active department)
+with an optional ?departmentId= override, matching page_resolve_branch's shape.
 """
 from __future__ import annotations
 
 import sqlite3
+
+VIEW_ALL_ROLES = ("ADMIN", "MANAGER")
 
 
 def page_resolve_department(conn: sqlite3.Connection, user: dict,
@@ -14,7 +16,7 @@ def page_resolve_department(conn: sqlite3.Connection, user: dict,
     role = user["role"]
     department_id = user.get("departmentId")
 
-    if role != "ADMIN":
+    if role not in VIEW_ALL_ROLES:
         if not department_id:
             raise ValueError("User has no assigned department")
         row = conn.execute("SELECT id, name FROM Department WHERE id = ?", (department_id,)).fetchone()
