@@ -51,11 +51,10 @@ def requirements():
     date_db = date_key_to_db(date)
 
     items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
-    stock_by_item = {r["itemId"]: r["currentStock"] for r in get_master_inventory(g.conn, branch["branchId"], date_db)}
 
     departments: dict[str, list[dict]] = {}
     for r in items:
-        departments.setdefault(r["departmentName"], []).append({**r, "currentStock": stock_by_item.get(r["itemId"], 0.0)})
+        departments.setdefault(r["departmentName"], []).append(r)
     department_sections = [
         {"departmentName": name, "items": sorted(rows, key=lambda i: i["itemName"])}
         for name, rows in departments.items()

@@ -95,7 +95,7 @@ def build_kitchen_requirement_workbook(date: str, department_sections: list[dict
     ws["A2"] = "Date:"
     ws["A2"].font = _LABEL_FONT
     ws["B2"] = date
-    ws["A3"] = "Confirmed kitchen requirement, as saved in OmniStock (Stock is current on-hand, for reference)."
+    ws["A3"] = "Confirmed kitchen requirement, as saved in OmniStock."
     ws["A3"].font = _NOTE_FONT
 
     header_row, subheader_row, first_data_row = 5, 6, 7
@@ -123,7 +123,9 @@ def build_kitchen_requirement_workbook(date: str, department_sections: list[dict
             ws.cell(row=r, column=start_col + 1, value=item["itemName"])
             ws.cell(row=r, column=start_col + 2, value=item["unit"])
             ws.cell(row=r, column=start_col + 3, value=item["qty"])
-            ws.cell(row=r, column=start_col + 4, value=item["currentStock"])
+            # Stock column is left blank on purpose -- matches the kitchen
+            # team's own blank upload template exactly and isn't auto-filled
+            # with the app's live stock figure (confirmed with user).
 
     return _to_bytes(wb)
 
