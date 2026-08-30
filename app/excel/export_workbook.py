@@ -7,7 +7,15 @@ from __future__ import annotations
 import io
 
 from openpyxl import Workbook
-from openpyxl.styles import Font
+from openpyxl.styles import Font, PatternFill
+
+_DEPT_HEADER_FONT = Font(bold=True, size=11, color="FFFFFF", name="Arial")
+_DEPT_HEADER_FILL = PatternFill("solid", fgColor="2F5233")
+_SUBHEADER_FONT = Font(bold=True, name="Arial")
+_SUBHEADER_FILL = PatternFill("solid", fgColor="D9E4DD")
+_TITLE_FONT = Font(bold=True, size=14, name="Arial")
+_LABEL_FONT = Font(bold=True, size=11, name="Arial")
+_NOTE_FONT = Font(italic=True, size=9, color="808080", name="Arial")
 
 
 def _sheet(wb: Workbook, name: str, columns: list[tuple[str, int]]):
@@ -71,15 +79,52 @@ def build_purchase_order_workbook(rows: list[dict]) -> bytes:
     return _to_bytes(wb)
 
 
-def build_consolidated_requirement_workbook(date: str, rows: list[dict]) -> bytes:
+def build_kitchen_requirement_workbook(date: str, department_sections: list[dict]) -> bytes:
+    """Mirrors the layout of the blank workbook the kitchen team fills in
+    and uploads (title, Date: row, note row, then one S.No/Item/Unit/Qty/
+    Stock block per department side by side) -- confirmed with the user
+    against a real sample of that upload template, so the confirmed-and-
+    edited requirement can be handed back to the kitchen team in the same
+    format they already recognize."""
     wb = Workbook()
-    wb.remove(wb.active)
-    sheet = _sheet(wb, f"Requirement {date}", [
-        ("Item", 24), ("Unit", 10), ("Total", 12), ("Department Breakdown", 50),
-    ])
-    for r in rows:
-        breakdown = ", ".join(f"{d['departmentName']}: {d['qty']}" for d in r["byDepartment"])
-        sheet.append([r["itemName"], r["unit"], r["total"], breakdown])
+    ws = wb.active
+    ws.title = "Requirement"
+
+    ws["A1"] = "OmniStock — Kitchen Requirement"
+    ws["A1"].font = _TITLE_FONT
+    ws["A2"] = "Date:"
+    ws["A2"].font = _LABEL_FONT
+    ws["B2"] = date
+    ws["A3"] = "Confirmed kitchen requirement, as saved in OmniStock (Stock is current on-hand, for reference)."
+    ws["A3"].font = _NOTE_FONT
+
+    header_row, subheader_row, first_data_row = 5, 6, 7
+    block_stride = 6  # 5 data columns (S.No/Item/Unit/Qty/Stock) + 1 spacer
+
+    for i, dept in enumerate(department_sections):
+        start_col = i * block_stride + 1
+        end_col = start_col + 4
+
+        for c in range(start_col, end_col + 1):
+            cell = ws.cell(row=header_row, column=c)
+            cell.fill = _DEPT_HEADER_FILL
+            ws.column_dimensions[cell.column_letter].width = 13
+        ws.cell(row=header_row, column=start_col, value=dept["departmentName"]).font = _DEPT_HEADER_FONT
+        ws.merge_cells(start_row=header_row, start_column=start_col, end_row=header_row, end_column=end_col)
+
+        for offset, label in enumerate(("S.No", "Item", "Unit", "Qty", "Stock")):
+            cell = ws.cell(row=subheader_row, column=start_col + offset, value=label)
+            cell.font = _SUBHEADER_FONT
+            cell.fill = _SUBHEADER_FILL
+
+        for row_idx, item in enumerate(dept["items"]):
+            r = first_data_row + row_idx
+            ws.cell(row=r, column=start_col, value=row_idx + 1)
+            ws.cell(row=r, column=start_col + 1, value=item["itemName"])
+            ws.cell(row=r, column=start_col + 2, value=item["unit"])
+            ws.cell(row=r, column=start_col + 3, value=item["qty"])
+            ws.cell(row=r, column=start_col + 4, value=item["currentStock"])
+
     return _to_bytes(wb)
 
 

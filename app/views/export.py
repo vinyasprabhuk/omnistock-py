@@ -5,13 +5,14 @@ from flask import Blueprint, Response, g, request
 from app.auth.page_branch import page_resolve_branch
 from app.dates import date_key_to_db, today_key
 from app.excel.export_workbook import (
-    build_consolidated_requirement_workbook,
     build_intent_workbook,
+    build_kitchen_requirement_workbook,
     build_master_inventory_workbook,
     build_purchase_order_workbook,
     build_tracker_workbook,
 )
-from app.services.calculations import get_consolidated_requirement, get_daily_tracker, get_low_stock, get_master_inventory
+from app.services.calculations import get_daily_tracker, get_low_stock, get_master_inventory
+from app.services.kitchen_requirement import get_confirmed_requirement_items
 from app.services.intent import compute_recipe_prep
 
 bp = Blueprint("export", __name__, url_prefix="/api/export")
@@ -47,8 +48,21 @@ def inventory():
 def requirements():
     date = request.args.get("date") or today_key()
     branch = page_resolve_branch(g.conn, g.user, request.args.get("branchId"))
-    rows = get_consolidated_requirement(g.conn, branch["branchId"], date_eq=date_key_to_db(date))
-    data = build_consolidated_requirement_workbook(date, rows)
+    date_db = date_key_to_db(date)
+
+    items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
+    stock_by_item = {r["itemId"]: r["currentStock"] for r in get_master_inventory(g.conn, branch["branchId"], date_db)}
+
+    departments: dict[str, list[dict]] = {}
+    for r in items:
+        departments.setdefault(r["departmentName"], []).append({**r, "currentStock": stock_by_item.get(r["itemId"], 0.0)})
+    department_sections = [
+        {"departmentName": name, "items": sorted(rows, key=lambda i: i["itemName"])}
+        for name, rows in departments.items()
+    ]
+    department_sections.sort(key=lambda s: s["departmentName"])
+
+    data = build_kitchen_requirement_workbook(date, department_sections)
     return _xlsx_response(data, f"kitchen-requirement-{date}.xlsx")
 
 

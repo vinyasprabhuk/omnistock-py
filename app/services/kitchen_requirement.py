@@ -184,6 +184,43 @@ def delete_requirement_item(conn: sqlite3.Connection, item_id: str) -> None:
     conn.commit()
 
 
+def get_confirmed_requirement_items(conn: sqlite3.Connection, branch_id: str, date_db: str) -> list[dict]:
+    """Row-addressable (keyed by KitchenRequirementItem.id) confirmed rows
+    for a branch/date, so the Requirements page can edit qty on the exact
+    underlying row instead of an aggregated total -- see
+    get_consolidated_requirement for the read-only aggregated view used
+    elsewhere (e.g. the Daily Tracker's kitchenRequirement column)."""
+    rows = conn.execute(
+        "SELECT kri.id AS id, kri.qty AS qty, kri.unit AS unit, "
+        "i.id AS itemId, i.name AS itemName, d.name AS departmentName "
+        "FROM KitchenRequirementItem kri "
+        "JOIN KitchenRequirement kr ON kr.id = kri.requirementId "
+        "JOIN Item i ON i.id = kri.matchedItemId "
+        "JOIN Department d ON d.id = kri.departmentId "
+        "WHERE kr.branchId = ? AND kr.date = ? AND kr.confirmedAt IS NOT NULL AND kri.matchedItemId IS NOT NULL "
+        "ORDER BY d.name ASC, i.name ASC",
+        (branch_id, date_db),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def update_confirmed_requirement_item_qty(conn: sqlite3.Connection, item_id: str, qty: float) -> None:
+    """Unlike update_requirement_item (pre-confirm review edits), this is
+    the post-confirm path: admin/manager adjusting the saved qty directly
+    from the Requirements page. Only qty is editable here -- the item/
+    department match is already locked in by confirmation."""
+    row = conn.execute(
+        "SELECT kri.id FROM KitchenRequirementItem kri "
+        "JOIN KitchenRequirement kr ON kr.id = kri.requirementId "
+        "WHERE kri.id = ? AND kr.confirmedAt IS NOT NULL",
+        (item_id,),
+    ).fetchone()
+    if row is None:
+        raise ValueError("Requirement item not found or not confirmed yet")
+    conn.execute("UPDATE KitchenRequirementItem SET qty = ? WHERE id = ?", (qty, item_id))
+    conn.commit()
+
+
 def confirm_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirement_id: str) -> None:
     req = conn.execute("SELECT * FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
     if req is None:
