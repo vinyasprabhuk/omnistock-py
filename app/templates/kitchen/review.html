@@ -17,12 +17,6 @@
 {% if requirement.confirmedAt %}
 <div class="card">Confirmed by {{ requirement.confirmedById }} on {{ requirement.confirmedAt }}. This requirement is locked.</div>
 {% endif %}
-{% if requirement.rejectedAt and not requirement.confirmedAt %}
-<div class="card" style="border-color:var(--danger);background:var(--danger-bg);">
-  <strong>Rejected</strong> on {{ requirement.rejectedAt }}{% if requirement.reviewComment %}: {{ requirement.reviewComment }}{% endif %}
-  <div class="text-muted" style="font-size:0.8rem;margin-top:4px;">Fix the rows below, then Confirm when ready.</div>
-</div>
-{% endif %}
 
 <div class="card">
   <div class="table-wrap">
@@ -110,41 +104,12 @@
   </form>
 </div>
 
-{% if current_user.role in ('ADMIN', 'MANAGER') %}
 <div class="card" style="margin-top:16px;">
-  <label class="field"><span>Comment (optional to approve, required to reject)</span>
-    <textarea id="review-comment-input" rows="2" placeholder="e.g. Qty for Sambar looks too high, please recheck"></textarea>
-  </label>
-  <div class="flex-row" style="justify-content:space-between;margin-top:8px;">
+  <div class="flex-row" style="justify-content:space-between;align-items:center;">
     <span class="text-muted">{{ unmatched_count }} row(s) still need an item selected</span>
-    <div class="flex-row">
-      <button type="submit" form="review-reject-form" class="btn">Reject</button>
-      <button type="submit" form="review-confirm-form" class="btn btn-primary" {{ 'disabled' if unmatched_count > 0 else '' }}>Confirm Requirement</button>
-    </div>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('requirements.index', date=date_key, branchId=requirement.branchId) }}">Back to Requirements to Approve / Reject</a>
   </div>
 </div>
-{# Confirm/Reject each POST to a different route -- both carry the same
-   comment textarea's value via a hidden input filled in on submit
-   (see scripts block), since one textarea can't live inside two forms. #}
-<form id="review-confirm-form" method="post" action="{{ url_for('kitchen.confirm', requirement_id=requirement.id) }}">
-  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-  <input type="hidden" name="comment">
-</form>
-<form id="review-reject-form" method="post" action="{{ url_for('kitchen.reject', requirement_id=requirement.id) }}">
-  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-  <input type="hidden" name="comment">
-</form>
-{% endif %}
 {% endif %}
 </div>
-{% endblock %}
-{% block scripts %}
-<script>
-  document.querySelectorAll('#review-confirm-form, #review-reject-form').forEach(function (form) {
-    form.addEventListener('submit', function () {
-      var comment = document.getElementById('review-comment-input');
-      form.querySelector('input[name="comment"]').value = comment ? comment.value : '';
-    });
-  });
-</script>
 {% endblock %}

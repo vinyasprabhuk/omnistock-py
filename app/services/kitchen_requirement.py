@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import sqlite3
 
-from app.dates import date_key_to_db, now_db, today_key
+from app.dates import date_key_to_db, from_db, now_db, today_key
 from app.db import new_id
 from app.services import audit, storage
 from app.services.departments import find_or_create_department
 from app.services.match_item import match_item, save_alias
 from app.services.normalize_unit import normalize_unit
+from app.services.transactions import create_stock_issue
 from app.parsing.prepare_kitchen_file import prepare_kitchen_file
 
 
@@ -184,6 +185,24 @@ def delete_requirement_item(conn: sqlite3.Connection, item_id: str) -> None:
     conn.commit()
 
 
+def get_pending_requirements_for_branch_date(conn: sqlite3.Connection, branch_id: str, date_db: str) -> list[dict]:
+    """Uploaded-but-not-yet-confirmed requirements for a specific branch/
+    date -- backs the Requirements page's Pending section, where
+    Approve/Reject live (row editing -- matched item, qty, department --
+    still happens on the Kitchen review screen, linked from here)."""
+    rows = conn.execute(
+        "SELECT kr.id AS id, kr.createdAt AS createdAt, "
+        "COUNT(kri.id) AS itemCount, "
+        "SUM(CASE WHEN kri.matchedItemId IS NULL THEN 1 ELSE 0 END) AS unmatchedCount "
+        "FROM KitchenRequirement kr "
+        "LEFT JOIN KitchenRequirementItem kri ON kri.requirementId = kr.id "
+        "WHERE kr.branchId = ? AND kr.date = ? AND kr.confirmedAt IS NULL "
+        "GROUP BY kr.id ORDER BY kr.createdAt ASC",
+        (branch_id, date_db),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_pending_requirements(conn: sqlite3.Connection, user: dict) -> list[dict]:
     """Uploaded-but-not-yet-confirmed requirements needing admin/manager
     review, scoped to the user's branch (or every branch for a
@@ -204,31 +223,6 @@ def get_pending_requirements(conn: sqlite3.Connection, user: dict) -> list[dict]
         "LEFT JOIN KitchenRequirementItem kri ON kri.requirementId = kr.id "
         f"WHERE {' AND '.join(conditions)} "
         "GROUP BY kr.id ORDER BY kr.date DESC, kr.createdAt DESC"
-    )
-    return [dict(r) for r in conn.execute(sql, params).fetchall()]
-
-
-def get_rejected_requirements(conn: sqlite3.Connection, user: dict | None) -> list[dict]:
-    """Requirements a reviewer sent back with a reason, not yet
-    re-approved -- surfaced as a banner on the Kitchen Upload page so
-    whoever has access there sees the reason and can fix the rows via the
-    same review screen (rejected rows stay editable, same as any other
-    not-yet-confirmed requirement)."""
-    if user is None:
-        return []
-    conditions = ["kr.rejectedAt IS NOT NULL", "kr.confirmedAt IS NULL"]
-    params: list = []
-    if user.get("branchId"):
-        conditions.append("kr.branchId = ?")
-        params.append(user["branchId"])
-    sql = (
-        "SELECT kr.id AS id, kr.date AS date, kr.reviewComment AS comment, "
-        "b.name AS branchName, u.name AS rejectedByName "
-        "FROM KitchenRequirement kr "
-        "JOIN Branch b ON b.id = kr.branchId "
-        "LEFT JOIN User u ON u.id = kr.rejectedById "
-        f"WHERE {' AND '.join(conditions)} "
-        "ORDER BY kr.rejectedAt DESC"
     )
     return [dict(r) for r in conn.execute(sql, params).fetchall()]
 
@@ -278,45 +272,80 @@ def update_confirmed_requirement_item_qty(conn: sqlite3.Connection, item_id: str
     conn.commit()
 
 
+def auto_issue_stock_from_requirement(conn: sqlite3.Connection, user_id: str, requirement_id: str) -> list[str]:
+    """Approving a requirement now issues its items to stock automatically
+    -- closes the loop that used to require exporting the requirement as
+    Excel and manually re-uploading it into Stock Issue. Daily Tracker's
+    "issued" figures are a live sum over StockIssueItem, so they reflect
+    this the moment it runs, with no separate update needed. One
+    StockIssue per department, same as a manual issue (Stock Issue is
+    always scoped to a single department per entry)."""
+    req = conn.execute("SELECT * FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+    if req is None:
+        raise ValueError("Requirement not found")
+    rows = conn.execute(
+        "SELECT kri.matchedItemId AS itemId, kri.qty AS qty, d.name AS departmentName "
+        "FROM KitchenRequirementItem kri JOIN Department d ON d.id = kri.departmentId "
+        "WHERE kri.requirementId = ? AND kri.matchedItemId IS NOT NULL",
+        (requirement_id,),
+    ).fetchall()
+    if not rows:
+        return []
+
+    date_key = from_db(req["date"]).strftime("%Y-%m-%d")
+    by_dept: dict[str, list[dict]] = {}
+    for r in rows:
+        by_dept.setdefault(r["departmentName"], []).append({"itemId": r["itemId"], "qty": r["qty"]})
+
+    return [
+        create_stock_issue(conn, user_id, req["branchId"], date_key, dept_name, lines)
+        for dept_name, lines in by_dept.items()
+    ]
+
+
 def confirm_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirement_id: str,
                                  comment: str | None = None) -> None:
     req = conn.execute("SELECT * FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
     if req is None:
         raise ValueError("Requirement not found")
+    if req["confirmedAt"]:
+        raise ValueError("Already confirmed")
     items = conn.execute("SELECT * FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,)).fetchall()
 
     unmatched = [i for i in items if not i["matchedItemId"]]
     if unmatched:
         raise ValueError(f"{len(unmatched)} row(s) still need an item selected before confirming")
 
-    # Approving clears any earlier rejection -- a requirement can only be
-    # in one state (pending / rejected / confirmed) at a time.
     conn.execute(
-        "UPDATE KitchenRequirement SET confirmedById = ?, confirmedAt = ?, "
-        "rejectedAt = NULL, rejectedById = NULL, reviewComment = ? WHERE id = ?",
+        "UPDATE KitchenRequirement SET confirmedById = ?, confirmedAt = ?, reviewComment = ? WHERE id = ?",
         (user_id, now_db(), comment or None, requirement_id),
     )
     audit.write(conn, user_id, req["branchId"], "KITCHEN_REQUIREMENT_CONFIRMED",
                 "KitchenRequirement", requirement_id, {"itemCount": len(items)})
     conn.commit()
 
+    auto_issue_stock_from_requirement(conn, user_id, requirement_id)
+
 
 def reject_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirement_id: str,
                                 comment: str) -> None:
-    """Sends a requirement back to Kitchen with a reason instead of
-    confirming it. Rows stay exactly as they are (still editable, same as
-    any other not-yet-confirmed requirement) -- there's no separate
-    resubmit step, whoever fixes the rows (Kitchen or Admin/Manager) just
-    confirms it afterward like normal."""
+    """Rejecting deletes the requirement outright (confirmed with user) --
+    Kitchen uploads a fresh sheet rather than fixing rows in place. Also
+    removes the Upload record (not the stored file itself, since storage
+    is content-addressed by hash and another Upload row could share the
+    same bytes) so a resubmitted file with identical content doesn't
+    incorrectly trip the duplicate-upload check against a requirement
+    that no longer exists."""
     if not comment or not comment.strip():
         raise ValueError("A comment is required when rejecting")
-    req = conn.execute("SELECT id, confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+    req = conn.execute("SELECT id, uploadId, confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
     if req is None:
         raise ValueError("Requirement not found")
+    if req["confirmedAt"]:
+        raise ValueError("Already confirmed -- nothing to reject")
 
-    conn.execute(
-        "UPDATE KitchenRequirement SET rejectedAt = ?, rejectedById = ?, reviewComment = ?, "
-        "confirmedAt = NULL, confirmedById = NULL WHERE id = ?",
-        (now_db(), user_id, comment.strip(), requirement_id),
-    )
+    conn.execute("DELETE FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,))
+    conn.execute("DELETE FROM KitchenRequirement WHERE id = ?", (requirement_id,))
+    if req["uploadId"]:
+        conn.execute("DELETE FROM Upload WHERE id = ?", (req["uploadId"],))
     conn.commit()

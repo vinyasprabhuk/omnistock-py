@@ -11,8 +11,6 @@ from app.services.kitchen_requirement import (
     confirm_kitchen_requirement,
     create_manual_requirement,
     delete_requirement_item,
-    get_pending_requirements,
-    get_rejected_requirements,
     get_requirement_for_review,
     reject_kitchen_requirement,
     update_requirement_item,
@@ -31,15 +29,9 @@ def index():
     branches = list_branches_for_admin(conn) if not user_branch_id else []
     items = [dict(r) for r in conn.execute("SELECT id, name, unit FROM Item WHERE active = 1 ORDER BY name ASC")]
     departments = [r["name"] for r in conn.execute("SELECT name FROM Department WHERE active = 1 ORDER BY name ASC")]
-    pending = get_pending_requirements(conn, g.user)
-    for req in pending:
-        req["date"] = from_db(req["date"]).strftime("%Y-%m-%d")
-    rejected = get_rejected_requirements(conn, g.user)
-    for req in rejected:
-        req["date"] = from_db(req["date"]).strftime("%Y-%m-%d")
     return render_template(
         "kitchen/index.html", branches=branches, user_branch_id=user_branch_id, today=today_key(),
-        items=items, departments=departments, pending=pending, rejected=rejected,
+        items=items, departments=departments,
     )
 
 
@@ -133,7 +125,7 @@ def review(requirement_id: str):
     return render_template(
         "kitchen/review.html", requirement=req, items=data["items"], all_items=items,
         departments=departments, was_structured_file=was_structured_file,
-        unmatched_count=unmatched_count,
+        unmatched_count=unmatched_count, date_key=from_db(req["date"]).strftime("%Y-%m-%d"),
     )
 
 
@@ -185,17 +177,22 @@ def delete_item(requirement_id: str, item_id: str):
 @bp.route("/kitchen/review/<requirement_id>/confirm", methods=["POST"])
 @require_write
 def confirm(requirement_id: str):
+    # Approve/Reject live on the Requirements page now, not here -- this
+    # route just carries out the action and bounces back to wherever the
+    # form was submitted from (Requirements, by date/branch).
     if g.user["role"] not in ("ADMIN", "MANAGER"):
         abort(403, description="Only Admin/Manager can approve a requirement")
     conn = g.conn
     comment = request.form.get("comment") or None
+    date = request.form.get("date") or today_key()
+    branch_id = request.form.get("branchId") or ""
     try:
         confirm_kitchen_requirement(conn, g.user["id"], requirement_id, comment)
     except ValueError as e:
         flash(str(e), "error")
-        return redirect(url_for("kitchen.review", requirement_id=requirement_id))
-    flash("Requirement confirmed.", "success")
-    return redirect(url_for("requirements.index"))
+        return redirect(url_for("requirements.index", date=date, branchId=branch_id))
+    flash("Requirement confirmed and issued to stock.", "success")
+    return redirect(url_for("requirements.index", date=date, branchId=branch_id))
 
 
 @bp.route("/kitchen/review/<requirement_id>/reject", methods=["POST"])
@@ -205,10 +202,12 @@ def reject(requirement_id: str):
         abort(403, description="Only Admin/Manager can reject a requirement")
     conn = g.conn
     comment = request.form.get("comment") or ""
+    date = request.form.get("date") or today_key()
+    branch_id = request.form.get("branchId") or ""
     try:
         reject_kitchen_requirement(conn, g.user["id"], requirement_id, comment)
     except ValueError as e:
         flash(str(e), "error")
-        return redirect(url_for("kitchen.review", requirement_id=requirement_id))
-    flash("Requirement rejected and sent back.", "success")
-    return redirect(url_for("kitchen.index"))
+        return redirect(url_for("requirements.index", date=date, branchId=branch_id))
+    flash("Requirement rejected and removed.", "success")
+    return redirect(url_for("requirements.index", date=date, branchId=branch_id))

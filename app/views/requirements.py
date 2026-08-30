@@ -5,7 +5,11 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import date_key_to_db, today_key
 from app.security import require_write
-from app.services.kitchen_requirement import get_confirmed_requirement_items, update_confirmed_requirement_item_qty
+from app.services.kitchen_requirement import (
+    get_confirmed_requirement_items,
+    get_pending_requirements_for_branch_date,
+    update_confirmed_requirement_item_qty,
+)
 
 bp = Blueprint("requirements", __name__)
 
@@ -19,6 +23,8 @@ def index():
     branches = list_branches_for_admin(g.conn) if is_admin else []
 
     date_db = date_key_to_db(date)
+    can_review = g.user["role"] in ("ADMIN", "MANAGER")
+    pending = get_pending_requirements_for_branch_date(g.conn, branch["branchId"], date_db) if can_review else []
     items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
 
     # Rows already come back ordered by requirementCreatedAt (see
@@ -49,7 +55,7 @@ def index():
     return render_template(
         "requirements/index.html",
         date=date, branch=branch, is_admin=is_admin, branches=branches,
-        items=items, batches=batches,
+        items=items, batches=batches, pending=pending, can_review=can_review,
     )
 
 

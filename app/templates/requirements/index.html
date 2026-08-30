@@ -12,7 +12,39 @@
   </div>
 </div>
 
-{% if items | length == 0 %}
+{% if pending %}
+<div class="card" style="border-color:var(--danger);margin-bottom:20px;">
+  <h3 style="margin-top:0;">Pending Review ({{ pending | length }})</h3>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-8px;">Uploaded by the kitchen team for {{ date }} -- review and approve or reject.</p>
+  {% for req in pending %}
+  <div style="border-bottom:1px solid var(--border);padding:12px 0;">
+    <div class="flex-row" style="justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span>{{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}{% if req.unmatchedCount %} <span class="badge badge-danger">{{ req.unmatchedCount }} unmatched</span>{% endif %}</span>
+      <a class="btn btn-sm" href="{{ url_for('kitchen.review', requirement_id=req.id) }}">Edit rows</a>
+    </div>
+    <textarea id="comment-{{ req.id }}" rows="2" style="margin-bottom:8px;" placeholder="Comment -- optional to approve, required to reject"></textarea>
+    <div class="flex-row" style="justify-content:flex-end;">
+      <button type="submit" form="reject-form-{{ req.id }}" class="btn btn-sm">Reject</button>
+      <button type="submit" form="confirm-form-{{ req.id }}" class="btn btn-sm btn-primary" {{ 'disabled' if req.unmatchedCount else '' }}>Approve</button>
+    </div>
+  </div>
+  <form id="confirm-form-{{ req.id }}" method="post" action="{{ url_for('kitchen.confirm', requirement_id=req.id) }}" class="js-pending-form" data-comment-id="comment-{{ req.id }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <input type="hidden" name="comment">
+  </form>
+  <form id="reject-form-{{ req.id }}" method="post" action="{{ url_for('kitchen.reject', requirement_id=req.id) }}" class="js-pending-form" data-comment-id="comment-{{ req.id }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <input type="hidden" name="comment">
+  </form>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if items | length == 0 and not pending %}
 <div class="card text-muted" style="text-align:center;padding:32px;">
   No confirmed kitchen requirements for {{ date }} yet.
 </div>
@@ -62,4 +94,14 @@
 {% endfor %}
 {% endfor %}
 {% endfor %}
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll('.js-pending-form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      var comment = document.getElementById(form.dataset.commentId);
+      form.querySelector('input[name="comment"]').value = comment ? comment.value : '';
+    });
+  });
+</script>
 {% endblock %}
