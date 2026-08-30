@@ -184,6 +184,30 @@ def delete_requirement_item(conn: sqlite3.Connection, item_id: str) -> None:
     conn.commit()
 
 
+def get_pending_requirements(conn: sqlite3.Connection, user: dict) -> list[dict]:
+    """Uploaded-but-not-yet-confirmed requirements needing admin/manager
+    review, scoped to the user's branch (or every branch for a
+    not-branch-locked admin). Backs both the Kitchen Upload page's
+    'Pending Review' list and the nav badge count."""
+    if user is None or user["role"] not in ("ADMIN", "MANAGER"):
+        return []
+    conditions = ["kr.confirmedAt IS NULL"]
+    params: list = []
+    if user.get("branchId"):
+        conditions.append("kr.branchId = ?")
+        params.append(user["branchId"])
+    sql = (
+        "SELECT kr.id AS id, kr.date AS date, b.name AS branchName, "
+        "COUNT(kri.id) AS itemCount "
+        "FROM KitchenRequirement kr "
+        "JOIN Branch b ON b.id = kr.branchId "
+        "LEFT JOIN KitchenRequirementItem kri ON kri.requirementId = kr.id "
+        f"WHERE {' AND '.join(conditions)} "
+        "GROUP BY kr.id ORDER BY kr.date DESC, kr.createdAt DESC"
+    )
+    return [dict(r) for r in conn.execute(sql, params).fetchall()]
+
+
 def get_confirmed_requirement_items(conn: sqlite3.Connection, branch_id: str, date_db: str) -> list[dict]:
     """Row-addressable (keyed by KitchenRequirementItem.id) confirmed rows
     for a branch/date, so the Requirements page can edit qty on the exact

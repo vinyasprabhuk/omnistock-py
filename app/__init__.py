@@ -148,13 +148,16 @@ def create_app(config_object: str = "config.Config") -> Flask:
     @app.context_processor
     def inject_globals():
         from app.services.branding import get_branding
+        from app.services.kitchen_requirement import get_pending_requirements
         branding = get_branding(g.conn) if getattr(g, "conn", None) else None
+        pending_count = len(get_pending_requirements(g.conn, g.user)) if getattr(g, "conn", None) else 0
         return {
             "branding": branding,
             "current_user": getattr(g, "user", None),
             "csrf_token": get_csrf_token,
             "nav_links": _nav_links(getattr(g, "user", None)),
             "nav_groups": _nav_groups(getattr(g, "user", None)),
+            "pending_requirement_count": pending_count,
         }
 
     return app

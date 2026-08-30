@@ -4,13 +4,14 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 
 from app.auth.page_branch import list_branches_for_admin
 from app.auth.session import ForbiddenError, resolve_branch_scope
-from app.dates import today_key
+from app.dates import from_db, today_key
 from app.security import require_write
 from app.services.kitchen_requirement import (
     add_manual_requirement_item,
     confirm_kitchen_requirement,
     create_manual_requirement,
     delete_requirement_item,
+    get_pending_requirements,
     get_requirement_for_review,
     update_requirement_item,
     upload_kitchen_screenshot,
@@ -28,9 +29,12 @@ def index():
     branches = list_branches_for_admin(conn) if not user_branch_id else []
     items = [dict(r) for r in conn.execute("SELECT id, name, unit FROM Item WHERE active = 1 ORDER BY name ASC")]
     departments = [r["name"] for r in conn.execute("SELECT name FROM Department WHERE active = 1 ORDER BY name ASC")]
+    pending = get_pending_requirements(conn, g.user)
+    for req in pending:
+        req["date"] = from_db(req["date"]).strftime("%Y-%m-%d")
     return render_template(
         "kitchen/index.html", branches=branches, user_branch_id=user_branch_id, today=today_key(),
-        items=items, departments=departments,
+        items=items, departments=departments, pending=pending,
     )
 
 
