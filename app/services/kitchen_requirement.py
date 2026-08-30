@@ -213,16 +213,23 @@ def get_confirmed_requirement_items(conn: sqlite3.Connection, branch_id: str, da
     for a branch/date, so the Requirements page can edit qty on the exact
     underlying row instead of an aggregated total -- see
     get_consolidated_requirement for the read-only aggregated view used
-    elsewhere (e.g. the Daily Tracker's kitchenRequirement column)."""
+    elsewhere (e.g. the Daily Tracker's kitchenRequirement column).
+
+    Carries requirementId/requirementCreatedAt so a caller can group rows
+    by the upload ("batch") they came from -- if the kitchen team uploads
+    a second sheet for the same date, its rows must stay visually
+    separated from the first upload's, not interleaved into the same
+    department card as if they were one entry."""
     rows = conn.execute(
         "SELECT kri.id AS id, kri.qty AS qty, kri.unit AS unit, "
+        "kr.id AS requirementId, kr.createdAt AS requirementCreatedAt, "
         "i.id AS itemId, i.name AS itemName, d.name AS departmentName "
         "FROM KitchenRequirementItem kri "
         "JOIN KitchenRequirement kr ON kr.id = kri.requirementId "
         "JOIN Item i ON i.id = kri.matchedItemId "
         "JOIN Department d ON d.id = kri.departmentId "
         "WHERE kr.branchId = ? AND kr.date = ? AND kr.confirmedAt IS NOT NULL AND kri.matchedItemId IS NOT NULL "
-        "ORDER BY d.name ASC, i.name ASC",
+        "ORDER BY kr.createdAt ASC, d.name ASC, i.name ASC",
         (branch_id, date_db),
     ).fetchall()
     return [dict(r) for r in rows]

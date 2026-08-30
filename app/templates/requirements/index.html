@@ -17,41 +17,50 @@
 </div>
 {% endif %}
 
-<div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
-  {% for dept in department_sections %}
-  <div class="card">
-    <h3>{{ dept.departmentName }}</h3>
-    {% for item in dept['items'] %}
-    <div class="flex-row" style="justify-content:space-between;align-items:center;font-size:0.85rem;padding:2px 0;">
-      <span>
-        {{ item.itemName }}
-        {% if item.total != item.qty %}<span class="badge badge-muted">{{ item.total | fmt }} {{ item.unit }} total</span>{% endif %}
-      </span>
-      <span class="flex-row" style="gap:4px;align-items:center;">
-        {% if current_user.role != 'VIEWER' %}
-        <input type="number" name="qty" form="qty-form-{{ item.id }}" step="any" value="{{ item.qty }}"
-               style="width:72px;text-align:right;" onchange="this.form.requestSubmit()">
-        {% else %}
-        <strong>{{ item.qty | fmt }}</strong>
-        {% endif %}
-        <span class="text-muted" style="font-size:0.75rem;">{{ item.unit }}</span>
-      </span>
+{% for batch in batches %}
+<div style="margin-bottom:24px;">
+  {% if batches | length > 1 %}
+  <h3 style="margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--border);">Batch {{ batch.batchNumber }}</h3>
+  {% endif %}
+  <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
+    {% for dept in batch.departmentSections %}
+    <div class="card">
+      <h3>{{ dept.departmentName }}</h3>
+      {% for item in dept['items'] %}
+      <div class="flex-row" style="justify-content:space-between;align-items:center;font-size:0.85rem;padding:2px 0;">
+        <span>
+          {{ item.itemName }}
+          {% if item.total != item.qty %}<span class="badge badge-muted">{{ item.total | fmt }} {{ item.unit }} total</span>{% endif %}
+        </span>
+        <span class="flex-row" style="gap:4px;align-items:center;">
+          {% if current_user.role != 'VIEWER' %}
+          <input type="number" name="qty" form="qty-form-{{ item.id }}" step="any" value="{{ item.qty }}"
+                 style="width:72px;text-align:right;" onchange="this.form.requestSubmit()">
+          {% else %}
+          <strong>{{ item.qty | fmt }}</strong>
+          {% endif %}
+          <span class="text-muted" style="font-size:0.75rem;">{{ item.unit }}</span>
+        </span>
+      </div>
+      {% endfor %}
     </div>
     {% endfor %}
   </div>
-  {% endfor %}
 </div>
+{% endfor %}
 
 {# Each row's qty input lives in its own form (via the form="" attribute)
    so it can submit independently on change without wrapping every card
    in a <form>. #}
-{% for dept in department_sections %}
+{% for batch in batches %}
+{% for dept in batch.departmentSections %}
 {% for item in dept['items'] %}
 <form id="qty-form-{{ item.id }}" method="post" action="{{ url_for('requirements.update_item', item_id=item.id) }}">
   <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="date" value="{{ date }}">
   <input type="hidden" name="branchId" value="{{ branch.branchId }}">
 </form>
+{% endfor %}
 {% endfor %}
 {% endfor %}
 {% endblock %}

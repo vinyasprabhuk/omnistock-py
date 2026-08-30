@@ -5,7 +5,6 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import date_key_to_db, today_key
 from app.security import require_write
-from app.services.calculations import get_master_inventory
 from app.services.kitchen_requirement import get_confirmed_requirement_items, update_confirmed_requirement_item_qty
 
 bp = Blueprint("requirements", __name__)
@@ -21,27 +20,45 @@ def index():
 
     date_db = date_key_to_db(date)
     items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
-    stock_by_item = {r["itemId"]: r["currentStock"] for r in get_master_inventory(g.conn, branch["branchId"], date_db)}
 
+    # Grand total per item, across every batch uploaded for this date --
+    # shown as a badge so a split across two uploads is still visible at a
+    # glance without merging the rows themselves.
     totals_by_item: dict[str, float] = {}
     for r in items:
         totals_by_item[r["itemId"]] = totals_by_item.get(r["itemId"], 0.0) + r["qty"]
 
-    departments: dict[str, list[dict]] = {}
+    # Rows already come back ordered by requirementCreatedAt (see
+    # get_confirmed_requirement_items), so the first requirementId
+    # encountered is batch 1, the next distinct one is batch 2, etc. --
+    # each kitchen upload for the date stays its own section instead of
+    # its items silently interleaving with another upload's under the
+    # same department card.
+    batch_numbers: dict[str, int] = {}
+    batches: list[dict] = []
     for r in items:
-        departments.setdefault(r["departmentName"], []).append({
-            **r, "total": totals_by_item[r["itemId"]], "currentStock": stock_by_item.get(r["itemId"], 0.0),
+        req_id = r["requirementId"]
+        if req_id not in batch_numbers:
+            batch_numbers[req_id] = len(batches) + 1
+            batches.append({"batchNumber": batch_numbers[req_id], "departments": {}})
+        batch = batches[batch_numbers[req_id] - 1]
+        batch["departments"].setdefault(r["departmentName"], []).append({
+            **r, "total": totals_by_item[r["itemId"]],
         })
-    department_sections = [
-        {"departmentName": name, "items": sorted(rows, key=lambda i: i["itemName"])}
-        for name, rows in departments.items()
-    ]
-    department_sections.sort(key=lambda s: s["departmentName"])
+
+    for batch in batches:
+        department_sections = [
+            {"departmentName": name, "items": sorted(rows, key=lambda i: i["itemName"])}
+            for name, rows in batch["departments"].items()
+        ]
+        department_sections.sort(key=lambda s: s["departmentName"])
+        batch["departmentSections"] = department_sections
+        del batch["departments"]
 
     return render_template(
         "requirements/index.html",
         date=date, branch=branch, is_admin=is_admin, branches=branches,
-        items=items, department_sections=department_sections,
+        items=items, batches=batches,
     )
 
 
