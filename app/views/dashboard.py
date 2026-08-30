@@ -7,7 +7,7 @@ from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import date_key_to_db, from_db, today_key
 from app.services import purchase_analytics as pa
 from app.services import usage_analytics as ua
-from app.services.calculations import get_master_inventory, get_period_tracker
+from app.services.calculations import get_low_stock, get_master_inventory, get_period_tracker
 from app.services.spend_periods import get_period_boundaries
 
 bp = Blueprint("dashboard", __name__)
@@ -188,7 +188,7 @@ def index():
     # usage cost descending (the evident intent) instead.
     tracker_compare_rows.sort(key=lambda r: r["b"]["usageCost"], reverse=True)
 
-    low_stock = [r for r in inventory if r["currentStock"] <= 0]
+    low_stock = get_low_stock(conn, branch_id, range_to_db)
     total_store_value = sum(r["storeValue"] for r in inventory)
     breakdown_total = today_purchase_spend + today_issue_spend + total_store_value
     breakdown_pct = {

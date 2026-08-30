@@ -335,3 +335,18 @@ def get_consolidated_requirement(conn: sqlite3.Connection, branch_id: str,
             entry["byDepartment"].append({"departmentName": dept_name, "qty": qty})
 
     return sorted(by_item.values(), key=lambda r: r["itemName"])
+
+
+def get_low_stock(conn: sqlite3.Connection, branch_id: str, as_of_db: str | None = None) -> list[dict]:
+    """Threshold = 30% of the item's opening stock baseline (confirmed in
+    chat), not a manually-set per-item field. An item with no opening
+    stock configured has a 0 threshold, i.e. only flags once it's actually
+    at or below zero. Shared by the Dashboard's Low Stock tab and the
+    Excel purchase-order export so the two can never disagree."""
+    inventory = get_master_inventory(conn, branch_id, as_of_db)
+    rows = []
+    for r in inventory:
+        threshold = round(r["opening"] * 0.3, 2)
+        if r["currentStock"] <= threshold:
+            rows.append({**r, "threshold": threshold})
+    return rows

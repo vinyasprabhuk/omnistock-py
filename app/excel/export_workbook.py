@@ -57,6 +57,20 @@ def build_master_inventory_workbook(rows: list[dict]) -> bytes:
     return _to_bytes(wb)
 
 
+def build_purchase_order_workbook(rows: list[dict]) -> bytes:
+    wb = Workbook()
+    wb.remove(wb.active)
+    sheet = _sheet(wb, "Purchase Order", [
+        ("Item Name", 24), ("Unit", 10), ("Current Stock", 14),
+        ("Threshold", 14), ("Suggested Order Qty", 18),
+    ])
+    for r in rows:
+        sheet.append([
+            r["itemName"], r["unit"], r["currentStock"], r["threshold"], r["orderQty"],
+        ])
+    return _to_bytes(wb)
+
+
 def build_consolidated_requirement_workbook(date: str, rows: list[dict]) -> bytes:
     wb = Workbook()
     wb.remove(wb.active)

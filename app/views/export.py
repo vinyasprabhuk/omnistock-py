@@ -8,9 +8,10 @@ from app.excel.export_workbook import (
     build_consolidated_requirement_workbook,
     build_intent_workbook,
     build_master_inventory_workbook,
+    build_purchase_order_workbook,
     build_tracker_workbook,
 )
-from app.services.calculations import get_consolidated_requirement, get_daily_tracker, get_master_inventory
+from app.services.calculations import get_consolidated_requirement, get_daily_tracker, get_low_stock, get_master_inventory
 from app.services.intent import compute_recipe_prep
 
 bp = Blueprint("export", __name__, url_prefix="/api/export")
@@ -49,6 +50,18 @@ def requirements():
     rows = get_consolidated_requirement(g.conn, branch["branchId"], date_eq=date_key_to_db(date))
     data = build_consolidated_requirement_workbook(date, rows)
     return _xlsx_response(data, f"kitchen-requirement-{date}.xlsx")
+
+
+@bp.route("/purchase-order")
+def purchase_order():
+    branch = page_resolve_branch(g.conn, g.user, request.args.get("branchId"))
+    low_stock = get_low_stock(g.conn, branch["branchId"])
+    rows = [
+        {**r, "orderQty": round(max(r["opening"] - r["currentStock"], 0), 2)}
+        for r in low_stock
+    ]
+    data = build_purchase_order_workbook(rows)
+    return _xlsx_response(data, f"purchase-order-{today_key()}.xlsx")
 
 
 @bp.route("/intent")
