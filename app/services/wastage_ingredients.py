@@ -32,45 +32,56 @@ class IngredientLine(TypedDict):
     spend: float
 
 
+def batch_ml_for_recipe(recipe: sqlite3.Row) -> float:
+    return (recipe["servesVolumeLitre"] * 1000.0 if recipe["servesVolumeLitre"]
+            else (recipe["servesQty"] or 0) * (recipe["portionSizeMl"] or 0))
+
+
+def match_and_scale_entry(conn: sqlite3.Connection, entry: dict) -> dict:
+    """Matches a Wastage/Production entry's description to a recipe and
+    returns {match, recipe, multiplier, gapReason} -- multiplier is None
+    (with a reason) whenever the entry can't be confidently scaled. `match`
+    is always populated (even a REVIEW/MANUAL best guess) so callers can
+    still show what the matcher thought it was, shared between the
+    ingredient breakdown and the produced/sold/wasted variance."""
+    match = match_recipe(conn, entry["description"])
+    if match["status"] != "AUTO":
+        return {"match": match, "recipe": None, "multiplier": None,
+                "gapReason": f"no confident recipe match (best guess: {match['matchedRecipeName'] or 'none'})"}
+
+    recipe = conn.execute("SELECT * FROM Recipe WHERE id = ?", (match["matchedRecipeId"],)).fetchone()
+
+    if entry["pieces"]:
+        if recipe["servesQty"]:
+            return {"match": match, "recipe": recipe, "multiplier": float(entry["pieces"]) / recipe["servesQty"], "gapReason": None}
+        return {"match": match, "recipe": recipe, "multiplier": None,
+                "gapReason": f"{recipe['name']} recipe has no pax yield to scale pieces against"}
+
+    if entry["weight"] is not None:
+        weight_ml = float(entry["weight"]) * _WEIGHT_TO_ML.get(entry["unit"], 1.0)
+        batch_ml = batch_ml_for_recipe(recipe)
+        if batch_ml:
+            return {"match": match, "recipe": recipe, "multiplier": weight_ml / batch_ml, "gapReason": None}
+        return {"match": match, "recipe": recipe, "multiplier": None,
+                "gapReason": f"{recipe['name']} recipe has no batch yield to scale from"}
+
+    return {"match": match, "recipe": recipe, "multiplier": None, "gapReason": "no weight or piece count logged"}
+
+
 def compute_wasted_ingredients(conn: sqlite3.Connection, entries: list[dict]) -> dict:
     matched_entries: list[dict] = []
     item_totals: dict[tuple[str, str], float] = defaultdict(float)
     gaps: list[dict] = []
 
     for entry in entries:
-        match = match_recipe(conn, entry["description"])
-        entry_with_match = {
-            **entry, "matchedRecipeName": match["matchedRecipeName"],
-            "matchStatus": match["status"], "matchConfidence": match["confidence"],
-        }
-        matched_entries.append(entry_with_match)
+        result = match_and_scale_entry(conn, entry)
+        match, recipe, multiplier, gap_reason = result["match"], result["recipe"], result["multiplier"], result["gapReason"]
+        matched_entries.append({
+            **entry, "matchedRecipeName": match["matchedRecipeName"], "matchStatus": match["status"],
+        })
 
-        if match["status"] != "AUTO":
-            gaps.append({
-                "description": entry["description"],
-                "reason": f"no confident recipe match (best guess: {match['matchedRecipeName'] or 'none'})",
-            })
-            continue
-
-        recipe = conn.execute("SELECT * FROM Recipe WHERE id = ?", (match["matchedRecipeId"],)).fetchone()
-
-        multiplier = None
-        if entry["pieces"]:
-            if recipe["servesQty"]:
-                multiplier = float(entry["pieces"]) / recipe["servesQty"]
-            else:
-                gaps.append({"description": entry["description"], "reason": f"{recipe['name']} recipe has no pax yield to scale pieces against"})
-        elif entry["weight"] is not None:
-            weight_ml = float(entry["weight"]) * _WEIGHT_TO_ML.get(entry["unit"], 1.0)
-            batch_ml = (recipe["servesVolumeLitre"] * 1000.0 if recipe["servesVolumeLitre"]
-                        else (recipe["servesQty"] or 0) * (recipe["portionSizeMl"] or 0))
-            if batch_ml:
-                multiplier = weight_ml / batch_ml
-            else:
-                gaps.append({"description": entry["description"], "reason": f"{recipe['name']} recipe has no batch yield to scale from"})
-        else:
-            gaps.append({"description": entry["description"], "reason": "no weight or piece count logged"})
-
+        if gap_reason:
+            gaps.append({"description": entry["description"], "reason": gap_reason})
         if multiplier is None:
             continue
 

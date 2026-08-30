@@ -4,12 +4,13 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.auth.session import ForbiddenError, resolve_branch_scope
-from app.dates import today_key
+from app.dates import date_key_to_db, today_key
 from app.security import require_write
 from app.services import production, wastage
 from app.services.meal_periods import MEAL_LABELS, MEAL_PERIODS
 from app.services.wastage_ingredients import compute_wasted_ingredients
 from app.services.wastage_menu import get_wastage_menu
+from app.services.wastage_variance import compute_variance
 
 bp = Blueprint("wastage", __name__)
 
@@ -46,12 +47,15 @@ def index():
     grouped = {mp: [e for e in entries if e["mealPeriod"] == mp] for mp in MEAL_PERIODS}
     other = [e for e in entries if not e["mealPeriod"]]
 
+    variance = compute_variance(conn, date_key_to_db(date), branch["branchId"])
+
     return render_template(
         "wastage/index.html", date=date, mode=mode, branch=branch, is_admin=is_admin,
         branches=branches, branch_param=branch_param or "", entries=entries, menu=menu,
         grouped=grouped, other=other, meal_labels=MEAL_LABELS, total_kg=_total_kg(entries),
         ingredient_lines=ingredients["lines"], ingredient_gaps=ingredients["gaps"],
         ingredient_total_spend=ingredients["totalSpend"],
+        variance_rows=variance["rows"], sales_available=variance["salesAvailable"],
     )
 
 

@@ -94,6 +94,40 @@
 </div>
 {% endif %}
 
+<div class="card" style="margin-top:16px;">
+  <h3>Produced vs Sold vs Wasted &mdash; {{ date }}</h3>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-6px;">
+    Variance = Produced &minus; Sold &minus; Wasted, in Litres per recipe. Combines both Production and Wastage entries for this date, regardless of which tab you're on.
+  </p>
+  {% if not sales_available %}
+  <p class="text-muted" style="font-size:0.85rem;background:var(--warning-bg);color:var(--warning);padding:8px 10px;border-radius:8px;">
+    No sale report has been uploaded for {{ date }} yet, so "Sold" shows 0 for everything &mdash; upload that day's sales on the Intent tab first, or the variance below isn't meaningful.
+  </p>
+  {% endif %}
+  {% if variance_rows | length == 0 %}
+  <p class="text-muted">Nothing to compare yet for this date.</p>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Recipe</th><th style="width:100px;">Produced</th><th style="width:100px;">Sold</th><th style="width:100px;">Wasted</th><th style="width:110px;">Variance</th></tr></thead>
+      <tbody>
+        {% for row in variance_rows %}
+        <tr>
+          <td>{{ row.recipeName }}</td>
+          <td class="qty">{{ row.produced }} {{ row.unit }}</td>
+          <td class="qty">{{ row.sold }} {{ row.unit }}</td>
+          <td class="qty">{{ row.wasted }} {{ row.unit }}</td>
+          <td class="qty" style="font-weight:600;color:{{ 'var(--danger)' if row.variance < -0.05 else ('var(--success)' if row.variance > 0.05 else 'inherit') }};">
+            {{ row.variance }} {{ row.unit }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
 <dialog id="entry-dialog" data-username="{{ current_user.name if current_user else '' }}" style="border-radius:10px;border:1px solid var(--border);padding:0;max-width:400px;width:90%;">
   <form method="post" action="{{ url_for('wastage.create') }}" enctype="multipart/form-data" style="padding:20px;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
