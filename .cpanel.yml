@@ -19,7 +19,14 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/wattsupc/inventory.mokshamveg.com/
-    - /bin/cp -R app $DEPLOYPATH
+    # rsync --delete mirrors app/ exactly -- a file removed from the repo
+    # (e.g. a deleted feature) gets removed on the server too. `cp -R`
+    # only ever adds/overwrites, so a deleted source file silently stays
+    # on the server forever -- exactly what happened when the Workstation
+    # Photos feature was removed (see the "Remove Workstation Photos
+    # feature" commit): the deploy never actually removed the old files,
+    # so stale code kept running no matter how many times it redeployed.
+    - /usr/bin/rsync -a --delete app/ $DEPLOYPATH/app/
     - /bin/cp -R config.py $DEPLOYPATH
     - /bin/cp -R passenger_wsgi.py $DEPLOYPATH
     - /bin/cp -R wsgi.py $DEPLOYPATH
