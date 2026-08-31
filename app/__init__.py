@@ -10,7 +10,7 @@ from app.security import get_csrf_token, validate_csrf
 # Paths open to anyone, matching src/proxy.ts's PUBLIC_PATHS. manifest.json/
 # sw.js must be public too -- the browser fetches these to decide if the site
 # is installable, before any login has happened.
-PUBLIC_PATHS = ("/login", "/branding", "/static", "/manifest.json", "/sw.js")
+PUBLIC_PATHS = ("/login", "/branding", "/static", "/manifest.json", "/sw.js", "/.well-known")
 
 
 def create_app(config_object: str = "config.Config") -> Flask:

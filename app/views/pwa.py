@@ -37,6 +37,25 @@ def manifest():
     })
 
 
+@bp.route("/.well-known/assetlinks.json")
+def asset_links():
+    # Proves to Android that this website and the Android app (wrapping it
+    # via Trusted Web Activity) are controlled by the same party -- without
+    # this, the TWA falls back to showing the browser address bar instead
+    # of looking like a real app. The SHA-256 fingerprint here is the
+    # signing certificate's, not a secret -- it's meant to be public.
+    return jsonify([{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.mokshamveg.stoq",
+            "sha256_cert_fingerprints": [
+                "FF:60:D1:98:43:58:F9:CD:E5:0C:FF:84:2B:F6:66:09:D1:FF:0C:46:7A:CB:02:38:BD:12:6F:89:66:8E:76:EE",
+            ],
+        },
+    }])
+
+
 @bp.route("/sw.js")
 def service_worker():
     # Deliberately minimal: no offline caching (this app is data-live, not a
