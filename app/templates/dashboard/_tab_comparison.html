@@ -54,35 +54,40 @@
   </form>
 </div>
 
-<div class="card">
-  <input type="text" class="js-search-input" data-target="cmp-table-body" placeholder="Search item..." style="width:260px;margin-bottom:12px;">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th class="num">Purchased<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
-          <th class="num">Issued<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
-          <th class="num">Closing<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} &rarr; {{ period_b.label }}</span></th>
-          <th class="num">Usage Cost<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
-        </tr>
-      </thead>
-      <tbody id="cmp-table-body">
-        {% for row in tracker_compare_rows %}
-        <tr class="js-search-row" data-search="{{ row.b.itemName | lower }}">
-          <td>{{ row.b.itemName }} <span class="text-muted" style="font-size:0.8em;">({{ row.b.unit }})</span></td>
-          <td class="num">{{ row.a.purchased | fmt }} / {{ row.b.purchased | fmt }}</td>
-          <td class="num">{{ row.a.issued | fmt }} / {{ row.b.issued | fmt }}</td>
-          <td class="num">{{ row.a.closing | fmt }} &rarr; {{ row.b.closing | fmt }}</td>
-          <td class="num">{{ row.a.usageCost | money_grouped }} / {{ row.b.usageCost | money_grouped }}</td>
-        </tr>
-        {% endfor %}
-        <tr class="js-search-empty" {{ 'hidden' if tracker_compare_rows else '' }}>
-          <td colspan="5" class="text-muted" style="text-align:center;padding:24px;">
-            {% if tracker_compare_rows | length == 0 %}No purchase or issue activity in either period.{% else %}No items match "<span class="js-search-query"></span>".{% endif %}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+<details class="rcard">
+  <summary>
+    <span>Item-by-Item Comparison ({{ tracker_compare_rows | length }})</span>
+  </summary>
+  <div style="padding:14px;">
+    <input type="text" class="js-search-input" data-target="cmp-table-body" placeholder="Search item..." style="width:260px;margin-bottom:12px;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="num">Purchased<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
+            <th class="num">Issued<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
+            <th class="num">Closing<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} &rarr; {{ period_b.label }}</span></th>
+            <th class="num">Usage Cost<br><span style="font-size:10px;font-weight:400;">{{ period_a.label }} / {{ period_b.label }}</span></th>
+          </tr>
+        </thead>
+        <tbody id="cmp-table-body">
+          {% for row in tracker_compare_rows %}
+          <tr class="js-search-row" data-search="{{ row.b.itemName | lower }}">
+            <td>{{ row.b.itemName }} <span class="text-muted" style="font-size:0.8em;">({{ row.b.unit }})</span></td>
+            <td class="num">{{ row.a.purchased | fmt }} / {{ row.b.purchased | fmt }}</td>
+            <td class="num">{{ row.a.issued | fmt }} / {{ row.b.issued | fmt }}</td>
+            <td class="num">{{ row.a.closing | fmt }} &rarr; {{ row.b.closing | fmt }}</td>
+            <td class="num">{{ row.a.usageCost | money_grouped }} / {{ row.b.usageCost | money_grouped }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="js-search-empty" {{ 'hidden' if tracker_compare_rows else '' }}>
+            <td colspan="5" class="text-muted" style="text-align:center;padding:24px;">
+              {% if tracker_compare_rows | length == 0 %}No purchase or issue activity in either period.{% else %}No items match "<span class="js-search-query"></span>".{% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
+</details>

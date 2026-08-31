@@ -1,26 +1,28 @@
-<div class="card">
-  <div class="flex-row" style="justify-content:space-between;align-items:baseline;">
-    <h3 style="margin-bottom:0;">Low / Out of Stock ({{ low_stock | length }}){% if is_filtered and to_param %} &mdash; as of {{ to_param }}{% endif %}</h3>
+<details class="rcard">
+  <summary>
+    <span>Low Stock &mdash; To Be Ordered ({{ low_stock | length }}){% if is_filtered and to_param %} <span class="rmeta text-muted">as of {{ to_param }}</span>{% endif %}</span>
     {% if low_stock | length > 0 %}
-    <a class="btn btn-sm btn-primary" href="{{ url_for('export.purchase_order', branchId=branch.branchId) }}">Generate Purchase Order (Excel)</a>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('export.purchase_order', branchId=branch.branchId) }}" onclick="event.stopPropagation()">Generate Purchase Order (Excel)</a>
+    {% endif %}
+  </summary>
+  <div style="padding:14px;">
+    <p class="text-muted" style="font-size:0.8rem;margin-top:0;">Flagged once current stock drops to 30% of the item's opening stock baseline (or to zero, for items with no opening stock set).</p>
+    {% if low_stock | length == 0 %}
+      <p class="text-muted">Nothing is at or below its threshold.</p>
+    {% else %}
+      <input type="text" class="js-search-input" data-target="lowstock-body" placeholder="Search item..." style="width:260px;margin-bottom:12px;">
+      <div id="lowstock-body" style="max-height:28rem;overflow-y:auto;">
+        {% for r in low_stock %}
+        <div class="js-search-row flex-row" data-search="{{ r.itemName | lower }}" style="justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0;font-size:0.85rem;">
+          <span>{{ r.itemName }}</span>
+          <span style="text-align:right;">
+            <strong style="color: {{ 'var(--danger)' if r.currentStock < 0 else 'var(--muted-foreground)' }};">{{ r.currentStock | fmt }} {{ r.unit }}</strong>
+            <span class="text-muted" style="font-size:0.78rem;"> / threshold {{ r.threshold | fmt }} {{ r.unit }}</span>
+          </span>
+        </div>
+        {% endfor %}
+        <div class="js-search-empty text-muted" hidden style="text-align:center;padding:24px;">No items match "<span class="js-search-query"></span>".</div>
+      </div>
     {% endif %}
   </div>
-  <p class="text-muted" style="font-size:0.8rem;margin-top:-4px;">Flagged once current stock drops to 30% of the item's opening stock baseline (or to zero, for items with no opening stock set).</p>
-  {% if low_stock | length == 0 %}
-    <p class="text-muted">Nothing is at or below its threshold.</p>
-  {% else %}
-    <input type="text" class="js-search-input" data-target="lowstock-body" placeholder="Search item..." style="width:260px;margin-bottom:12px;">
-    <div id="lowstock-body" style="max-height:28rem;overflow-y:auto;">
-      {% for r in low_stock %}
-      <div class="js-search-row flex-row" data-search="{{ r.itemName | lower }}" style="justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0;font-size:0.85rem;">
-        <span>{{ r.itemName }}</span>
-        <span style="text-align:right;">
-          <strong style="color: {{ 'var(--danger)' if r.currentStock < 0 else 'var(--muted-foreground)' }};">{{ r.currentStock | fmt }} {{ r.unit }}</strong>
-          <span class="text-muted" style="font-size:0.78rem;"> / threshold {{ r.threshold | fmt }} {{ r.unit }}</span>
-        </span>
-      </div>
-      {% endfor %}
-      <div class="js-search-empty text-muted" hidden style="text-align:center;padding:24px;">No items match "<span class="js-search-query"></span>".</div>
-    </div>
-  {% endif %}
-</div>
+</details>
