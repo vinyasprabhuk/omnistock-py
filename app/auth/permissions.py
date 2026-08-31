@@ -23,7 +23,6 @@ ROUTE_ACCESS: list[tuple[str, list[str]]] = [
     ("/purchases", ["ADMIN", "STORE"]),
     ("/issue", ["ADMIN", "MANAGER", "STORE"]),
     ("/reports", ["ADMIN", "MANAGER", "VIEWER"]),
-    ("/workstation", ["ADMIN", "MANAGER", "DEPARTMENT_LEAD"]),
 ]
 
 
@@ -44,7 +43,7 @@ def default_route_for_role(role: str) -> str:
     if role == "STORE":
         return "/tracker"
     if role == "DEPARTMENT_LEAD":
-        return "/workstation"
+        return "/wastage"
     if role == "MANAGER":
         return "/requirements"
     return "/dashboard"

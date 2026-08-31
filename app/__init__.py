@@ -41,7 +41,6 @@ def create_app(config_object: str = "config.Config") -> Flask:
     from app.views.pwa import bp as pwa_bp
     from app.views.intent import bp as intent_bp
     from app.views.recipe import bp as recipe_bp
-    from app.views.workstation import bp as workstation_bp
 
     app.register_blueprint(login_bp)
     app.register_blueprint(files_bp)
@@ -58,7 +57,6 @@ def create_app(config_object: str = "config.Config") -> Flask:
     app.register_blueprint(wastage_bp)
     app.register_blueprint(intent_bp)
     app.register_blueprint(recipe_bp)
-    app.register_blueprint(workstation_bp)
 
     from app.services.color import is_light_color
     from app.formatting import fmt, money, money_grouped, pct
@@ -176,7 +174,6 @@ _ALL_NAV_LINKS = [
     {"href": "/issue", "label": "Stock Issue", "roles": ["ADMIN", "MANAGER", "STORE"]},
     {"href": "/wastage", "label": "Wastage", "roles": ["ADMIN", "MANAGER", "KITCHEN", "DEPARTMENT_LEAD"]},
     {"href": "/purchases", "label": "Purchases", "roles": ["ADMIN", "STORE"]},
-    {"href": "/workstation", "label": "Workstation Photos", "roles": ["ADMIN", "MANAGER", "DEPARTMENT_LEAD"]},
     {"href": "/admin", "label": "Admin", "roles": ["ADMIN"]},
 ]
 
