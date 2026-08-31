@@ -14,6 +14,8 @@ from app.services.wastage_variance import compute_variance
 
 bp = Blueprint("wastage", __name__)
 
+LOG_ROLES = ("KITCHEN", "ADMIN", "MANAGER", "DEPARTMENT_LEAD")
+
 
 def _total_kg(entries: list[dict]) -> float:
     total = 0.0
@@ -47,7 +49,7 @@ def index():
     grouped = {mp: [e for e in entries if e["mealPeriod"] == mp] for mp in MEAL_PERIODS}
     other = [e for e in entries if not e["mealPeriod"]]
 
-    can_log = g.user["role"] == "KITCHEN"
+    can_log = g.user["role"] in LOG_ROLES
     can_see_analysis = g.user["role"] in ("ADMIN", "MANAGER")
 
     variance_rows, sales_available = [], True
@@ -69,8 +71,8 @@ def index():
 @bp.route("/wastage/create", methods=["POST"])
 @require_write
 def create():
-    if g.user["role"] != "KITCHEN":
-        abort(403, description="Only Kitchen can log production/wastage entries")
+    if g.user["role"] not in LOG_ROLES:
+        abort(403, description="You don't have permission to log production/wastage entries")
 
     conn = g.conn
     mode = request.form.get("mode") or "production"
