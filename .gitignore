@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.coverage
 
 # Real business data -- never commit
 instance/dev.db
@@ -12,6 +13,7 @@ instance/reference/dev.db.pristine
 instance/secret_key
 instance/audit.db
 uploads/
+tests/fixtures/real_samples/
 
 # Local/generated
 .DS_Store
