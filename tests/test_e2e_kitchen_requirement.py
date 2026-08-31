@@ -1,0 +1,287 @@
+"""End-to-end coverage of the Kitchen Requirement lifecycle: upload ->
+review -> confirm (auto-issues stock) -> Daily Tracker reflects it, and
+upload -> reject (deletes outright). This is the most complex, most
+recently-changed feature in the app, and the least covered by the
+existing suite -- exercised here via a real generated .xlsx in the exact
+format parse_kitchen_excel expects, matched against real Item Master
+rows so the AUTO-match path runs for real, not mocked.
+"""
+from __future__ import annotations
+
+import io
+
+from tests.conftest import build_kitchen_upload_xlsx, csrf_token, login, make_user
+
+
+def _upload(client, token, branch_id, date="2026-08-25", filename="test.xlsx", force=False, items=None):
+    items = items or {"SOUTH INDIAN": [("Sugar", 2.0, "Kg"), ("Toor Dhal", 6.0, "Kg")]}
+    data = build_kitchen_upload_xlsx(items)
+    payload = {
+        "file": (io.BytesIO(data), filename),
+        "branchId": branch_id,
+        "date": date,
+        "_csrf_token": token,
+    }
+    if force:
+        payload["force"] = "true"
+    return client.post("/kitchen/upload", data=payload, content_type="multipart/form-data")
+
+
+def _admin_client(full_app, full_db_conn, branch_id):
+    client = full_app.test_client()
+    _, username, password = make_user(full_db_conn, "ADMIN", None)
+    login(client, username, password)
+    return client
+
+
+class TestUploadAndDuplicateDetection:
+    def test_upload_creates_requirement_with_automatched_items(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id)
+        assert resp.status_code == 302
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+
+        rows = full_db_conn.execute(
+            "SELECT matchedItemId, status FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,)
+        ).fetchall()
+        assert len(rows) == 2
+        assert all(r["matchedItemId"] is not None for r in rows), "real item names should AUTO-match"
+
+    def test_reupload_same_file_without_force_is_flagged_duplicate(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        _upload(client, token, branch_id, filename="dup.xlsx")
+        resp = _upload(client, token, branch_id, filename="dup.xlsx")
+        assert resp.status_code == 200  # renders duplicate.html, no redirect
+        assert b"duplicate" in resp.data.lower() or b"already" in resp.data.lower()
+
+    def test_reupload_with_force_creates_a_second_requirement(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        r1 = _upload(client, token, branch_id, filename="dup2.xlsx")
+        r2 = _upload(client, token, branch_id, filename="dup2.xlsx", force=True)
+        assert r2.status_code == 302
+        assert r1.headers["Location"] != r2.headers["Location"]
+
+
+class TestConfirmFlow:
+    def test_confirm_blocks_kitchen_role(self, full_app, full_db_conn, branch_id):
+        admin = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(admin)
+        resp = _upload(admin, token, branch_id, filename="k1.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+
+        kitchen_client = full_app.test_client()
+        _, kuser, kpass = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(kitchen_client, kuser, kpass)
+        ktoken = csrf_token(kitchen_client)
+        resp2 = kitchen_client.post(
+            f"/kitchen/review/{requirement_id}/confirm",
+            data={"_csrf_token": ktoken, "date": "2026-08-25", "branchId": branch_id},
+        )
+        assert resp2.status_code == 403
+
+    def test_confirm_creates_one_stock_issue_per_department_and_updates_tracker(
+        self, full_app, full_db_conn, branch_id
+    ):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="k2.xlsx", items={
+            "SOUTH INDIAN": [("Sugar", 2.0, "Kg")],
+            "CHINESE": [("Butter", 1.0, "Kg")],
+        })
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+
+        before = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+        resp2 = client.post(
+            f"/kitchen/review/{requirement_id}/confirm",
+            data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "comment": "looks fine"},
+        )
+        assert resp2.status_code == 302
+        after = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+        assert after - before == 2, "one StockIssue per department (SOUTH INDIAN, CHINESE)"
+
+        confirmed = full_db_conn.execute(
+            "SELECT confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)
+        ).fetchone()
+        assert confirmed["confirmedAt"] is not None
+
+        tracker_resp = client.get(f"/tracker?date=2026-08-25&branchId={branch_id}")
+        assert tracker_resp.status_code == 200
+        assert b"Sugar" in tracker_resp.data
+
+    def test_double_confirm_is_blocked(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="k3.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        before = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        after = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+        assert after == before, "re-confirming an already-confirmed requirement must not double-issue stock"
+
+    def test_confirm_blocked_with_unmatched_rows(self, full_app, full_db_conn, branch_id):
+        # match_item always attaches a best-guess matchedItemId even at
+        # MANUAL confidence (see match_item.py) -- a garbage item NAME
+        # alone never produces matchedItemId=NULL through the real upload
+        # path, only an ambiguous/unrecognized unit does, which the
+        # parser drops as an unparseable row before it ever reaches the
+        # DB. So this exercises the manual "add row" path instead, which
+        # can add a row with no matchedItemId at all -- the same shape
+        # confirm_kitchen_requirement's unmatched check guards against.
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="k4.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/item/add", data={
+            "_csrf_token": token, "departmentName": "SOUTH INDIAN", "itemText": "Mystery Item",
+            "matchedItemId": "", "qty": "1", "unit": "Kg",
+        })
+
+        resp2 = client.post(f"/kitchen/review/{requirement_id}/confirm",
+                             data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id},
+                             follow_redirects=True)
+        assert b"need an item selected" in resp2.data
+        row = full_db_conn.execute("SELECT confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+        assert row["confirmedAt"] is None
+
+
+class TestRejectFlow:
+    def test_reject_without_comment_is_blocked(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="r1.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/reject",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "comment": ""})
+        still_there = full_db_conn.execute(
+            "SELECT COUNT(*) FROM KitchenRequirement WHERE id = ?", (requirement_id,)
+        ).fetchone()[0]
+        assert still_there == 1
+
+    def test_reject_with_comment_deletes_requirement_items_and_upload(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="r2.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        upload_id = full_db_conn.execute(
+            "SELECT uploadId FROM KitchenRequirement WHERE id = ?", (requirement_id,)
+        ).fetchone()["uploadId"]
+
+        resp2 = client.post(f"/kitchen/review/{requirement_id}/reject",
+                             data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id,
+                                   "comment": "wrong file"})
+        assert resp2.status_code == 302
+
+        assert full_db_conn.execute(
+            "SELECT COUNT(*) FROM KitchenRequirement WHERE id = ?", (requirement_id,)
+        ).fetchone()[0] == 0
+        assert full_db_conn.execute(
+            "SELECT COUNT(*) FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,)
+        ).fetchone()[0] == 0
+        assert full_db_conn.execute(
+            "SELECT COUNT(*) FROM Upload WHERE id = ?", (upload_id,)
+        ).fetchone()[0] == 0
+
+    def test_reupload_same_content_after_reject_is_not_flagged_duplicate(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="r3.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/reject",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "comment": "bad"})
+
+        resp2 = _upload(client, token, branch_id, filename="r3.xlsx")
+        assert resp2.status_code == 302, "same content re-uploaded after reject must not trip the duplicate check"
+
+    def test_reject_blocked_on_already_confirmed_requirement(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="r4.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        client.post(f"/kitchen/review/{requirement_id}/reject",
+                     data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "comment": "oops"})
+        still_confirmed = full_db_conn.execute(
+            "SELECT confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)
+        ).fetchone()
+        assert still_confirmed is not None and still_confirmed["confirmedAt"] is not None
+
+
+class TestRequirementsPageBatchesAndPending:
+    def test_two_uploads_same_date_render_as_two_batches(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        batch_items = [
+            {"SOUTH INDIAN": [("Sugar", 2.0, "Kg")]},
+            {"SOUTH INDIAN": [("Sugar", 3.0, "Kg")]},  # different qty -> different file hash, not a duplicate
+        ]
+        for fn, items in zip(("b1.xlsx", "b2.xlsx"), batch_items):
+            resp = _upload(client, token, branch_id, filename=fn, items=items)
+            assert resp.status_code == 302, resp.get_data(as_text=True)[:300]
+            requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+            client.post(f"/kitchen/review/{requirement_id}/confirm",
+                        data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+
+        page = client.get(f"/requirements?date=2026-08-25&branchId={branch_id}")
+        body = page.get_data(as_text=True)
+        assert "Batch 1" in body and "Batch 2" in body
+
+    def test_pending_requirement_shows_on_requirements_page_with_approve_reject(
+        self, full_app, full_db_conn, branch_id
+    ):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        _upload(client, token, branch_id, filename="p1.xlsx")
+
+        page = client.get(f"/requirements?date=2026-08-25&branchId={branch_id}")
+        body = page.get_data(as_text=True)
+        assert "Pending Review" in body
+        assert ">Approve<" in body and ">Reject<" in body
+
+    def test_confirmed_qty_editable_inline_unconfirmed_is_not(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="q1.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        item_id = full_db_conn.execute(
+            "SELECT id FROM KitchenRequirementItem WHERE requirementId = ? LIMIT 1", (requirement_id,)
+        ).fetchone()["id"]
+
+        # Not confirmed yet -- update route should refuse.
+        resp_early = client.post(f"/requirements/item/{item_id}/update",
+                                  data={"_csrf_token": token, "qty": "99", "date": "2026-08-25", "branchId": branch_id})
+        qty_before = full_db_conn.execute("SELECT qty FROM KitchenRequirementItem WHERE id = ?", (item_id,)).fetchone()["qty"]
+        assert qty_before != 99
+
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        client.post(f"/requirements/item/{item_id}/update",
+                    data={"_csrf_token": token, "qty": "99", "date": "2026-08-25", "branchId": branch_id})
+        qty_after = full_db_conn.execute("SELECT qty FROM KitchenRequirementItem WHERE id = ?", (item_id,)).fetchone()["qty"]
+        assert qty_after == 99
+
+
+class TestExports:
+    def test_combined_and_per_batch_export_download(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="e1.xlsx")
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+
+        combined = client.get(f"/api/export/requirements?date=2026-08-25&branchId={branch_id}")
+        assert combined.status_code == 200
+        assert combined.mimetype == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+        per_batch = client.get(
+            f"/api/export/requirements?date=2026-08-25&branchId={branch_id}&requirementId={requirement_id}"
+        )
+        assert per_batch.status_code == 200
+        assert "batch1" in per_batch.headers["Content-Disposition"]

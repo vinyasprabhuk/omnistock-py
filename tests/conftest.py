@@ -140,6 +140,47 @@ def full_client(full_app):
     return full_app.test_client()
 
 
+def build_kitchen_upload_xlsx(department_items: dict[str, list[tuple[str, float, str]]]) -> bytes:
+    """Builds a real .xlsx in the exact block layout parse_kitchen_excel
+    expects (a small integer, then item text, then unit, then qty, each
+    one cell over -- matched by scanning every column for that repeating
+    pattern, not by header text). department_items: {dept_name: [(item_
+    name, qty, unit), ...]}. Real item names (matching real Item Master
+    rows) let the AUTO match path exercise for real, same as a genuine
+    upload."""
+    import io
+    from datetime import datetime
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    # openpyxl stamps wall-clock created/modified timestamps into every
+    # workbook by default, so two calls with IDENTICAL cell content would
+    # otherwise still produce different file bytes (and therefore
+    # different sha256 hashes) if they land in different seconds --
+    # fixing both to a constant makes identical content always hash
+    # identically, which duplicate-upload-detection tests depend on.
+    wb.properties.created = datetime(2026, 1, 1)
+    wb.properties.modified = datetime(2026, 1, 1)
+    ws = wb.active
+    col = 1
+    for dept_name, items in department_items.items():
+        ws.cell(row=5, column=col, value=dept_name)
+        ws.cell(row=6, column=col, value="S.No")
+        ws.cell(row=6, column=col + 1, value="Item")
+        ws.cell(row=6, column=col + 2, value="Unit")
+        ws.cell(row=6, column=col + 3, value="Qty")
+        for i, (name, qty, unit) in enumerate(items):
+            r = 7 + i
+            ws.cell(row=r, column=col, value=i + 1)
+            ws.cell(row=r, column=col + 1, value=name)
+            ws.cell(row=r, column=col + 2, value=unit)
+            ws.cell(row=r, column=col + 3, value=qty)
+        col += 6
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
 def make_user(conn, role: str, branch_id: str | None, department_id: str | None = None) -> tuple[str, str, str]:
     """Creates a real, correctly-hashed test user of the given role.
     Returns (user_id, username, password). Every call gets a unique
