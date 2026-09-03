@@ -42,7 +42,12 @@
       <h3 style="margin-bottom:0;">{{ date }} &middot; {{ entries | length }} entr{{ 'y' if entries | length == 1 else 'ies' }} &middot; {{ total_kg | fmt }} KG total</h3>
       {% if entries | length > 0 %}
       <div class="flex-row" style="align-items:center;gap:8px;">
-        <input type="text" class="js-wastage-filter" data-target="wastage-entries" placeholder="Filter by item..." style="max-width:220px;">
+        <select class="js-wastage-filter" data-target="wastage-entries" data-mode-label="{{ 'Wasted' if mode == 'wastage' else 'Produced' }}" style="max-width:220px;">
+          <option value="">All items</option>
+          {% for name in entries | map(attribute='description') | unique | sort %}
+          <option value="{{ name }}">{{ name }}</option>
+          {% endfor %}
+        </select>
         <span class="js-wastage-count text-muted" style="font-size:0.8rem;white-space:nowrap;"></span>
       </div>
       {% endif %}
