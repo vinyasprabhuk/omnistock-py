@@ -134,20 +134,20 @@
     <table style="table-layout:fixed;width:100%;min-width:300px;">
       <thead><tr>
         <th style="width:auto;padding:10px 8px;">Recipe</th>
-        <th style="width:52px;padding:10px 4px;">Prod</th>
-        <th style="width:52px;padding:10px 4px;">Sold</th>
-        <th style="width:52px;padding:10px 4px;">Waste</th>
-        <th style="width:60px;padding:10px 4px;">Var</th>
+        <th style="width:56px;padding:10px 4px;text-align:right;">Prod (L)</th>
+        <th style="width:56px;padding:10px 4px;text-align:right;">Sold (L)</th>
+        <th style="width:60px;padding:10px 4px;text-align:right;">Waste (L)</th>
+        <th style="width:56px;padding:10px 4px;text-align:right;">Var (L)</th>
       </tr></thead>
       <tbody>
         {% for row in variance_rows %}
         <tr>
           <td style="padding:10px 8px;">{{ row.recipeName }}</td>
-          <td class="qty" style="padding:10px 4px;">{{ row.produced }}<br>{{ row.unit }}</td>
-          <td class="qty" style="padding:10px 4px;">{{ row.sold }}<br>{{ row.unit }}</td>
-          <td class="qty" style="padding:10px 4px;">{{ row.wasted }}<br>{{ row.unit }}</td>
-          <td class="qty" style="padding:10px 4px;font-weight:600;color:{{ 'var(--danger)' if row.variance < -0.05 else ('var(--success)' if row.variance > 0.05 else 'inherit') }};">
-            {{ row.variance }}<br>{{ row.unit }}
+          <td class="qty" style="padding:10px 4px;text-align:right;">{{ row.produced }}</td>
+          <td class="qty" style="padding:10px 4px;text-align:right;">{{ row.sold }}</td>
+          <td class="qty" style="padding:10px 4px;text-align:right;">{{ row.wasted }}</td>
+          <td class="qty" style="padding:10px 4px;text-align:right;font-weight:600;color:{{ 'var(--danger)' if row.variance < -0.05 else ('var(--success)' if row.variance > 0.05 else 'inherit') }};">
+            {{ row.variance }}
           </td>
         </tr>
         {% if row.soldBreakdown %}
