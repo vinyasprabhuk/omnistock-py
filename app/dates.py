@@ -113,3 +113,12 @@ def now_db() -> str:
     tools/verify_schema.py's format check on the very next run.
     """
     return to_db(datetime.now(_UTC))
+
+
+def ist_time(db_str: str | None) -> str:
+    """DB UTC timestamp -> 'h:mm AM/PM' in Asia/Kolkata, for display only
+    (e.g. a wastage/production log entry's time-of-day)."""
+    if not db_str:
+        return ""
+    dt = from_db(db_str).astimezone(APP_OFFSET)
+    return dt.strftime("%I:%M %p").lstrip("0")

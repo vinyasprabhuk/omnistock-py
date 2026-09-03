@@ -9,7 +9,7 @@
     {% if branding.tagline %}<p class="login-tagline">{{ branding.tagline }}</p>{% endif %}
   </div>
 
-  <form method="post" class="card login-card">
+  <form method="post" class="card login-card js-no-scroll-restore">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     {% if callback_url %}<input type="hidden" name="callback_url" value="{{ callback_url }}">{% endif %}
 

@@ -31,11 +31,21 @@ def _total_kg(entries: list[dict]) -> float:
 def index():
     conn = g.conn
     date = request.args.get("date") or today_key()
-    mode = "wastage" if request.args.get("mode") == "wastage" else "production"
     branch_param = request.args.get("branchId")
     branch = page_resolve_branch(conn, g.user, branch_param)
     is_admin = g.user["role"] == "ADMIN"
     branches = list_branches_for_admin(conn) if is_admin else []
+
+    can_log = g.user["role"] in LOG_ROLES
+    can_see_analysis = g.user["role"] in ("ADMIN", "MANAGER")
+
+    mode_param = request.args.get("mode")
+    if mode_param == "variance" and can_see_analysis:
+        mode = "variance"
+    elif mode_param == "wastage":
+        mode = "wastage"
+    else:
+        mode = "production"
 
     if mode == "wastage":
         entries = wastage.get_wastage_for_date(conn, branch["branchId"], date)
@@ -48,9 +58,6 @@ def index():
 
     grouped = {mp: [e for e in entries if e["mealPeriod"] == mp] for mp in MEAL_PERIODS}
     other = [e for e in entries if not e["mealPeriod"]]
-
-    can_log = g.user["role"] in LOG_ROLES
-    can_see_analysis = g.user["role"] in ("ADMIN", "MANAGER")
 
     variance_rows, sales_available = [], True
     if can_see_analysis:
