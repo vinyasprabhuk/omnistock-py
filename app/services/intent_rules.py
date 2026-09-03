@@ -48,7 +48,37 @@ GROUP_A_DISH_ADDITIONS: list[tuple[str, AccompanimentEntry]] = [
     ("neer dosa", {"refType": "RECIPE_MISSING", "refName": "Coconut Stuff", "qty": 100, "unit": "ml"}),
     ("channa batura", {"refType": "RECIPE_MISSING", "refName": "Channa Masala", "qty": 100, "unit": "ml"}),
     ("set dosa", {"refType": "RECIPE", "refName": "Vadakari", "qty": 100, "unit": "ml"}),
+    # Every Masala Dosa variant except Paneer Masala Dosa (see
+    # ACCOMPANIMENT_EXCLUSIONS below) comes with 100ml Poori Masala.
+    ("masala dosa", {"refType": "RECIPE", "refName": "Poori Masala", "qty": 100, "unit": "ml"}),
 ]
+
+# Additions that apply purely by dish-name keyword, independent of
+# category -- Parotta/Chapathi (all varieties; their Dish rows are mostly
+# category OTHER, not covered by any of the Group A/B/C rules above) and
+# the Limited Meals / Special Meals / Quick Lunch combos each come with a
+# fixed 100ml of Kurma, on top of whatever else that dish already gets.
+GLOBAL_DISH_ADDITIONS: list[tuple[str, AccompanimentEntry]] = [
+    ("parotta", {"refType": "RECIPE", "refName": "Kurma", "qty": 100, "unit": "ml"}),
+    ("chapathi", {"refType": "RECIPE", "refName": "Kurma", "qty": 100, "unit": "ml"}),
+    ("limited meals", {"refType": "RECIPE", "refName": "Kurma", "qty": 100, "unit": "ml"}),
+    ("special meals", {"refType": "RECIPE", "refName": "Kurma", "qty": 100, "unit": "ml"}),
+    ("quick lunch", {"refType": "RECIPE", "refName": "Kurma", "qty": 100, "unit": "ml"}),
+]
+
+# Per-recipe exclusions: even though a dish falls under a category/rule
+# that would normally add this recipe as an accompaniment, these specific
+# dishes (matched by a case-insensitive substring of the dish name) don't
+# actually come with it -- confirmed in chat while reviewing Wastage >
+# Produced vs Sold vs Wasted's per-recipe "N items counted toward Sold"
+# breakdown. Applied last, after every other rule above.
+ACCOMPANIMENT_EXCLUSIONS: dict[str, list[str]] = {
+    "Tamilnadu Sambar": ["curd vada", "poori", "idiyappam", "vadacurry"],
+    "Meals Sambar": ["north indian thali"],
+    "Kara Kuuzhambu": ["north indian thali"],
+    "Rasam": ["north indian thali"],
+    "Poori Masala": ["paneer masala dosa"],
+}
 
 # Meals/thali: every side at 100ml, sambar alone at 200ml (confirmed).
 GROUP_B_CATEGORY = "MEALS"
@@ -120,5 +150,16 @@ def accompaniments_for_dish(category: str, dish_name: str) -> list[Accompaniment
         entries.extend(GROUP_C_SIDES)
 
     entries.extend(COMBO_COMPOSITIONS.get(dish_name, []))
+
+    for keyword, addition in GLOBAL_DISH_ADDITIONS:
+        if keyword in name_lower:
+            entries.append(addition)
+
+    excluded_recipes = {
+        ref_name for ref_name, keywords in ACCOMPANIMENT_EXCLUSIONS.items()
+        if any(kw in name_lower for kw in keywords)
+    }
+    if excluded_recipes:
+        entries = [e for e in entries if e["refName"] not in excluded_recipes]
 
     return entries
