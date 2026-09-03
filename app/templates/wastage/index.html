@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% from "_macros.html" import date_switcher, branch_switcher %}
-{% block title %}{{ 'Wastage' if mode == 'wastage' else 'Production' }} - {{ branding.appName }}{% endblock %}
+{% block title %}{{ 'Variance' if mode == 'variance' else ('Wastage' if mode == 'wastage' else 'Production') }} - {{ branding.appName }}{% endblock %}
 {% block content %}
 <div class="flex-row" style="justify-content:space-between;margin-bottom:16px;">
-  <h1 class="mt-0">{{ 'Wastage' if mode == 'wastage' else 'Production' }} &mdash; {{ branch.branchName }}</h1>
+  <h1 class="mt-0">{{ 'Produced vs Sold vs Wasted' if mode == 'variance' else ('Wastage' if mode == 'wastage' else 'Production') }} &mdash; {{ branch.branchName }}</h1>
   <div class="flex-row">
     {% if is_admin %}{{ branch_switcher(branches, branch.branchId, '&mode=' ~ mode) }}{% endif %}
     {{ date_switcher(date, '&mode=' ~ mode ~ '&branchId=' ~ branch.branchId) }}
@@ -13,8 +13,12 @@
 <div class="flex-row" style="border-bottom:1px solid var(--border);margin-bottom:16px;">
   <a class="btn {{ 'btn-primary' if mode == 'production' else '' }}" style="border-radius:6px 6px 0 0;" href="?date={{ date }}&mode=production&branchId={{ branch.branchId }}">Production</a>
   <a class="btn {{ 'btn-primary' if mode == 'wastage' else '' }}" style="border-radius:6px 6px 0 0;" href="?date={{ date }}&mode=wastage&branchId={{ branch.branchId }}">Wastage</a>
+  {% if can_see_analysis %}
+  <a class="btn {{ 'btn-primary' if mode == 'variance' else '' }}" style="border-radius:6px 6px 0 0;" href="?date={{ date }}&mode=variance&branchId={{ branch.branchId }}">Produced vs Sold vs Wasted</a>
+  {% endif %}
 </div>
 
+{% if mode != 'variance' %}
 <div style="display:grid;grid-template-columns:{{ 'minmax(280px,360px) 1fr' if can_log else '1fr' }};gap:16px;align-items:start;">
   {% if can_log %}
   <div class="card">
@@ -34,13 +38,22 @@
   {% endif %}
 
   <div class="card">
-    <h3>{{ date }} &middot; {{ entries | length }} entr{{ 'y' if entries | length == 1 else 'ies' }} &middot; {{ total_kg | fmt }} KG total</h3>
+    <div class="flex-row" style="justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
+      <h3 style="margin-bottom:0;">{{ date }} &middot; {{ entries | length }} entr{{ 'y' if entries | length == 1 else 'ies' }} &middot; {{ total_kg | fmt }} KG total</h3>
+      {% if entries | length > 0 %}
+      <div class="flex-row" style="align-items:center;gap:8px;">
+        <input type="text" class="js-wastage-filter" data-target="wastage-entries" placeholder="Filter by item..." style="max-width:220px;">
+        <span class="js-wastage-count text-muted" style="font-size:0.8rem;white-space:nowrap;"></span>
+      </div>
+      {% endif %}
+    </div>
     {% if entries | length == 0 %}
       <p class="text-muted">No {{ mode }} logged for this date yet.</p>
     {% endif %}
+    <div id="wastage-entries">
     {% for mp in meal_labels %}
       {% if grouped[mp] %}
-      <div style="margin-bottom:14px;">
+      <div class="js-entry-group" style="margin-bottom:14px;">
         <div class="text-muted" style="font-size:0.8rem;font-weight:600;margin-bottom:6px;">{{ meal_labels[mp] }}</div>
         {% for entry in grouped[mp] %}
           {% include "wastage/_entry_row.html" %}
@@ -49,17 +62,19 @@
       {% endif %}
     {% endfor %}
     {% if other %}
-    <div>
+    <div class="js-entry-group">
       <div class="text-muted" style="font-size:0.8rem;font-weight:600;margin-bottom:6px;">Other</div>
       {% for entry in other %}
         {% include "wastage/_entry_row.html" %}
       {% endfor %}
     </div>
     {% endif %}
+    </div>
   </div>
 </div>
+{% endif %}
 
-{% if can_see_analysis and entries | length > 0 %}
+{% if can_see_analysis and mode != 'variance' and entries | length > 0 %}
 <div class="card" style="margin-top:16px;">
   <div class="flex-row" style="justify-content:space-between;align-items:baseline;">
     <h3 style="margin-bottom:0;">Ingredients {{ 'wasted' if mode == 'wastage' else 'used in production' }}</h3>
@@ -96,8 +111,8 @@
 </div>
 {% endif %}
 
-{% if can_see_analysis %}
-<div class="card" style="margin-top:16px;">
+{% if can_see_analysis and mode == 'variance' %}
+<div class="card">
   <h3>Produced vs Sold vs Wasted &mdash; {{ date }}</h3>
   <p class="text-muted" style="font-size:0.85rem;margin-top:-6px;">
     Variance = Produced &minus; Sold &minus; Wasted, in Litres per recipe. Combines both Production and Wastage entries for this date, regardless of which tab you're on.
@@ -111,19 +126,37 @@
   <p class="text-muted">Nothing to compare yet for this date.</p>
   {% else %}
   <div class="table-wrap">
-    <table>
-      <thead><tr><th>Recipe</th><th style="width:100px;">Produced</th><th style="width:100px;">Sold</th><th style="width:100px;">Wasted</th><th style="width:110px;">Variance</th></tr></thead>
+    <table style="table-layout:fixed;width:100%;min-width:300px;">
+      <thead><tr>
+        <th style="width:auto;padding:10px 8px;">Recipe</th>
+        <th style="width:52px;padding:10px 4px;">Prod</th>
+        <th style="width:52px;padding:10px 4px;">Sold</th>
+        <th style="width:52px;padding:10px 4px;">Waste</th>
+        <th style="width:60px;padding:10px 4px;">Var</th>
+      </tr></thead>
       <tbody>
         {% for row in variance_rows %}
         <tr>
-          <td>{{ row.recipeName }}</td>
-          <td class="qty">{{ row.produced }} {{ row.unit }}</td>
-          <td class="qty">{{ row.sold }} {{ row.unit }}</td>
-          <td class="qty">{{ row.wasted }} {{ row.unit }}</td>
-          <td class="qty" style="font-weight:600;color:{{ 'var(--danger)' if row.variance < -0.05 else ('var(--success)' if row.variance > 0.05 else 'inherit') }};">
-            {{ row.variance }} {{ row.unit }}
+          <td style="padding:10px 8px;">{{ row.recipeName }}</td>
+          <td class="qty" style="padding:10px 4px;">{{ row.produced }}<br>{{ row.unit }}</td>
+          <td class="qty" style="padding:10px 4px;">{{ row.sold }}<br>{{ row.unit }}</td>
+          <td class="qty" style="padding:10px 4px;">{{ row.wasted }}<br>{{ row.unit }}</td>
+          <td class="qty" style="padding:10px 4px;font-weight:600;color:{{ 'var(--danger)' if row.variance < -0.05 else ('var(--success)' if row.variance > 0.05 else 'inherit') }};">
+            {{ row.variance }}<br>{{ row.unit }}
           </td>
         </tr>
+        {% if row.soldBreakdown %}
+        <tr>
+          <td colspan="5" style="padding:0 10px 8px;">
+            <details>
+              <summary class="text-muted" style="font-size:0.78rem;cursor:pointer;">{{ row.soldBreakdown | length }} item{{ 's' if row.soldBreakdown | length != 1 else '' }} counted toward Sold</summary>
+              <ul style="font-size:0.8rem;margin:4px 0 0;padding-left:18px;color:var(--muted-foreground);">
+                {% for b in row.soldBreakdown %}<li>{{ b.dishName }} &mdash; {{ b.qty }} sold</li>{% endfor %}
+              </ul>
+            </details>
+          </td>
+        </tr>
+        {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -198,6 +231,7 @@
 {% endif %}
 {% endblock %}
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/wastage-filter.js') }}"></script>
 {% if can_log %}
 <script src="{{ url_for('static', filename='js/camera-capture.js') }}"></script>
 <script src="{{ url_for('static', filename='js/quantity-modal.js') }}"></script>

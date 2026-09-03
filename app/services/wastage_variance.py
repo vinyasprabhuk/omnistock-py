@@ -25,6 +25,11 @@ from app.services.intent_rules import accompaniments_for_dish
 from app.services.wastage_ingredients import batch_ml_for_recipe, match_and_scale_entry
 
 
+class SoldBreakdownEntry(TypedDict):
+    dishName: str
+    qty: float
+
+
 class VarianceRow(TypedDict):
     recipeName: str
     produced: float
@@ -32,6 +37,7 @@ class VarianceRow(TypedDict):
     wasted: float
     variance: float
     unit: str
+    soldBreakdown: list[SoldBreakdownEntry]
 
 
 def _recipe_litres_from_log(conn: sqlite3.Connection, table: str, date_db: str, branch_id: str) -> dict[str, float]:
@@ -50,15 +56,24 @@ def _recipe_litres_from_log(conn: sqlite3.Connection, table: str, date_db: str, 
     return dict(totals)
 
 
-def _recipe_litres_from_sales(conn: sqlite3.Connection, date_db: str) -> tuple[dict[str, float], bool]:
+def _recipe_litres_from_sales(
+    conn: sqlite3.Connection, date_db: str,
+) -> tuple[dict[str, float], dict[str, dict[str, float]], bool]:
+    """Returns (recipe -> total litres sold, recipe -> {dishName: qtySold},
+    salesAvailable). The per-dish breakdown lets the UI show exactly which
+    sold dishes (own-recipe sales and/or accompaniment usage, e.g. every
+    Idly sold carries a fixed serving of Sambar) were counted toward a
+    recipe's Sold figure -- dish qtys are summed if a dish contributes to
+    the same recipe more than once (own recipe + accompaniment)."""
     rows = conn.execute(
         "SELECT dishId, SUM(qty) AS qty FROM DishSale WHERE date = ? AND dishId IS NOT NULL GROUP BY dishId",
         (date_db,),
     ).fetchall()
     if not rows:
-        return {}, False
+        return {}, {}, False
 
     totals: dict[str, float] = defaultdict(float)
+    breakdown: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     for row in rows:
         dish = conn.execute("SELECT id, name, category FROM Dish WHERE id = ?", (row["dishId"],)).fetchone()
         if dish is None:
@@ -68,6 +83,7 @@ def _recipe_litres_from_sales(conn: sqlite3.Connection, date_db: str) -> tuple[d
         own_recipe = conn.execute("SELECT * FROM Recipe WHERE dishId = ?", (dish["id"],)).fetchone()
         if own_recipe and own_recipe["portionSizeMl"]:
             totals[own_recipe["name"]] += (qty * own_recipe["portionSizeMl"]) / 1000.0
+            breakdown[own_recipe["name"]][dish["name"]] += qty
 
         for entry in accompaniments_for_dish(dish["category"], dish["name"]):
             if entry["refType"] != "RECIPE":
@@ -76,22 +92,28 @@ def _recipe_litres_from_sales(conn: sqlite3.Connection, date_db: str) -> tuple[d
             if recipe is None:
                 continue
             totals[recipe["name"]] += (qty * entry["qty"]) / 1000.0
+            breakdown[recipe["name"]][dish["name"]] += qty
 
-    return dict(totals), True
+    return dict(totals), {k: dict(v) for k, v in breakdown.items()}, True
 
 
 def compute_variance(conn: sqlite3.Connection, date_db: str, branch_id: str) -> dict:
     produced = _recipe_litres_from_log(conn, "ProductionLog", date_db, branch_id)
     wasted = _recipe_litres_from_log(conn, "Wastage", date_db, branch_id)
-    sold, sales_available = _recipe_litres_from_sales(conn, date_db)
+    sold, sold_breakdown, sales_available = _recipe_litres_from_sales(conn, date_db)
 
     recipe_names = set(produced) | set(wasted) | set(sold)
     rows: list[VarianceRow] = []
     for name in recipe_names:
         p, s, w = produced.get(name, 0.0), sold.get(name, 0.0), wasted.get(name, 0.0)
+        breakdown = sorted(
+            ({"dishName": d, "qty": round(q, 2)} for d, q in sold_breakdown.get(name, {}).items()),
+            key=lambda b: -b["qty"],
+        )
         rows.append({
             "recipeName": name, "produced": round(p, 2), "sold": round(s, 2),
             "wasted": round(w, 2), "variance": round(p - s - w, 2), "unit": "L",
+            "soldBreakdown": breakdown,
         })
     rows.sort(key=lambda r: -abs(r["variance"]))
 

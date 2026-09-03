@@ -60,13 +60,14 @@ def create_app(config_object: str = "config.Config") -> Flask:
 
     from app.services.color import is_light_color
     from app.formatting import fmt, money, money_grouped, pct
-    from app.dates import shift_date_key, today_key
+    from app.dates import ist_time, shift_date_key, today_key
     app.jinja_env.filters["is_light_color"] = is_light_color
     app.jinja_env.filters["fmt"] = fmt
     app.jinja_env.filters["money"] = money
     app.jinja_env.filters["money_grouped"] = money_grouped
     app.jinja_env.filters["pct"] = pct
     app.jinja_env.filters["shift_date"] = shift_date_key
+    app.jinja_env.filters["ist_time"] = ist_time
     app.jinja_env.globals["today_key"] = today_key
 
     @app.before_request

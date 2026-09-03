@@ -99,8 +99,18 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
+  {% if current_user %}
+  <dialog id="photo-zoom-dialog" style="border:none;border-radius:10px;padding:0;max-width:min(90vw,700px);width:auto;background:transparent;">
+    <div style="position:relative;line-height:0;">
+      <img class="js-zoom-img" src="" alt="" style="max-width:100%;max-height:85vh;display:block;border-radius:10px;">
+      <button type="button" class="btn btn-sm js-zoom-close" style="position:absolute;top:8px;right:8px;">&times;</button>
+    </div>
+  </dialog>
+  {% endif %}
   <script src="{{ url_for('static', filename='js/table-search.js') }}"></script>
   <script src="{{ url_for('static', filename='js/line-items.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/scroll-restore.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/photo-zoom.js') }}"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
