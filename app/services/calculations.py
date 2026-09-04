@@ -6,7 +6,7 @@ append-only transaction tables (Purchase/PurchaseItem, StockIssue/
 StockIssueItem, KitchenRequirement/KitchenRequirementItem), scoped to
 (item, branch, date). Stock Issue is what reduces stock; Kitchen Requirement
 is informational only (requesting != consuming) and is additionally filtered
-to confirmed requirements only.
+to Issued requirements only -- see _kr_issued_condition for why.
 
 closing(date) = openingSeed(branch) + purchased(<=date) - issued(<=date), so
 "opening" for any date is just closing(date - 1 day) -- no day-by-day walk
@@ -40,6 +40,23 @@ def _get_active_items(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute(
         'SELECT id, name, unit, purchasePrice FROM Item WHERE active = 1 ORDER BY name ASC'
     ).fetchall()
+
+
+def _kr_issued_condition(conn: sqlite3.Connection, alias: str) -> str:
+    """The pristine golden-parity reference DB (tests/conftest.py's
+    unmigrated `db_conn` fixture, frozen on purpose for byte-for-byte
+    comparison against the original app) predates the split Approve/Issue
+    lifecycle and has no `status` column -- there, `confirmedAt IS NOT
+    NULL` already means "issued", since the old app issued stock at
+    confirm-time. Everywhere else (including live production, once
+    migrate_kitchen_requirement_v2 has run), `confirmedAt` now means
+    Approved, not necessarily Issued, so `status = 'ISSUED'` is the
+    correct gate. Checked once per call via PRAGMA rather than assuming
+    either schema, so this one function works correctly against both."""
+    has_status = any(
+        r["name"] == "status" for r in conn.execute("PRAGMA table_info(KitchenRequirement)").fetchall()
+    )
+    return f"{alias}.status = 'ISSUED'" if has_status else f"{alias}.confirmedAt IS NOT NULL"
 
 
 # --- Per-item cumulative sums (used by closingStock, which needs a single
@@ -86,7 +103,7 @@ def sum_issued(conn: sqlite3.Connection, item_id: str, branch_id: str,
 def sum_kitchen_requirement(conn: sqlite3.Connection, item_id: str, branch_id: str,
                              date_eq: str | None = None, date_lte: str | None = None,
                              date_gte: str | None = None) -> float:
-    conditions = ["kri.matchedItemId = ?", "kr.branchId = ?", "kr.confirmedAt IS NOT NULL"]
+    conditions = ["kri.matchedItemId = ?", "kr.branchId = ?", _kr_issued_condition(conn, "kr")]
     params: list = [item_id, branch_id]
     if date_eq is not None:
         conditions.append("kr.date = ?"); params.append(date_eq)
@@ -147,7 +164,7 @@ def _bulk_issued(conn, branch_id, **kw) -> dict[str, float]:
 def _bulk_kitchen_requirement(conn, branch_id, **kw) -> dict[str, float]:
     return _grouped_sum(
         conn, "KitchenRequirementItem", "KitchenRequirement", "requirementId", "matchedItemId",
-        branch_id, extra_where="j.confirmedAt IS NOT NULL", **kw,
+        branch_id, extra_where=_kr_issued_condition(conn, "j"), **kw,
     )
 
 
@@ -299,7 +316,7 @@ class ConsolidatedRequirementRow(TypedDict):
 def get_consolidated_requirement(conn: sqlite3.Connection, branch_id: str,
                                   date_eq: str | None = None, date_lte: str | None = None,
                                   date_gte: str | None = None) -> list[ConsolidatedRequirementRow]:
-    conditions = ["kr.branchId = ?", "kr.confirmedAt IS NOT NULL", "kri.matchedItemId IS NOT NULL"]
+    conditions = ["kr.branchId = ?", _kr_issued_condition(conn, "kr"), "kri.matchedItemId IS NOT NULL"]
     params: list = [branch_id]
     if date_eq is not None:
         conditions.append("kr.date = ?"); params.append(date_eq)

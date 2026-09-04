@@ -148,10 +148,23 @@ def create_app(config_object: str = "config.Config") -> Flask:
 
     @app.context_processor
     def inject_globals():
+        import sqlite3
         from app.services.branding import get_branding
-        from app.services.kitchen_requirement import get_pending_requirements
+        from app.services.kitchen_requirement import get_approved_requirements, get_pending_requirements
         branding = get_branding(g.conn) if getattr(g, "conn", None) else None
-        pending_count = len(get_pending_requirements(g.conn, g.user)) if getattr(g, "conn", None) else 0
+        # Best-effort nav badges -- must never break page rendering itself
+        # (same reasoning as the audit-log hook below). The only realistic
+        # way these queries fail is a test running against the pristine
+        # reference DB fixture on purpose left unmigrated for golden-parity
+        # comparisons (see tests/conftest.py) -- production always has the
+        # migration applied.
+        pending_count = approved_count = 0
+        if getattr(g, "conn", None):
+            try:
+                pending_count = len(get_pending_requirements(g.conn, g.user))
+                approved_count = len(get_approved_requirements(g.conn, g.user))
+            except sqlite3.OperationalError:
+                pass
         return {
             "branding": branding,
             "current_user": getattr(g, "user", None),
@@ -159,6 +172,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
             "nav_links": _nav_links(getattr(g, "user", None)),
             "nav_groups": _nav_groups(getattr(g, "user", None)),
             "pending_requirement_count": pending_count,
+            "approved_requirement_count": approved_count,
         }
 
     return app

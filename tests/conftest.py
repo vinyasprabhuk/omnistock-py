@@ -105,6 +105,7 @@ MIGRATIONS = (
     "migrate_add_intent_recipe",
     "migrate_add_workstation",
     "migrate_add_requirement_review",
+    "migrate_kitchen_requirement_v2",
 )
 
 

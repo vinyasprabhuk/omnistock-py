@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_macros.html" import date_switcher, branch_switcher %}
+{% block title %}{{ 'Edit Request' if step == 'edit' else ('Request Extra Items' if request_type == 'EXTRA' else 'Request Regular Items') }} - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div style="max-width:560px;margin:0 auto;">
+
+{% if step == 'department' %}
+<h1>{{ 'Request Extra Items' if request_type == 'EXTRA' else 'Request Regular Items' }}</h1>
+{% if requirement_id %}
+<p class="text-muted" style="margin-top:-10px;">For {{ date }}. Pick another department to add, or Submit when you're done.</p>
+{% if saved_departments %}
+<div class="card" style="font-size:0.85rem;">
+  <strong>Saved so far:</strong> {{ saved_departments | join(', ') }}
+</div>
+<a class="btn btn-primary btn-block" href="{{ url_for('kitchen.review', requirement_id=requirement_id) }}">Submit</a>
+{% endif %}
+{% else %}
+<p class="text-muted" style="margin-top:-10px;">Pick a date{{ ', a branch,' if branches else '' }} then a department to see its items.</p>
+<div class="card">
+  {% if branches %}
+  <div style="margin-bottom:10px;">{{ branch_switcher(branches, branch_id) }}</div>
+  {% endif %}
+  {{ date_switcher(date, '&type=' ~ request_type.lower() ~ '&branchId=' ~ branch_id) }}
+</div>
+{% endif %}
+<div class="card">
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    {% for dept in departments %}
+    <a class="btn btn-block" style="text-align:left;" href="{{ url_for('kitchen.request_entry', type=request_type.lower(), departmentId=dept.id, date=date, branchId=branch_id, requirementId=requirement_id) }}">{{ dept.name }}{{ ' ✓' if dept.name in saved_departments else '' }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if step == 'items' %}
+<h1>{{ 'Request Extra Items' if request_type == 'EXTRA' else 'Request Regular Items' }} &mdash; {{ department.name }}</h1>
+<p class="text-muted" style="margin-top:-10px;">
+  For {{ date }}.
+  Enter a quantity for whatever you need. Leave the rest blank &mdash; blank means 0, not required.
+</p>
+{% if used_fallback %}
+<div class="card" style="border-color:#f59e0b;background:var(--warning-bg);font-size:0.85rem;">
+  No request history yet for {{ department.name }}, so every active item is listed below instead of just the usual ones.
+</div>
+{% endif %}
+<div class="card">
+  <form method="post" action="{{ url_for('kitchen.request_save') }}" class="js-no-scroll-restore">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="requestType" value="{{ request_type }}">
+    <input type="hidden" name="departmentId" value="{{ department.id }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="branchId" value="{{ branch_id }}">
+    <input type="hidden" name="requirementId" value="{{ requirement_id }}">
+
+    <input type="text" class="js-search-input" data-target="request-items" placeholder="Filter items..." style="margin-bottom:12px;">
+
+    <div id="request-items">
+      {% for item in items %}
+      <div class="js-search-row flex-row" data-search="{{ item.name | lower }}" style="align-items:center;gap:10px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
+        <span style="flex:1;">{{ item.name }}</span>
+        <input type="hidden" name="itemId" value="{{ item.id }}">
+        <input type="number" name="qty" step="any" min="0" placeholder="0" style="width:90px;flex-shrink:0;">
+      </div>
+      {% endfor %}
+      <p class="js-search-empty text-muted" hidden>No items match "<span class="js-search-query"></span>".</p>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top:12px;">Save Department</button>
+  </form>
+</div>
+{% endif %}
+
+{% if step == 'edit' %}
+<h1>Edit Request &mdash; {{ requirement.requestType | title }}</h1>
+<p class="text-muted" style="margin-top:-10px;">For {{ date }}. Change a quantity below, then give a reason for each change. Items you don't touch need no reason.</p>
+<div class="card">
+  <form method="post" action="{{ url_for('kitchen.edit_submit', requirement_id=requirement.id) }}" class="js-no-scroll-restore" id="edit-form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="editId" value="{{ edit_id }}">
+
+    {% for item in items %}
+    <div class="js-edit-row" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
+      <div class="flex-row" style="align-items:center;gap:10px;">
+        <span style="flex:1;">{{ item.matchedItemName or item.extractedText }}</span>
+        <input type="hidden" name="itemId" value="{{ item.matchedItemId }}">
+        <input type="number" name="qty" step="any" min="0" class="js-edit-qty" data-original-qty="{{ item.qty }}" value="{{ item.qty }}" style="width:90px;flex-shrink:0;">
+      </div>
+      <div class="js-edit-reason-field field" style="margin-top:6px;" hidden>
+        <span>Reason for this change</span>
+        <input type="text" name="reason" placeholder="Why is this changing?">
+      </div>
+    </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top:12px;">Submit Changes</button>
+  </form>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}
+{% block scripts %}
+{% if step == 'edit' %}
+<script src="{{ url_for('static', filename='js/kitchen-edit-reason.js') }}"></script>
+{% endif %}
+{% endblock %}

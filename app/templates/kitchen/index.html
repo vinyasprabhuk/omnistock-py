@@ -1,87 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Kitchen Upload - {{ branding.appName }}{% endblock %}
+{% from "_macros.html" import date_switcher %}
+{% block title %}Kitchen Requirement - {{ branding.appName }}{% endblock %}
 {% block content %}
 {% if current_user.role in ('ADMIN', 'MANAGER') %}
 <div class="card" style="max-width:640px;margin:0 auto 24px;text-align:center;">
-  <p class="text-muted" style="margin:0;">Approving/rejecting an uploaded requirement now happens on the <a href="{{ url_for('requirements.index') }}">Requirements</a> page.</p>
+  <p class="text-muted" style="margin:0;">Approving/issuing a requirement happens on the <a href="{{ url_for('requirements.index') }}">Requirements</a> page.</p>
 </div>
 {% endif %}
 
-<div class="card" style="max-width:420px;margin:24px auto;">
-  <h2>Upload Kitchen Requirement</h2>
-  <p class="text-muted">Excel or Word are read automatically. Photos/PDFs are saved for reference and filled in manually.</p>
-  <form method="post" action="{{ url_for('kitchen.upload') }}" enctype="multipart/form-data">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <label class="field"><span>Date</span><input type="date" name="date" value="{{ today }}" required></label>
-    {% if not user_branch_id %}
-    <label class="field">
-      <span>Branch</span>
-      <select name="branchId">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
-    </label>
-    {% endif %}
-    <label class="field">
-      <span>File</span>
-      <input type="file" name="file" accept="image/*,.pdf,.xlsx,.xls,.docx,.doc" required>
-    </label>
-    <button type="submit" class="btn btn-primary btn-block" style="height:56px;font-size:1rem;">&#128247; Upload Kitchen Requirement</button>
-  </form>
+<div class="card" style="max-width:420px;margin:24px auto;text-align:center;">
+  <h2 style="margin-top:0;">What do you need?</h2>
+  <div style="display:flex;justify-content:center;margin-bottom:16px;">
+    {{ date_switcher(date) }}
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <a class="btn btn-primary btn-block" style="height:56px;font-size:1rem;" href="{{ url_for('kitchen.request_entry', type='regular', date=date) }}">Request Regular Items</a>
+    <a class="btn btn-block" style="height:56px;font-size:1rem;" href="{{ url_for('kitchen.request_entry', type='extra', date=date) }}">Request Extra Items</a>
+  </div>
 </div>
 
-<div class="card" style="max-width:640px;margin:24px auto;">
-  <h2>Or Add Items Manually</h2>
-  <p class="text-muted">Skip the file — pick items directly from the list and enter quantities.</p>
-  <form method="post" action="{{ url_for('kitchen.manual_entry') }}">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <div class="flex-row" style="margin-bottom:16px;">
-      <label class="field" style="width:auto;"><span>Date</span><input type="date" name="date" value="{{ today }}" required style="width:160px;"></label>
+{% if pending_regular or pending_extra %}
+<div class="card" style="max-width:420px;margin:24px auto;">
+  <h3 style="margin-top:0;">Your requests</h3>
+  <p class="text-muted" style="font-size:0.8rem;margin-top:-8px;">You can keep editing any of these until an admin approves it. Once approved, open it to request a further edit if needed.</p>
+  {% if pending_regular %}
+  <div class="text-muted" style="font-size:0.8rem;font-weight:600;margin:14px 0 6px;">Regular</div>
+  {% for req in pending_regular %}
+  <a href="{{ url_for('kitchen.review', requirement_id=req.id) }}" style="display:block;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;text-decoration:none;color:inherit;">
+    <div class="flex-row" style="justify-content:space-between;">
+      <span>{{ req.departmentNames or 'No items yet' }}</span>
+      {% if req.status == 'APPROVED' %}<span class="badge badge-success">&#128274; Approved by {{ req.confirmedByName or 'admin' }}</span>
+      {% else %}<span class="badge badge-danger">Pending</span>{% endif %}
+    </div>
+    <div class="text-muted" style="font-size:0.78rem;">For {{ req.dateKey }} &middot; {{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}</div>
+  </a>
+  {% endfor %}
+  {% endif %}
+  {% if pending_extra %}
+  <div class="text-muted" style="font-size:0.8rem;font-weight:600;margin:14px 0 6px;">Extra</div>
+  {% for req in pending_extra %}
+  <a href="{{ url_for('kitchen.review', requirement_id=req.id) }}" style="display:block;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;text-decoration:none;color:inherit;">
+    <div class="flex-row" style="justify-content:space-between;">
+      <span>{{ req.departmentNames or 'No items yet' }}</span>
+      {% if req.status == 'APPROVED' %}<span class="badge badge-success">&#128274; Approved by {{ req.confirmedByName or 'admin' }}</span>
+      {% else %}<span class="badge badge-danger">Pending</span>{% endif %}
+    </div>
+    <div class="text-muted" style="font-size:0.78rem;">For {{ req.dateKey }} &middot; {{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}</div>
+  </a>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endif %}
+
+<details style="max-width:420px;margin:24px auto;">
+  <summary class="text-muted" style="cursor:pointer;font-size:0.9rem;">Upload a file instead</summary>
+  <div class="card" style="margin-top:12px;">
+    <p class="text-muted" style="font-size:0.85rem;margin-top:0;">Excel or Word are read automatically. Photos/PDFs are saved for reference and filled in manually.</p>
+    <form method="post" action="{{ url_for('kitchen.upload') }}" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label class="field"><span>Date</span><input type="date" name="date" value="{{ today }}" required></label>
       {% if not user_branch_id %}
-      <label class="field" style="width:auto;">
+      <label class="field">
         <span>Branch</span>
-        <select name="branchId" style="width:200px;">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+        <select name="branchId">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
       </label>
       {% endif %}
-    </div>
-
-    <datalist id="dept-list-manual">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
-
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Department</th><th>Item</th><th style="width:90px;">Qty</th><th style="width:70px;">Unit</th><th style="width:40px;"></th></tr></thead>
-        <tbody id="manual-kitchen-lines">
-          <tr>
-            <td><input type="text" name="departmentName" list="dept-list-manual" required style="width:100%;"></td>
-            <td>
-              <select name="itemId" class="js-item-select" required style="width:100%;">
-                <option value="">-- select item --</option>
-                {% for it in items %}<option value="{{ it.id }}" data-unit="{{ it.unit }}">{{ it.name }}</option>{% endfor %}
-              </select>
-            </td>
-            <td><input type="number" name="qty" step="any" min="0" required style="width:100%;"></td>
-            <td class="js-unit-display text-muted"></td>
-            <td><button type="button" class="btn btn-sm js-remove-line">&times;</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <template id="manual-kitchen-lines-template">
-      <tr>
-        <td><input type="text" name="departmentName" list="dept-list-manual" required style="width:100%;"></td>
-        <td>
-          <select name="itemId" class="js-item-select" required style="width:100%;">
-            <option value="">-- select item --</option>
-            {% for it in items %}<option value="{{ it.id }}" data-unit="{{ it.unit }}">{{ it.name }}</option>{% endfor %}
-          </select>
-        </td>
-        <td><input type="number" name="qty" step="any" min="0" required style="width:100%;"></td>
-        <td class="js-unit-display text-muted"></td>
-        <td><button type="button" class="btn btn-sm js-remove-line">&times;</button></td>
-      </tr>
-    </template>
-
-    <div class="flex-row" style="justify-content:space-between;margin-top:12px;">
-      <button type="button" class="btn btn-sm js-add-line" data-target="manual-kitchen-lines">+ Add item</button>
-      <button type="submit" class="btn btn-primary">Save Items</button>
-    </div>
-  </form>
-</div>
+      <label class="field">
+        <span>File</span>
+        <input type="file" name="file" accept="image/*,.pdf,.xlsx,.xls,.docx,.doc" required>
+      </label>
+      <button type="submit" class="btn btn-block">Upload Kitchen Requirement</button>
+    </form>
+  </div>
+</details>
 {% endblock %}

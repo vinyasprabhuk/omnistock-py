@@ -8,18 +8,38 @@
     {% if is_admin %}{{ branch_switcher(branches, branch.branchId) }}{% endif %}
     {{ date_switcher(date) }}
     {{ export_button('/api/export/requirements?date=' ~ date ~ '&branchId=' ~ branch.branchId) }}
-    {% if batches | length > 1 %}<span class="text-muted" style="font-size:0.78rem;">(all batches combined)</span>{% endif %}
   </div>
 </div>
+
+{% if other_action_dates %}
+<div class="card" style="border-color:var(--warning);margin-bottom:20px;">
+  <h3 style="margin-top:0;">Needs action on other dates</h3>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-8px;">Kitchen can request for any date, not just {{ date }} -- these dates have requests waiting.</p>
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    {% for d in other_action_dates %}
+    <a href="{{ url_for('requirements.index', date=d.dateKey, branchId=branch.branchId) }}" style="display:flex;justify-content:space-between;text-decoration:none;color:inherit;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+      <span>{{ d.dateKey }}</span>
+      <span>
+        {% if d.pendingCount %}<span class="badge badge-danger">{{ d.pendingCount }} pending</span>{% endif %}
+        {% if d.approvedCount %}<span class="badge badge-warning">{{ d.approvedCount }} approved</span>{% endif %}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 {% if pending %}
 <div class="card" style="border-color:var(--danger);margin-bottom:20px;">
   <h3 style="margin-top:0;">Pending Review ({{ pending | length }})</h3>
-  <p class="text-muted" style="font-size:0.85rem;margin-top:-8px;">Uploaded by the kitchen team for {{ date }} -- review and approve or reject.</p>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-8px;">Requested for {{ date }} -- review and approve or reject.</p>
   {% for req in pending %}
   <div style="border-bottom:1px solid var(--border);padding:12px 0;">
     <div class="flex-row" style="justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <span>{{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}{% if req.unmatchedCount %} <span class="badge badge-danger">{{ req.unmatchedCount }} unmatched</span>{% endif %}</span>
+      <span>
+        <span class="badge {{ 'badge-warning' if req.requestType == 'EXTRA' else 'badge-success' }}">{{ req.requestType | title }}</span>
+        {{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}{% if req.unmatchedCount %} <span class="badge badge-danger">{{ req.unmatchedCount }} unmatched</span>{% endif %}
+      </span>
       <a class="btn btn-sm" href="{{ url_for('kitchen.review', requirement_id=req.id) }}">Edit rows</a>
     </div>
     <textarea id="comment-{{ req.id }}" rows="2" style="margin-bottom:8px;" placeholder="Comment -- optional to approve, required to reject"></textarea>
@@ -44,34 +64,74 @@
 </div>
 {% endif %}
 
-{% if items | length == 0 and not pending %}
-<div class="card text-muted" style="text-align:center;padding:32px;">
-  No confirmed kitchen requirements for {{ date }} yet.
+{% if approved_batches %}
+<div class="card" style="border-color:#f59e0b;margin-bottom:20px;">
+  <h3 style="margin-top:0;">Approved &mdash; awaiting Issue ({{ approved_batches | length }})</h3>
+  <p class="text-muted" style="font-size:0.85rem;margin-top:-8px;">Adjust quantities against what's actually available, then click Issue once stock has been physically handed over -- that's what updates Daily Tracker.</p>
+  {% for batch in approved_batches %}
+  <div style="border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;">
+    <div class="flex-row" style="justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+      <span>
+        <span class="badge {{ 'badge-warning' if batch.requestType == 'EXTRA' else 'badge-success' }}">{{ batch.requestType | title }}</span>
+        &#128274; Approved by {{ batch.confirmedByName }} on {{ batch.confirmedAt }}
+      </span>
+      {% if current_user.role in ('ADMIN', 'MANAGER') %}
+      <button type="submit" form="issue-form-{{ batch.requirementId }}" class="btn btn-sm btn-primary">Issue</button>
+      {% endif %}
+    </div>
+    <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
+      {% for dept in batch.departmentSections %}
+      <div class="card">
+        <h3>{{ dept.departmentName }}</h3>
+        {% for item in dept['items'] %}
+        <div style="display:grid;grid-template-columns:1fr 64px;align-items:center;gap:8px;font-size:0.85rem;padding:5px 0;border-bottom:1px solid var(--border);">
+          <span>{{ item.itemName }}</span>
+          {% if current_user.role != 'VIEWER' %}
+          <input type="number" name="qty" form="qty-form-{{ item.id }}" step="any" value="{{ item.qty }}"
+                 class="qty" style="width:64px;text-align:right;padding:5px 8px;" onchange="this.form.requestSubmit()">
+          {% else %}
+          <strong class="qty" style="text-align:right;">{{ item.qty | fmt }}</strong>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <form id="issue-form-{{ batch.requirementId }}" method="post" action="{{ url_for('kitchen.issue', requirement_id=batch.requirementId) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+  </form>
+  {% endfor %}
 </div>
 {% endif %}
 
-{% for batch in batches %}
+{% if issued_batches | length == 0 and not pending and not approved_batches %}
+<div class="card text-muted" style="text-align:center;padding:32px;">
+  No kitchen requirements for {{ date }} yet.
+</div>
+{% endif %}
+
+{% if issued_batches %}
+<h3>Issued</h3>
+{% for batch in issued_batches %}
 <div style="margin-bottom:24px;">
-  {% if batches | length > 1 %}
   <div class="flex-row" style="justify-content:space-between;align-items:baseline;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--border);">
-    <h3 style="margin-bottom:0;">Batch {{ batch.batchNumber }}</h3>
+    <span>
+      <span class="badge {{ 'badge-warning' if batch.requestType == 'EXTRA' else 'badge-success' }}">{{ batch.requestType | title }}</span>
+      <span class="text-muted" style="font-size:0.85rem;">&#128274; Issued by {{ batch.issuedByName }} on {{ batch.issuedAt }}</span>
+    </span>
     {{ export_button('/api/export/requirements?date=' ~ date ~ '&branchId=' ~ branch.branchId ~ '&requirementId=' ~ batch.requirementId) }}
   </div>
-  {% endif %}
   <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
     {% for dept in batch.departmentSections %}
     <div class="card">
       <h3>{{ dept.departmentName }}</h3>
       {% for item in dept['items'] %}
-      <div style="display:grid;grid-template-columns:1fr 64px 30px;align-items:center;gap:8px;font-size:0.85rem;padding:5px 0;border-bottom:1px solid var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 64px;align-items:center;gap:8px;font-size:0.85rem;padding:5px 0;border-bottom:1px solid var(--border);">
         <span>{{ item.itemName }}</span>
-        {% if current_user.role != 'VIEWER' %}
-        <input type="number" name="qty" form="qty-form-{{ item.id }}" step="any" value="{{ item.qty }}"
-               class="qty" style="width:64px;text-align:right;padding:5px 8px;" onchange="this.form.requestSubmit()">
-        {% else %}
         <strong class="qty" style="text-align:right;">{{ item.qty | fmt }}</strong>
-        {% endif %}
-        <span class="text-muted" style="font-size:0.75rem;">{{ item.unit }}</span>
       </div>
       {% endfor %}
     </div>
@@ -79,11 +139,13 @@
   </div>
 </div>
 {% endfor %}
+{% endif %}
 
 {# Each row's qty input lives in its own form (via the form="" attribute)
    so it can submit independently on change without wrapping every card
-   in a <form>. #}
-{% for batch in batches %}
+   in a <form>. Only Approved-section items get one -- Issued items are
+   read-only, no form needed. #}
+{% for batch in approved_batches %}
 {% for dept in batch.departmentSections %}
 {% for item in dept['items'] %}
 <form id="qty-form-{{ item.id }}" method="post" action="{{ url_for('requirements.update_item', item_id=item.id) }}">

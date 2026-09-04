@@ -45,6 +45,7 @@
             <a href="{{ entry.href }}" class="{{ 'active' if request.path.startswith(entry.href) else '' }}">
               {{ entry.label }}
               {% if entry.href == '/requirements' and pending_requirement_count %}<span class="badge badge-danger" style="margin-left:5px;">{{ pending_requirement_count }}</span>{% endif %}
+              {% if entry.href == '/requirements' and approved_requirement_count %}<span class="badge badge-warning" style="margin-left:5px;" title="Approved, awaiting Issue">{{ approved_requirement_count }}</span>{% endif %}
             </a>
           {% else %}
             {% set ns = namespace(active=false) %}
@@ -53,12 +54,14 @@
               <span class="nav-dd-label {{ 'active' if ns.active else '' }}">
                 {{ entry.label }} <span class="nav-dd-caret">&#9662;</span>
                 {% if pending_requirement_count and entry['items'] | selectattr('href', 'equalto', '/requirements') | list %}<span class="badge badge-danger" style="margin-left:5px;">{{ pending_requirement_count }}</span>{% endif %}
+                {% if approved_requirement_count and entry['items'] | selectattr('href', 'equalto', '/requirements') | list %}<span class="badge badge-warning" style="margin-left:5px;" title="Approved, awaiting Issue">{{ approved_requirement_count }}</span>{% endif %}
               </span>
               <div class="nav-dd-panel">
                 {% for item in entry['items'] %}
                   <a href="{{ item.href }}" class="{{ 'active' if request.path.startswith(item.href) else '' }}">
                     {{ item.label }}
                     {% if item.href == '/requirements' and pending_requirement_count %}<span class="badge badge-danger" style="margin-left:5px;">{{ pending_requirement_count }}</span>{% endif %}
+                    {% if item.href == '/requirements' and approved_requirement_count %}<span class="badge badge-warning" style="margin-left:5px;" title="Approved, awaiting Issue">{{ approved_requirement_count }}</span>{% endif %}
                   </a>
                 {% endfor %}
               </div>
@@ -71,6 +74,7 @@
           <a href="{{ link.href }}" class="{{ 'active' if request.path.startswith(link.href) else '' }}">
             {{ link.label }}
             {% if link.href == '/requirements' and pending_requirement_count %}<span class="badge badge-danger" style="margin-left:5px;">{{ pending_requirement_count }}</span>{% endif %}
+            {% if link.href == '/requirements' and approved_requirement_count %}<span class="badge badge-warning" style="margin-left:5px;" title="Approved, awaiting Issue">{{ approved_requirement_count }}</span>{% endif %}
           </a>
         {% endfor %}
       </nav>

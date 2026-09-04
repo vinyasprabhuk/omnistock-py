@@ -47,8 +47,13 @@ def attach_purchase_receipt(conn: sqlite3.Connection, purchase_id: str,
 
 
 def create_stock_issue(conn: sqlite3.Connection, user_id: str, branch_id: str, date_key: str,
-                        department_name: str, lines: list[dict]) -> str:
-    """lines: [{"itemId": str, "qty": float}, ...]"""
+                        department_name: str, lines: list[dict],
+                        source_requirement_id: str | None = None) -> str:
+    """lines: [{"itemId": str, "qty": float}, ...]
+
+    source_requirement_id links this issue back to the KitchenRequirement
+    that produced it (see issue_kitchen_requirement) -- None for every
+    other caller (manual Stock Issue entry, Excel import)."""
     if not lines:
         raise ValueError("Add at least one line item")
 
@@ -56,8 +61,9 @@ def create_stock_issue(conn: sqlite3.Connection, user_id: str, branch_id: str, d
 
     issue_id = new_id()
     conn.execute(
-        "INSERT INTO StockIssue (id, date, branchId, departmentId, createdAt) VALUES (?, ?, ?, ?, ?)",
-        (issue_id, date_key_to_db(date_key), branch_id, department["id"], now_db()),
+        "INSERT INTO StockIssue (id, date, branchId, departmentId, createdAt, sourceRequirementId) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (issue_id, date_key_to_db(date_key), branch_id, department["id"], now_db(), source_requirement_id),
     )
     for line in lines:
         conn.execute(

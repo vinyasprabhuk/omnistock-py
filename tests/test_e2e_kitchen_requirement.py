@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 
+from app.dates import date_key_to_db
 from tests.conftest import build_kitchen_upload_xlsx, csrf_token, login, make_user
 
 
@@ -82,7 +83,7 @@ class TestConfirmFlow:
         )
         assert resp2.status_code == 403
 
-    def test_confirm_creates_one_stock_issue_per_department_and_updates_tracker(
+    def test_approve_does_not_issue_stock_only_explicit_issue_does(
         self, full_app, full_db_conn, branch_id
     ):
         client = _admin_client(full_app, full_db_conn, branch_id)
@@ -99,17 +100,171 @@ class TestConfirmFlow:
             data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "comment": "looks fine"},
         )
         assert resp2.status_code == 302
-        after = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
-        assert after - before == 2, "one StockIssue per department (SOUTH INDIAN, CHINESE)"
+        after_approve = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+        assert after_approve == before, "Approve alone must not create any StockIssue"
 
-        confirmed = full_db_conn.execute(
-            "SELECT confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)
+        req_row = full_db_conn.execute(
+            "SELECT status, confirmedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)
         ).fetchone()
-        assert confirmed["confirmedAt"] is not None
+        assert req_row["status"] == "APPROVED"
+        assert req_row["confirmedAt"] is not None
+
+        # Approve alone (confirmedAt set, status='APPROVED') must not show up
+        # in Daily Tracker's "Kitchen Req." column either -- that column is
+        # gated on status='ISSUED', same as actual stock movement, so an
+        # admin adjusting qty against real stock-room availability never
+        # shows a number here that then changes again at Issue time.
+        from app.services.calculations import get_daily_tracker
+        rows_before_issue = get_daily_tracker(full_db_conn, branch_id, date_key_to_db("2026-08-25"))
+        sugar_before = next(r for r in rows_before_issue if r["itemName"] == "Sugar")
+        assert sugar_before["kitchenRequirement"] == 0.0
+        assert sugar_before["issued"] == 0.0
+
+        tracker_before_issue = client.get(f"/tracker?date=2026-08-25&branchId={branch_id}")
+        assert b"Sugar" not in tracker_before_issue.data or b"0.00" in tracker_before_issue.data
+
+        resp3 = client.post(
+            f"/kitchen/review/{requirement_id}/issue",
+            data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id},
+        )
+        assert resp3.status_code == 302
+        after_issue = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+        assert after_issue - before == 2, "one StockIssue per department (SOUTH INDIAN, CHINESE), only after Issue"
+
+        issues = full_db_conn.execute(
+            "SELECT sourceRequirementId FROM StockIssue ORDER BY createdAt DESC LIMIT 2"
+        ).fetchall()
+        assert all(i["sourceRequirementId"] == requirement_id for i in issues)
+
+        req_row2 = full_db_conn.execute("SELECT status, issuedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+        assert req_row2["status"] == "ISSUED"
+        assert req_row2["issuedAt"] is not None
 
         tracker_resp = client.get(f"/tracker?date=2026-08-25&branchId={branch_id}")
         assert tracker_resp.status_code == 200
         assert b"Sugar" in tracker_resp.data
+
+        rows_after_issue = get_daily_tracker(full_db_conn, branch_id, date_key_to_db("2026-08-25"))
+        sugar_after = next(r for r in rows_after_issue if r["itemName"] == "Sugar")
+        assert sugar_after["kitchenRequirement"] == 2.0
+        assert sugar_after["issued"] == 2.0
+
+    def test_double_issue_is_blocked(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="k2b.xlsx", items={
+            "SOUTH INDIAN": [("Sugar", 2.0, "Kg")],
+        })
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        client.post(f"/kitchen/review/{requirement_id}/issue",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        before = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+
+        resp2 = client.post(
+            f"/kitchen/review/{requirement_id}/issue",
+            data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id},
+            follow_redirects=True,
+        )
+        assert b"must be approved before it can be issued" in resp2.data
+        after = full_db_conn.execute("SELECT COUNT(*) FROM StockIssue").fetchone()[0]
+        assert after == before
+
+    def test_kitchen_role_blocked_from_issue(self, full_app, full_db_conn, branch_id):
+        admin_client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(admin_client)
+        resp = _upload(admin_client, token, branch_id, filename="k2c.xlsx", items={
+            "SOUTH INDIAN": [("Sugar", 2.0, "Kg")],
+        })
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        admin_client.post(f"/kitchen/review/{requirement_id}/confirm",
+                           data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+
+        kitchen_client = full_app.test_client()
+        _, kusername, kpassword = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(kitchen_client, kusername, kpassword)
+        ktoken = csrf_token(kitchen_client)
+        resp2 = kitchen_client.post(
+            f"/kitchen/review/{requirement_id}/issue",
+            data={"_csrf_token": ktoken, "date": "2026-08-25", "branchId": branch_id},
+        )
+        assert resp2.status_code == 403
+
+    def test_admin_edits_approved_qty_before_issue_flows_into_stock_issue(
+        self, full_app, full_db_conn, branch_id
+    ):
+        """Regression test for the old latent bug: editing qty after
+        approval must be reflected in the eventually-issued StockIssueItem
+        qty, since issuing is now deferred until the explicit Issue step."""
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="k2d.xlsx", items={
+            "SOUTH INDIAN": [("Sugar", 4.0, "Kg")],
+        })
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+
+        item_row = full_db_conn.execute(
+            "SELECT id FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,)
+        ).fetchone()
+        client.post(f"/requirements/item/{item_row['id']}/update",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "qty": "2"})
+
+        client.post(f"/kitchen/review/{requirement_id}/issue",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+
+        issued_qty = full_db_conn.execute(
+            "SELECT sii.qty FROM StockIssueItem sii JOIN StockIssue si ON si.id = sii.stockIssueId "
+            "WHERE si.sourceRequirementId = ?", (requirement_id,)
+        ).fetchone()
+        assert issued_qty["qty"] == 2.0
+
+        resp_after = client.post(f"/requirements/item/{item_row['id']}/update",
+                                  data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "qty": "9"},
+                                  follow_redirects=True)
+        assert b"not found or not approved yet" in resp_after.data
+        still_qty = full_db_conn.execute("SELECT qty FROM KitchenRequirementItem WHERE id = ?", (item_row["id"],)).fetchone()
+        assert still_qty["qty"] == 2.0, "qty edit must be blocked once issued"
+
+    def test_admin_zeroing_approved_qty_removes_item_not_zero_qty_issue(
+        self, full_app, full_db_conn, branch_id
+    ):
+        """Zeroing a qty on the Approved page must remove the row outright
+        (same convention as the Kitchen-side edit flow), not leave a
+        zero-qty line that would show up as a zero StockIssueItem once
+        issued."""
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        resp = _upload(client, token, branch_id, filename="k2e.xlsx", items={
+            "SOUTH INDIAN": [("Sugar", 4.0, "Kg"), ("Toor Dhal", 6.0, "Kg")],
+        })
+        requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+        client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+
+        sugar_row = full_db_conn.execute(
+            "SELECT kri.id FROM KitchenRequirementItem kri JOIN Item i ON i.id = kri.matchedItemId "
+            "WHERE kri.requirementId = ? AND i.name = 'Sugar'", (requirement_id,)
+        ).fetchone()
+        client.post(f"/requirements/item/{sugar_row['id']}/update",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "qty": "0"})
+
+        remaining = full_db_conn.execute(
+            "SELECT id FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,)
+        ).fetchall()
+        assert len(remaining) == 1, "zeroed item should be deleted, not left as a zero-qty row"
+
+        # approving/issuing must still work fine with fewer items
+        client.post(f"/kitchen/review/{requirement_id}/issue",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        issued_items = full_db_conn.execute(
+            "SELECT sii.qty FROM StockIssueItem sii JOIN StockIssue si ON si.id = sii.stockIssueId "
+            "WHERE si.sourceRequirementId = ?", (requirement_id,)
+        ).fetchall()
+        assert len(issued_items) == 1
+        assert issued_items[0]["qty"] == 6.0
 
     def test_double_confirm_is_blocked(self, full_app, full_db_conn, branch_id):
         client = _admin_client(full_app, full_db_conn, branch_id)
@@ -214,23 +369,35 @@ class TestRejectFlow:
 
 
 class TestRequirementsPageBatchesAndPending:
-    def test_two_uploads_same_date_render_as_two_batches(self, full_app, full_db_conn, branch_id):
+    def test_two_uploads_same_date_stay_separate_requirements(self, full_app, full_db_conn, branch_id):
+        """Each upload is its own KitchenRequirement (unique id), so
+        distinct-batch separation doesn't need a "Batch N" label -- the
+        two requirements' items must simply not be merged together."""
         client = _admin_client(full_app, full_db_conn, branch_id)
         token = csrf_token(client)
         batch_items = [
             {"SOUTH INDIAN": [("Sugar", 2.0, "Kg")]},
             {"SOUTH INDIAN": [("Sugar", 3.0, "Kg")]},  # different qty -> different file hash, not a duplicate
         ]
+        requirement_ids = []
         for fn, items in zip(("b1.xlsx", "b2.xlsx"), batch_items):
             resp = _upload(client, token, branch_id, filename=fn, items=items)
             assert resp.status_code == 302, resp.get_data(as_text=True)[:300]
             requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
+            requirement_ids.append(requirement_id)
             client.post(f"/kitchen/review/{requirement_id}/confirm",
                         data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
 
+        assert len(set(requirement_ids)) == 2
+        rows = full_db_conn.execute(
+            "SELECT DISTINCT requirementId, qty FROM KitchenRequirementItem WHERE requirementId IN (?, ?)",
+            requirement_ids,
+        ).fetchall()
+        qtys = sorted(r["qty"] for r in rows)
+        assert qtys == [2.0, 3.0], "both requirements' items must exist independently, not merged"
+
         page = client.get(f"/requirements?date=2026-08-25&branchId={branch_id}")
-        body = page.get_data(as_text=True)
-        assert "Batch 1" in body and "Batch 2" in body
+        assert page.status_code == 200
 
     def test_pending_requirement_shows_on_requirements_page_with_approve_reject(
         self, full_app, full_db_conn, branch_id
@@ -274,6 +441,8 @@ class TestExports:
         resp = _upload(client, token, branch_id, filename="e1.xlsx")
         requirement_id = resp.headers["Location"].rsplit("/", 1)[-1]
         client.post(f"/kitchen/review/{requirement_id}/confirm",
+                    data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
+        client.post(f"/kitchen/review/{requirement_id}/issue",
                     data={"_csrf_token": token, "date": "2026-08-25", "branchId": branch_id})
 
         combined = client.get(f"/api/export/requirements?date=2026-08-25&branchId={branch_id}")

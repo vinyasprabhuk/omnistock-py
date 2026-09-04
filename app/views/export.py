@@ -12,7 +12,7 @@ from app.excel.export_workbook import (
     build_tracker_workbook,
 )
 from app.services.calculations import get_daily_tracker, get_low_stock, get_master_inventory
-from app.services.kitchen_requirement import get_confirmed_requirement_items
+from app.services.kitchen_requirement import get_requirement_items_by_status
 from app.services.intent import compute_recipe_prep
 
 bp = Blueprint("export", __name__, url_prefix="/api/export")
@@ -55,7 +55,7 @@ def requirements():
     # order for the date, same ordinal the Requirements page shows --
     # computed even for a combined (non-batch-scoped) export so a
     # single-batch day's filename stays plain.
-    all_items = get_confirmed_requirement_items(g.conn, branch["branchId"], date_db)
+    all_items = get_requirement_items_by_status(g.conn, branch["branchId"], date_db, "ISSUED")
     batch_suffix = ""
     if requirement_id:
         seen_order = []

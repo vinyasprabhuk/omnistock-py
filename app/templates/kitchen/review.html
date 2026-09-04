@@ -2,20 +2,35 @@
 {% block title %}Kitchen Requirement Review - {{ branding.appName }}{% endblock %}
 {% block content %}
 <div style="max-width:900px;margin:0 auto;">
-<h1>Kitchen Requirement Review</h1>
+<a class="btn btn-sm" href="{{ url_for('kitchen.index') }}" style="margin-bottom:12px;display:inline-block;">&larr; Back</a>
+<div class="flex-row" style="align-items:center;gap:8px;">
+  <h1 style="margin-bottom:0;">Kitchen Requirement Review</h1>
+  <span class="badge {{ 'badge-warning' if requirement.requestType == 'EXTRA' else 'badge-success' }}">{{ requirement.requestType | title }}</span>
+</div>
+<p class="text-muted" style="margin-top:-4px;">For {{ date_key }}</p>
 
-{% if items | length == 0 and not requirement.confirmedAt and was_structured_file %}
+{% if items | length == 0 and requirement.status == 'PENDING' and was_structured_file %}
 <div class="card" style="border-color:#f59e0b;background:var(--warning-bg);">
   This file was read, but no rows had both an item and a quantity -- so nothing came through. Make sure the Qty column is filled in for each item you need, then re-upload, or add rows manually below.
 </div>
 {% endif %}
-{% if items | length == 0 and not requirement.confirmedAt and not was_structured_file %}
+{% if items | length == 0 and requirement.status == 'PENDING' and not was_structured_file %}
 <div class="card" style="border-color:#f59e0b;background:var(--warning-bg);">
   This file type isn't read automatically (only Excel/Word are). Add the department, item, and quantity rows below manually -- the uploaded file is still saved for reference.
 </div>
 {% endif %}
-{% if requirement.confirmedAt %}
-<div class="card">Confirmed by {{ requirement.confirmedById }} on {{ requirement.confirmedAt }}. This requirement is locked.</div>
+
+{% if requirement.status == 'APPROVED' %}
+<div class="card">
+  <div class="flex-row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <span>&#128274; Approved by {{ requirement.confirmedByName or requirement.confirmedById }} on {{ requirement.confirmedAt }}. Awaiting Issue.</span>
+    {% if can_request_edit %}
+    <button type="button" class="btn btn-sm" onclick="document.getElementById('edit-reason-dialog').showModal()">Request an edit</button>
+    {% endif %}
+  </div>
+</div>
+{% elif requirement.status == 'ISSUED' %}
+<div class="card">&#128274; Issued by {{ requirement.issuedByName or requirement.issuedById }} on {{ requirement.issuedAt }}. Fully locked.</div>
 {% endif %}
 
 <div class="card">
@@ -35,7 +50,7 @@
       {% else %}<span class="badge badge-danger">MANUAL{% if item.confidence %} {{ item.confidence }}%{% endif %}</span>{% endif %}
     </div>
 
-    {% if requirement.confirmedAt %}
+    {% if requirement.status != 'PENDING' %}
     <div style="font-weight:600;margin-top:4px;">{{ item.matchedItemName or '—' }}</div>
     <div class="text-muted" style="font-size:0.85rem;">Qty: {{ item.qty | fmt }}</div>
     {% else %}
@@ -57,7 +72,7 @@
      lost on edit; department stays fixed per section, not user-editable
      here since it's now the section heading rather than a per-row field. #}
   {% for item in items %}
-  {% if not requirement.confirmedAt %}
+  {% if requirement.status == 'PENDING' %}
   <form id="row-form-{{ item.id }}" method="post" action="{{ url_for('kitchen.update_item', requirement_id=requirement.id, item_id=item.id) }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="departmentName" value="{{ item.departmentName }}">
@@ -70,7 +85,7 @@
   {% endfor %}
 </div>
 
-{% if not requirement.confirmedAt %}
+{% if requirement.status == 'PENDING' %}
 <div class="card">
   <h3>Add row manually</h3>
   <form method="post" action="{{ url_for('kitchen.add_item', requirement_id=requirement.id) }}" style="display:flex;flex-direction:column;gap:10px;">
@@ -97,6 +112,21 @@
     <a class="btn btn-sm btn-primary" href="{{ url_for('requirements.index', date=date_key, branchId=requirement.branchId) }}">Back to Requirements to Approve / Reject</a>
   </div>
 </div>
+{% endif %}
+
+{% if can_request_edit %}
+<dialog id="edit-reason-dialog" style="border-radius:10px;border:1px solid var(--border);padding:0;max-width:400px;width:90%;">
+  <form method="post" action="{{ url_for('kitchen.request_edit', requirement_id=requirement.id) }}" style="padding:20px;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <h3 style="margin-top:0;">Why does this need to change?</h3>
+    <p class="text-muted" style="font-size:0.85rem;margin-top:-8px;">This sends the requirement back to Pending for a fresh admin approval once you submit your changes.</p>
+    <label class="field"><span>Reason</span><textarea name="reason" rows="3" required></textarea></label>
+    <div class="flex-row" style="justify-content:flex-end;margin-top:12px;">
+      <button type="button" class="btn btn-sm" onclick="document.getElementById('edit-reason-dialog').close()">Cancel</button>
+      <button type="submit" class="btn btn-primary">Continue</button>
+    </div>
+  </form>
+</dialog>
 {% endif %}
 </div>
 {% endblock %}
