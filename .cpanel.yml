@@ -16,9 +16,11 @@
 # "reinstall the world". When a dependency genuinely changes, install it
 # manually once via Terminal (with --only-binary=:all:), the same way the
 # original working environment was built.
+# THIS BRANCH (test-deploy) ONLY -- deploys to the separate test subdomain,
+# never to production. Do not merge this file's DEPLOYPATH change into main.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/wattsupc/inventory.mokshamveg.com/
+    - export DEPLOYPATH=/home/wattsupc/test.inventory.mokshamveg.com/
     # rsync --delete mirrors app/ exactly -- a file removed from the repo
     # (e.g. a deleted feature) gets removed on the server too. `cp -R`
     # only ever adds/overwrites, so a deleted source file silently stays
@@ -35,4 +37,4 @@ deployment:
     # NOT copied on purpose -- these hold real data / secrets / local
     # working files and must never be overwritten by a deploy:
     #   instance/dev.db, instance/secret_key, uploads/, .venv/
-    - touch /home/wattsupc/inventory.mokshamveg.com/tmp/restart.txt
+    - touch /home/wattsupc/test.inventory.mokshamveg.com/tmp/restart.txt
