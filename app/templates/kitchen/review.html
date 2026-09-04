@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Kitchen Requirement Review - {{ branding.appName }}{% endblock %}
 {% block content %}
-<div style="max-width:1000px;margin:0 auto;">
+<div style="max-width:900px;margin:0 auto;">
 <h1>Kitchen Requirement Review</h1>
 
 {% if items | length == 0 and not requirement.confirmedAt and was_structured_file %}
@@ -19,62 +19,49 @@
 {% endif %}
 
 <div class="card">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr><th>Department</th><th>Extracted</th><th>Matched Item</th><th style="width:90px;">Qty</th><th style="width:80px;">Unit</th><th>Confidence</th>{% if not requirement.confirmedAt %}<th></th>{% endif %}</tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-        {% set row_form = 'row-form-' ~ item.id %}
-        {% set del_form = 'del-form-' ~ item.id %}
-        <tr>
-          <td>
-            {% if requirement.confirmedAt %}{{ item.departmentName }}
-            {% else %}<input type="text" name="departmentName" form="{{ row_form }}" value="{{ item.departmentName }}" style="width:100%;" onchange="this.form.requestSubmit()">{% endif %}
-          </td>
-          <td class="text-muted">{{ item.extractedText }}</td>
-          <td>
-            {% if requirement.confirmedAt %}{{ item.matchedItemName or '—' }}
-            {% else %}
-            <select name="matchedItemId" form="{{ row_form }}" style="width:100%;" onchange="this.form.requestSubmit()">
-              <option value="">-- select item --</option>
-              {% for it in all_items %}<option value="{{ it.id }}" {{ 'selected' if it.id == item.matchedItemId else '' }}>{{ it.name }} ({{ it.unit }})</option>{% endfor %}
-            </select>
-            {% endif %}
-          </td>
-          <td>
-            {% if requirement.confirmedAt %}{{ item.qty | fmt }}
-            {% else %}<input type="number" name="qty" form="{{ row_form }}" step="any" value="{{ item.qty }}" style="width:100%;" onchange="this.form.requestSubmit()">{% endif %}
-          </td>
-          <td>
-            {% if requirement.confirmedAt %}{{ item.unit }}
-            {% else %}<input type="text" name="unit" form="{{ row_form }}" value="{{ item.unit }}" style="width:100%;" onchange="this.form.requestSubmit()">{% endif %}
-          </td>
-          <td>
-            {% if item.status == 'AUTO' %}<span class="badge badge-success">AUTO {{ item.confidence }}%</span>
-            {% elif item.status == 'REVIEW' %}<span class="badge badge-warning">REVIEW {{ item.confidence }}%</span>
-            {% else %}<span class="badge badge-danger">MANUAL{% if item.confidence %} {{ item.confidence }}%{% endif %}</span>{% endif %}
-          </td>
-          {% if not requirement.confirmedAt %}
-          <td>
-            <button type="submit" form="{{ del_form }}" class="btn btn-sm">&times;</button>
-          </td>
-          {% endif %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% set ns = namespace(current_dept='') %}
+  {% for item in items %}
+  {% set row_form = 'row-form-' ~ item.id %}
+  {% set del_form = 'del-form-' ~ item.id %}
+  {% if item.departmentName != ns.current_dept %}
+    {% set ns.current_dept = item.departmentName %}
+    <h3 style="margin:{{ '0 0 10px' if loop.first else '22px 0 10px' }};padding-bottom:6px;border-bottom:2px solid var(--border);">{{ item.departmentName }}</h3>
+  {% endif %}
+  <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
+    <div class="flex-row" style="justify-content:space-between;align-items:baseline;gap:8px;">
+      <span class="text-muted" style="font-size:0.8rem;">{{ item.extractedText }}</span>
+      {% if item.status == 'AUTO' %}<span class="badge badge-success">AUTO {{ item.confidence }}%</span>
+      {% elif item.status == 'REVIEW' %}<span class="badge badge-warning">REVIEW {{ item.confidence }}%</span>
+      {% else %}<span class="badge badge-danger">MANUAL{% if item.confidence %} {{ item.confidence }}%{% endif %}</span>{% endif %}
+    </div>
 
-  {# Row forms live outside the table -- a <form> cannot legally wrap <tr>/<td>
-     elements; each input/button above references its form via the `form=""`
-     attribute instead (the spec-correct way to associate scattered controls
-     with a form that isn't their ancestor). #}
+    {% if requirement.confirmedAt %}
+    <div style="font-weight:600;margin-top:4px;">{{ item.matchedItemName or '—' }}</div>
+    <div class="text-muted" style="font-size:0.85rem;">Qty: {{ item.qty | fmt }}</div>
+    {% else %}
+    <div class="flex-row" style="align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <select name="matchedItemId" form="{{ row_form }}" style="flex:1;min-width:160px;" onchange="this.form.requestSubmit()">
+        <option value="">-- select item --</option>
+        {% for it in all_items %}<option value="{{ it.id }}" {{ 'selected' if it.id == item.matchedItemId else '' }}>{{ it.name }}</option>{% endfor %}
+      </select>
+      <input type="number" name="qty" form="{{ row_form }}" step="any" value="{{ item.qty }}" style="width:80px;flex-shrink:0;" onchange="this.form.requestSubmit()">
+      <button type="submit" form="{{ del_form }}" class="btn btn-sm" style="flex-shrink:0;">&times;</button>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {# Row forms live outside the item cards -- each input/button above
+     references its form via the `form=""` attribute. Unit is preserved
+     as a hidden field (not shown in this UI) so existing values aren't
+     lost on edit; department stays fixed per section, not user-editable
+     here since it's now the section heading rather than a per-row field. #}
   {% for item in items %}
   {% if not requirement.confirmedAt %}
   <form id="row-form-{{ item.id }}" method="post" action="{{ url_for('kitchen.update_item', requirement_id=requirement.id, item_id=item.id) }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="departmentName" value="{{ item.departmentName }}">
+    <input type="hidden" name="unit" value="{{ item.unit }}">
   </form>
   <form id="del-form-{{ item.id }}" method="post" action="{{ url_for('kitchen.delete_item', requirement_id=requirement.id, item_id=item.id) }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
@@ -86,26 +73,26 @@
 {% if not requirement.confirmedAt %}
 <div class="card">
   <h3>Add row manually</h3>
-  <form method="post" action="{{ url_for('kitchen.add_item', requirement_id=requirement.id) }}" class="flex-row" style="align-items:flex-end;">
+  <form method="post" action="{{ url_for('kitchen.add_item', requirement_id=requirement.id) }}" style="display:flex;flex-direction:column;gap:10px;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <label class="field" style="width:auto;"><span>Department</span><input type="text" name="departmentName" list="dept-list" style="width:140px;"></label>
+    <label class="field"><span>Department</span><input type="text" name="departmentName" list="dept-list"></label>
     <datalist id="dept-list">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
-    <label class="field" style="width:auto;"><span>Item text</span><input type="text" name="itemText" style="width:160px;"></label>
-    <label class="field" style="width:auto;">
+    <label class="field"><span>Item text</span><input type="text" name="itemText"></label>
+    <label class="field">
       <span>Matched item</span>
-      <select name="matchedItemId" style="width:180px;">
+      <select name="matchedItemId">
         <option value="">-- select item --</option>
-        {% for it in all_items %}<option value="{{ it.id }}">{{ it.name }} ({{ it.unit }})</option>{% endfor %}
+        {% for it in all_items %}<option value="{{ it.id }}">{{ it.name }}</option>{% endfor %}
       </select>
     </label>
-    <label class="field" style="width:auto;"><span>Qty</span><input type="number" name="qty" step="any" style="width:80px;"></label>
-    <label class="field" style="width:auto;"><span>Unit</span><input type="text" name="unit" style="width:80px;"></label>
-    <button type="submit" class="btn btn-sm">Add row</button>
+    <label class="field" style="width:auto;max-width:120px;"><span>Qty</span><input type="number" name="qty" step="any"></label>
+    <input type="hidden" name="unit" value="">
+    <button type="submit" class="btn btn-sm" style="align-self:flex-start;">Add row</button>
   </form>
 </div>
 
 <div class="card" style="margin-top:16px;">
-  <div class="flex-row" style="justify-content:space-between;align-items:center;">
+  <div class="flex-row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
     <span class="text-muted">{{ unmatched_count }} row(s) still need an item selected</span>
     <a class="btn btn-sm btn-primary" href="{{ url_for('requirements.index', date=date_key, branchId=requirement.branchId) }}">Back to Requirements to Approve / Reject</a>
   </div>

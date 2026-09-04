@@ -114,7 +114,7 @@ def get_requirement_for_review(conn: sqlite3.Connection, requirement_id: str) ->
         "FROM KitchenRequirementItem kri "
         "JOIN Department d ON d.id = kri.departmentId "
         "LEFT JOIN Item i ON i.id = kri.matchedItemId "
-        "WHERE kri.requirementId = ? ORDER BY kri.createdAt ASC",
+        "WHERE kri.requirementId = ? ORDER BY d.name ASC, kri.createdAt ASC",
         (requirement_id,),
     ).fetchall()
     upload = None
