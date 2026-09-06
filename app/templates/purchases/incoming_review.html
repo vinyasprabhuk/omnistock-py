@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Review Incoming Invoice - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px;margin:0 auto;">
+  <a class="btn btn-sm" href="{{ url_for('purchases.incoming') }}" style="margin-bottom:12px;display:inline-block;">&larr; Back</a>
+  <h2 style="margin-top:0;">Review Incoming Invoice</h2>
+
+  <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));margin-bottom:16px;">
+    <div><span class="text-muted">Vendor</span><div><strong>{{ event.vendorName or '--' }}</strong></div></div>
+    <div><span class="text-muted">GSTIN</span><div><strong>{{ event.vendorGstin or '--' }}</strong></div></div>
+    <div><span class="text-muted">Invoice No</span><div><strong>{{ event.invoiceNumber or '--' }}</strong></div></div>
+    <div><span class="text-muted">Invoice Date</span><div><strong>{{ event.invoiceDate or '--' }}</strong></div></div>
+    {% if event.totalAmount %}<div><span class="text-muted">Total Amount</span><div><strong>&#8377;{{ event.totalAmount | fmt }}</strong></div></div>{% endif %}
+  </div>
+
+  <form method="post" action="{{ url_for('purchases.incoming_approve', event_id=event.id) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    {% if not user_branch_id %}
+    <label class="field" style="width:auto;margin-bottom:16px;">
+      <span>Branch</span>
+      <select name="branchId" style="width:200px;">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+    </label>
+    {% endif %}
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Description</th><th>Matched Item</th><th style="width:100px;">Qty</th><th>Invoice Unit</th><th style="width:100px;">Rate</th></tr></thead>
+        <tbody>
+          {% for item in event['items'] %}
+          <tr>
+            <td>{{ item.rawDescription }}<div class="text-muted" style="font-size:0.78rem;">normalized: {{ item.normalizedName or '--' }}</div></td>
+            <td>
+              <select name="itemId" style="width:100%;">
+                <option value="">-- select item --</option>
+                {% for it in all_items %}<option value="{{ it.id }}" {{ 'selected' if it.id == item.matchedItemId else '' }}>{{ it.name }} ({{ it.unit }})</option>{% endfor %}
+              </select>
+              {% if item.matchedItemId %}<span class="badge {{ 'badge-success' if item.confidence >= 90 else 'badge-warning' }}">{{ item.confidence }}%</span>
+              {% else %}<span class="badge badge-danger">unmatched</span>{% endif %}
+            </td>
+            <td><input type="number" name="qty" step="any" value="{{ item.qty }}" style="width:100%;"></td>
+            <td class="text-muted">{{ item.unit }}</td>
+            <td><input type="number" name="rate" step="any" value="{{ item.rate }}" style="width:100%;"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex-row" style="justify-content:flex-end;margin-top:16px;">
+      <button type="submit" class="btn btn-primary">Approve &amp; Save Purchase</button>
+    </div>
+  </form>
+
+  <div class="card" style="margin-top:20px;border-color:var(--danger);">
+    <h3 style="margin-top:0;">Reject this invoice</h3>
+    <form method="post" action="{{ url_for('purchases.incoming_reject', event_id=event.id) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label class="field"><span>Reason</span><textarea name="reason" rows="2" required></textarea></label>
+      <button type="submit" class="btn btn-sm">Reject</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

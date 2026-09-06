@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Incoming Invoices - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:800px;margin:0 auto;">
+  <div class="flex-row" style="justify-content:space-between;align-items:center;">
+    <h2 style="margin:0;">Incoming Invoices</h2>
+    <a class="btn btn-sm" href="{{ url_for('purchases.index') }}">&larr; Back to Purchases</a>
+  </div>
+  <p class="text-muted">Invoices pushed in by the invoice webhook, waiting for review before they become a real Purchase.</p>
+
+  {% if not events %}
+  <p class="text-muted" style="text-align:center;padding:24px;">No invoices waiting for review.</p>
+  {% endif %}
+
+  {% for e in events %}
+  <a href="{{ url_for('purchases.incoming_review', event_id=e.id) }}" style="display:block;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;text-decoration:none;color:inherit;">
+    <div class="flex-row" style="justify-content:space-between;align-items:center;">
+      <strong>{{ e.vendorName or 'Unknown vendor' }}</strong>
+      {% if e.unmatchedCount %}<span class="badge badge-danger">{{ e.unmatchedCount }} unmatched</span>{% endif %}
+    </div>
+    <div class="text-muted" style="font-size:0.85rem;">
+      Invoice {{ e.invoiceNumber or '--' }} &middot; {{ e.invoiceDate or 'no date' }} &middot;
+      {{ e.itemCount }} item{{ 's' if e.itemCount != 1 else '' }}
+      {% if e.totalAmount %}&middot; &#8377;{{ e.totalAmount | fmt }}{% endif %}
+    </div>
+    {% if e.vendorGstin %}<div class="text-muted" style="font-size:0.8rem;">GSTIN: {{ e.vendorGstin }}</div>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -9,8 +9,11 @@ from app.security import get_csrf_token, validate_csrf
 
 # Paths open to anyone, matching src/proxy.ts's PUBLIC_PATHS. manifest.json/
 # sw.js must be public too -- the browser fetches these to decide if the site
-# is installable, before any login has happened.
-PUBLIC_PATHS = ("/login", "/branding", "/static", "/manifest.json", "/sw.js", "/.well-known")
+# is installable, before any login has happened. /webhooks is a different
+# kind of "public" -- not browser-facing, but a local-only service-to-
+# service endpoint with no user session to present a CSRF token; its own
+# view enforces the localhost check (see app/views/webhooks.py).
+PUBLIC_PATHS = ("/login", "/branding", "/static", "/manifest.json", "/sw.js", "/.well-known", "/webhooks")
 
 
 def create_app(config_object: str = "config.Config") -> Flask:
@@ -41,6 +44,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
     from app.views.pwa import bp as pwa_bp
     from app.views.intent import bp as intent_bp
     from app.views.recipe import bp as recipe_bp
+    from app.views.webhooks import bp as webhooks_bp
 
     app.register_blueprint(login_bp)
     app.register_blueprint(files_bp)
@@ -57,6 +61,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
     app.register_blueprint(wastage_bp)
     app.register_blueprint(intent_bp)
     app.register_blueprint(recipe_bp)
+    app.register_blueprint(webhooks_bp)
 
     from app.services.color import is_light_color
     from app.formatting import fmt, money, money_grouped, pct

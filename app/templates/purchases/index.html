@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Purchases - {{ branding.appName }}{% endblock %}
 {% block content %}
+{% if pending_webhook_count %}
+<div class="card" style="max-width:760px;margin:0 auto 20px;border-color:var(--danger);">
+  <div class="flex-row" style="justify-content:space-between;align-items:center;">
+    <span>{{ pending_webhook_count }} incoming invoice{{ 's' if pending_webhook_count != 1 else '' }} waiting for review.</span>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('purchases.incoming') }}">Review Incoming Invoices</a>
+  </div>
+</div>
+{% endif %}
+
 <div class="card" style="max-width:760px;margin:0 auto;">
   <h2>Purchase Entry</h2>
   <form method="post" enctype="multipart/form-data">
@@ -59,4 +68,10 @@
     <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
   </form>
 </div>
+
+{% if not pending_webhook_count %}
+<p style="max-width:760px;margin:16px auto 0;text-align:center;">
+  <a class="text-muted" href="{{ url_for('purchases.incoming') }}">Incoming Invoices (webhook)</a>
+</p>
+{% endif %}
 {% endblock %}
