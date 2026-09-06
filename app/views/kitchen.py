@@ -14,6 +14,7 @@ from app.services.kitchen_requirement import (
     get_department_history_items,
     get_draft_requirement_departments,
     get_open_requirements_for_kitchen,
+    get_regular_requirement_for_date,
     get_requestable_departments,
     get_requirement_for_review,
     issue_kitchen_requirement,
@@ -79,6 +80,18 @@ def request_entry():
             saved_departments = get_draft_requirement_departments(conn, requirement_id)
             date = from_db(req["date"]).strftime("%Y-%m-%d")
             branch_id = req["branchId"]
+    elif request_type == "REGULAR" and branch_id:
+        # Only one Regular request per branch per day -- if today's (or
+        # whatever date is selected) already exists, resume it instead of
+        # letting the user start a second one that would only fail once
+        # they tried to save a department into it.
+        existing = get_regular_requirement_for_date(conn, branch_id, date_key_to_db(date))
+        if existing:
+            if existing["status"] == "PENDING":
+                return redirect(url_for("kitchen.request_entry", type="regular", date=date,
+                                         branchId=branch_id, requirementId=existing["id"]))
+            flash("A Regular request already exists for this date -- opening it below.", "info")
+            return redirect(url_for("kitchen.review", requirement_id=existing["id"]))
 
     if not department_id:
         departments = get_requestable_departments(conn)

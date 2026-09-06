@@ -124,6 +124,101 @@ class TestKitchenRequestEntry:
         count = full_db_conn.execute("SELECT COUNT(*) c FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()["c"]
         assert count == 1, "still exactly one KitchenRequirement row -- one transaction"
 
+    def test_second_regular_request_same_day_is_blocked(self, full_app, full_db_conn, branch_id):
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        depts = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 2").fetchall()
+
+        client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": depts[0]["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["3"],
+        })
+        before = full_db_conn.execute(
+            "SELECT COUNT(*) c FROM KitchenRequirement WHERE branchId = ? AND requestType = 'REGULAR'", (branch_id,)
+        ).fetchone()["c"]
+        assert before == 1
+
+        resp2 = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": depts[1]["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["5"],
+        }, follow_redirects=True)
+        assert b"only one Regular request per day" in resp2.data
+        after = full_db_conn.execute(
+            "SELECT COUNT(*) c FROM KitchenRequirement WHERE branchId = ? AND requestType = 'REGULAR'", (branch_id,)
+        ).fetchone()["c"]
+        assert after == 1, "no second Regular requirement should have been created"
+
+    def test_extra_requests_are_not_limited_per_day(self, full_app, full_db_conn, branch_id):
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        depts = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 2").fetchall()
+
+        client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "EXTRA", "departmentId": depts[0]["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["1"],
+        })
+        resp2 = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "EXTRA", "departmentId": depts[1]["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["2"],
+        })
+        assert resp2.status_code == 302, "Extra requests have no one-per-day limit"
+        count = full_db_conn.execute(
+            "SELECT COUNT(*) c FROM KitchenRequirement WHERE branchId = ? AND requestType = 'EXTRA'", (branch_id,)
+        ).fetchone()["c"]
+        assert count == 2
+
+    def test_request_entry_redirects_to_existing_pending_regular_for_date(self, full_app, full_db_conn, branch_id):
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        dept = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 1").fetchone()
+
+        resp1 = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": dept["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["3"],
+        })
+        requirement_id = resp1.headers["Location"].rsplit("requirementId=", 1)[-1]
+
+        resp2 = client.get(f"/kitchen/request?type=regular&date=2026-08-25&branchId={branch_id}")
+        assert resp2.status_code == 302
+        assert f"requirementId={requirement_id}" in resp2.headers["Location"], \
+            "starting a fresh Regular request for a date that already has one should resume it"
+
+    def test_request_entry_redirects_to_review_when_existing_regular_already_approved(self, full_app, full_db_conn, branch_id):
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        dept = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 1").fetchone()
+
+        resp1 = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": dept["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["3"],
+        })
+        requirement_id = resp1.headers["Location"].rsplit("requirementId=", 1)[-1]
+        from app.services.kitchen_requirement import approve_kitchen_requirement
+        admin_id, _, _ = make_user(full_db_conn, "ADMIN", None)
+        approve_kitchen_requirement(full_db_conn, admin_id, requirement_id)
+
+        resp2 = client.get(f"/kitchen/request?type=regular&date=2026-08-25&branchId={branch_id}")
+        assert resp2.status_code == 302
+        assert resp2.headers["Location"].endswith(f"/kitchen/review/{requirement_id}")
+
     def test_cannot_save_department_into_an_approved_requirement(self, full_app, full_db_conn, branch_id):
         client = full_app.test_client()
         _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)

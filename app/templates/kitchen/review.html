@@ -8,6 +8,7 @@
   <span class="badge {{ 'badge-warning' if requirement.requestType == 'EXTRA' else 'badge-success' }}">{{ requirement.requestType | title }}</span>
 </div>
 <p class="text-muted" style="margin-top:-4px;">For {{ date_key }}</p>
+<p class="text-muted" style="font-size:0.75rem;font-family:monospace;margin-top:-8px;">Txn: {{ requirement.id }}</p>
 
 {% if items | length == 0 and requirement.status == 'PENDING' and was_structured_file %}
 <div class="card" style="border-color:#f59e0b;background:var(--warning-bg);">

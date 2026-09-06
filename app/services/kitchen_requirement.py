@@ -118,6 +118,19 @@ def get_draft_requirement_departments(conn: sqlite3.Connection, requirement_id: 
     return [r["name"] for r in rows]
 
 
+def get_regular_requirement_for_date(conn: sqlite3.Connection, branch_id: str, date_db: str) -> dict | None:
+    """The one Regular request a branch is allowed per day (Extra has no
+    such limit -- it's for ad-hoc additional need). Backs the redirect
+    that sends a kitchen user straight to today's existing Regular
+    request instead of letting them start a second one that would only
+    fail at save_department_to_requirement's own guard."""
+    row = conn.execute(
+        "SELECT id, status FROM KitchenRequirement WHERE branchId = ? AND date = ? AND requestType = 'REGULAR'",
+        (branch_id, date_db),
+    ).fetchone()
+    return dict(row) if row else None
+
+
 def save_department_to_requirement(conn: sqlite3.Connection, user_id: str, branch_id: str,
                                     requirement_id: str | None, department_id: str, date_key: str,
                                     request_type: str, lines: list[dict]) -> str:
@@ -149,6 +162,13 @@ def save_department_to_requirement(conn: sqlite3.Connection, user_id: str, branc
         if req["status"] != "PENDING":
             raise ValueError("This request is no longer open for adding departments")
     else:
+        if request_type == "REGULAR":
+            existing = get_regular_requirement_for_date(conn, branch_id, date_key_to_db(date_key))
+            if existing:
+                raise ValueError(
+                    "A Regular request already exists for this date -- only one Regular "
+                    "request per day is allowed. Open the existing one to add more departments."
+                )
         requirement_id = new_id()
         conn.execute(
             "INSERT INTO KitchenRequirement (id, uploadId, branchId, date, createdAt, status, requestType) "

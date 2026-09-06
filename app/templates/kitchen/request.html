@@ -44,7 +44,7 @@
 </div>
 {% endif %}
 <div class="card">
-  <form method="post" action="{{ url_for('kitchen.request_save') }}" class="js-no-scroll-restore">
+  <form method="post" action="{{ url_for('kitchen.request_save') }}" class="js-no-scroll-restore js-qty-draft" data-draft-key="kitchen-qty-draft:{{ request_type }}:{{ branch_id }}:{{ date }}:{{ department.id }}:{{ requirement_id }}">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="requestType" value="{{ request_type }}">
     <input type="hidden" name="departmentId" value="{{ department.id }}">
@@ -59,7 +59,7 @@
       <div class="js-search-row flex-row" data-search="{{ item.name | lower }}" style="align-items:center;gap:10px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">
         <span style="flex:1;">{{ item.name }}</span>
         <input type="hidden" name="itemId" value="{{ item.id }}">
-        <input type="number" name="qty" step="any" min="0" placeholder="0" style="width:90px;flex-shrink:0;">
+        <input type="number" name="qty" step="any" min="0" placeholder="0" class="js-qty-input" data-item-id="{{ item.id }}" style="width:90px;flex-shrink:0;">
       </div>
       {% endfor %}
       <p class="js-search-empty text-muted" hidden>No items match "<span class="js-search-query"></span>".</p>
@@ -102,5 +102,8 @@
 {% block scripts %}
 {% if step == 'edit' %}
 <script src="{{ url_for('static', filename='js/kitchen-edit-reason.js') }}"></script>
+{% endif %}
+{% if step == 'items' %}
+<script src="{{ url_for('static', filename='js/kitchen-qty-draft.js') }}"></script>
 {% endif %}
 {% endblock %}

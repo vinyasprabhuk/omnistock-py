@@ -33,6 +33,7 @@
       {% else %}<span class="badge badge-danger">Pending</span>{% endif %}
     </div>
     <div class="text-muted" style="font-size:0.78rem;">For {{ req.dateKey }} &middot; {{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}</div>
+    <div class="text-muted" style="font-size:0.7rem;font-family:monospace;">Txn: {{ req.id }}</div>
   </a>
   {% endfor %}
   {% endif %}
@@ -46,6 +47,7 @@
       {% else %}<span class="badge badge-danger">Pending</span>{% endif %}
     </div>
     <div class="text-muted" style="font-size:0.78rem;">For {{ req.dateKey }} &middot; {{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}</div>
+    <div class="text-muted" style="font-size:0.7rem;font-family:monospace;">Txn: {{ req.id }}</div>
   </a>
   {% endfor %}
   {% endif %}

@@ -42,6 +42,7 @@
       </span>
       <a class="btn btn-sm" href="{{ url_for('kitchen.review', requirement_id=req.id) }}">Edit rows</a>
     </div>
+    <div class="text-muted" style="font-size:0.72rem;font-family:monospace;margin-bottom:8px;">Txn: {{ req.id }}</div>
     <textarea id="comment-{{ req.id }}" rows="2" style="margin-bottom:8px;" placeholder="Comment -- optional to approve, required to reject"></textarea>
     <div class="flex-row" style="justify-content:flex-end;">
       <button type="submit" form="reject-form-{{ req.id }}" class="btn btn-sm">Reject</button>
@@ -74,6 +75,7 @@
       <span>
         <span class="badge {{ 'badge-warning' if batch.requestType == 'EXTRA' else 'badge-success' }}">{{ batch.requestType | title }}</span>
         &#128274; Approved by {{ batch.confirmedByName }} on {{ batch.confirmedAt }}
+        <span class="text-muted" style="font-size:0.72rem;font-family:monospace;display:block;">Txn: {{ batch.requirementId }}</span>
       </span>
       {% if current_user.role in ('ADMIN', 'MANAGER') %}
       <button type="submit" form="issue-form-{{ batch.requirementId }}" class="btn btn-sm btn-primary">Issue</button>
@@ -121,6 +123,7 @@
     <span>
       <span class="badge {{ 'badge-warning' if batch.requestType == 'EXTRA' else 'badge-success' }}">{{ batch.requestType | title }}</span>
       <span class="text-muted" style="font-size:0.85rem;">&#128274; Issued by {{ batch.issuedByName }} on {{ batch.issuedAt }}</span>
+      <span class="text-muted" style="font-size:0.72rem;font-family:monospace;display:block;">Txn: {{ batch.requirementId }}</span>
     </span>
     {{ export_button('/api/export/requirements?date=' ~ date ~ '&branchId=' ~ branch.branchId ~ '&requirementId=' ~ batch.requirementId) }}
   </div>
