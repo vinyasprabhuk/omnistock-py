@@ -21,6 +21,7 @@ from app.services.kitchen_requirement import (
     reject_kitchen_requirement,
     request_requirement_edit,
     save_department_to_requirement,
+    submit_requirement_draft,
     submit_requirement_edit,
     update_requirement_item,
     upload_kitchen_screenshot,
@@ -162,6 +163,20 @@ def request_save():
                                  departmentId=department_id, requirementId=requirement_id))
     flash("Department saved. Add another department, or Submit to finish.", "success")
     return redirect(url_for("kitchen.request_entry", type=request_type.lower(), requirementId=requirement_id))
+
+
+@bp.route("/kitchen/request/<requirement_id>/submit", methods=["POST"])
+@require_write
+def request_submit(requirement_id: str):
+    req = g.conn.execute("SELECT requestType FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+    request_type = (req["requestType"] if req else "REGULAR").lower()
+    try:
+        submit_requirement_draft(g.conn, requirement_id)
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("kitchen.request_entry", type=request_type, requirementId=requirement_id))
+    flash("Request submitted -- an admin can now review it.", "success")
+    return redirect(url_for("kitchen.review", requirement_id=requirement_id))
 
 
 @bp.route("/kitchen/upload", methods=["POST"])

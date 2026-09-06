@@ -37,9 +37,12 @@ def upload_kitchen_screenshot(conn: sqlite3.Connection, user_id: str, branch_id:
         (upload_id, saved["filePath"], saved["fileHash"], user_id, branch_id, now_db()),
     )
     requirement_id = new_id()
+    # File upload has always been a single, final action (no multi-department
+    # Save-then-Submit draft phase like the in-app Request flow) -- so it's
+    # immediately submitted, visible to Admin/Manager right away.
     conn.execute(
-        "INSERT INTO KitchenRequirement (id, uploadId, branchId, date, createdAt) VALUES (?, ?, ?, ?, ?)",
-        (requirement_id, upload_id, branch_id, date_key_to_db(date_key), now_db()),
+        "INSERT INTO KitchenRequirement (id, uploadId, branchId, date, createdAt, submittedAt) VALUES (?, ?, ?, ?, ?, ?)",
+        (requirement_id, upload_id, branch_id, date_key_to_db(date_key), now_db(), now_db()),
     )
     conn.commit()
 
@@ -147,6 +150,14 @@ def save_department_to_requirement(conn: sqlite3.Connection, user_id: str, branc
     requirement. Blank/zero quantities are the caller's job to filter out
     before calling this (lines here are assumed already qty > 0).
 
+    A department's Save still writes straight to the server (so progress
+    is never lost even if the browser crashes mid-session), but the new
+    KitchenRequirement's submittedAt stays NULL until the separate
+    submit_requirement_draft call -- Admin/Manager's Pending Review list
+    and nav badge only surface requirements where submittedAt is set, so
+    a kitchen user adding departments one at a time doesn't show up to an
+    admin until they actually click Submit.
+
     lines: [{"itemId": str, "qty": float}, ...]
     Returns the requirement_id (new or the same one passed in).
     """
@@ -191,6 +202,29 @@ def save_department_to_requirement(conn: sqlite3.Connection, user_id: str, branc
     return requirement_id
 
 
+def submit_requirement_draft(conn: sqlite3.Connection, requirement_id: str) -> None:
+    """The "Submit" action on the department-picker screen, once at least
+    one department has been Saved. This is the point a draft actually
+    becomes visible to Admin/Manager -- see save_department_to_requirement
+    for why submittedAt starts out NULL. Idempotent: submitting an
+    already-submitted draft again is a harmless no-op (e.g. a
+    double-click), not an error."""
+    req = conn.execute("SELECT status, submittedAt FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+    if req is None:
+        raise ValueError("Requirement not found")
+    if req["status"] != "PENDING":
+        raise ValueError("This request is no longer open for submitting")
+    if req["submittedAt"]:
+        return
+    has_items = conn.execute(
+        "SELECT 1 FROM KitchenRequirementItem WHERE requirementId = ? LIMIT 1", (requirement_id,)
+    ).fetchone()
+    if not has_items:
+        raise ValueError("Add at least one department before submitting")
+    conn.execute("UPDATE KitchenRequirement SET submittedAt = ? WHERE id = ?", (now_db(), requirement_id))
+    conn.commit()
+
+
 def get_open_requirements_for_kitchen(conn: sqlite3.Connection, branch_id: str, request_type: str,
                                        date_db: str | None = None) -> list[dict]:
     """Backs the Pending/Approved list on the Kitchen Upload page -- Kitchen
@@ -213,7 +247,7 @@ def get_open_requirements_for_kitchen(conn: sqlite3.Connection, branch_id: str, 
         params.append(date_db)
     rows = conn.execute(
         "SELECT kr.id AS id, kr.date AS date, kr.createdAt AS createdAt, kr.status AS status, "
-        "cu.name AS confirmedByName, "
+        "kr.submittedAt AS submittedAt, cu.name AS confirmedByName, "
         "COUNT(kri.id) AS itemCount, "
         "GROUP_CONCAT(DISTINCT d.name) AS departmentNames "
         "FROM KitchenRequirement kr "
@@ -327,7 +361,7 @@ def get_pending_requirements_for_branch_date(conn: sqlite3.Connection, branch_id
         "SUM(CASE WHEN kri.matchedItemId IS NULL THEN 1 ELSE 0 END) AS unmatchedCount "
         "FROM KitchenRequirement kr "
         "LEFT JOIN KitchenRequirementItem kri ON kri.requirementId = kr.id "
-        "WHERE kr.branchId = ? AND kr.date = ? AND kr.status = 'PENDING' "
+        "WHERE kr.branchId = ? AND kr.date = ? AND kr.status = 'PENDING' AND kr.submittedAt IS NOT NULL "
         "GROUP BY kr.id ORDER BY kr.createdAt ASC",
         (branch_id, date_db),
     ).fetchall()
@@ -367,7 +401,7 @@ def get_approved_requirements(conn: sqlite3.Connection, user: dict) -> list[dict
 def _requirements_by_status(conn: sqlite3.Connection, user: dict, status: str) -> list[dict]:
     if user is None or user["role"] not in ("ADMIN", "MANAGER"):
         return []
-    conditions = ["kr.status = ?"]
+    conditions = ["kr.status = ?", "kr.submittedAt IS NOT NULL"]
     params: list = [status]
     if user.get("branchId"):
         conditions.append("kr.branchId = ?")
@@ -395,7 +429,7 @@ def get_action_dates_for_branch(conn: sqlite3.Connection, branch_id: str) -> lis
     rows = conn.execute(
         "SELECT kr.date AS date, kr.status AS status, COUNT(*) AS requirementCount "
         "FROM KitchenRequirement kr "
-        "WHERE kr.branchId = ? AND kr.status IN ('PENDING', 'APPROVED') "
+        "WHERE kr.branchId = ? AND kr.status IN ('PENDING', 'APPROVED') AND kr.submittedAt IS NOT NULL "
         "GROUP BY kr.date, kr.status",
         (branch_id,),
     ).fetchall()
@@ -522,6 +556,8 @@ def approve_kitchen_requirement(conn: sqlite3.Connection, user_id: str, requirem
         raise ValueError("Requirement not found")
     if req["status"] != "PENDING":
         raise ValueError("Requirement is not pending approval")
+    if not req["submittedAt"]:
+        raise ValueError("Kitchen hasn't submitted this request yet")
     items = conn.execute("SELECT * FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,)).fetchall()
 
     unmatched = [i for i in items if not i["matchedItemId"]]

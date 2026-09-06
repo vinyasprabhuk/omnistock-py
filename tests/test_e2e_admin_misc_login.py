@@ -124,6 +124,131 @@ class TestKitchenRequestEntry:
         count = full_db_conn.execute("SELECT COUNT(*) c FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()["c"]
         assert count == 1, "still exactly one KitchenRequirement row -- one transaction"
 
+    def test_draft_not_visible_to_admin_until_submitted(self, full_app, full_db_conn, branch_id):
+        """The core Save-vs-Submit split: Save writes to the server right
+        away (so progress survives a crash), but admin should see nothing
+        until Submit is actually clicked."""
+        from app.services.kitchen_requirement import get_pending_requirements, get_pending_requirements_for_branch_date
+
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        dept = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 1").fetchone()
+        admin_id, _, _ = make_user(full_db_conn, "ADMIN", None)
+        admin_user = {"id": admin_id, "role": "ADMIN", "branchId": None}
+
+        resp = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": dept["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["4"],
+        })
+        requirement_id = resp.headers["Location"].rsplit("requirementId=", 1)[-1]
+
+        # The item row really is in the database already (Save writes
+        # immediately) -- it's specifically hidden from admin, not absent.
+        row = full_db_conn.execute(
+            "SELECT qty, submittedAt FROM KitchenRequirementItem kri "
+            "JOIN KitchenRequirement kr ON kr.id = kri.requirementId WHERE kri.requirementId = ?",
+            (requirement_id,),
+        ).fetchone()
+        assert row["qty"] == 4.0
+        assert row["submittedAt"] is None
+
+        req_date_db = full_db_conn.execute(
+            "SELECT date FROM KitchenRequirement WHERE id = ?", (requirement_id,)
+        ).fetchone()["date"]
+        assert all(r["id"] != requirement_id
+                   for r in get_pending_requirements_for_branch_date(full_db_conn, branch_id, req_date_db))
+        assert all(r["id"] != requirement_id for r in get_pending_requirements(full_db_conn, admin_user))
+
+        admin_client = _admin_client(full_app, full_db_conn)
+        resp_page = admin_client.get("/requirements?date=2026-08-25")
+        assert requirement_id.encode() not in resp_page.data
+
+        # Now actually Submit -- admin must see it immediately afterward.
+        client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
+        assert any(r["id"] == requirement_id for r in get_pending_requirements(full_db_conn, admin_user))
+        resp_page2 = admin_client.get("/requirements?date=2026-08-25")
+        assert requirement_id.encode() in resp_page2.data
+
+    def test_approve_blocked_before_submit(self, full_app, full_db_conn, branch_id):
+        from app.services.kitchen_requirement import approve_kitchen_requirement
+
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        dept = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 1").fetchone()
+        admin_id, _, _ = make_user(full_db_conn, "ADMIN", None)
+
+        resp = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": dept["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["4"],
+        })
+        requirement_id = resp.headers["Location"].rsplit("requirementId=", 1)[-1]
+
+        import pytest
+        with pytest.raises(ValueError, match="hasn't submitted"):
+            approve_kitchen_requirement(full_db_conn, admin_id, requirement_id)
+
+        client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
+        approve_kitchen_requirement(full_db_conn, admin_id, requirement_id)  # now succeeds
+        status = full_db_conn.execute("SELECT status FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()["status"]
+        assert status == "APPROVED"
+
+    def test_kitchen_can_still_add_departments_after_submit_while_pending(self, full_app, full_db_conn, branch_id):
+        """Submit only gates admin *visibility* -- kitchen can still add
+        more departments to an already-submitted-but-still-Pending
+        request, same as before this feature existed."""
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        items = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 2").fetchall()
+        depts = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 2").fetchall()
+
+        resp1 = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": depts[0]["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [items[0]["id"]], "qty": ["1"],
+        })
+        requirement_id = resp1.headers["Location"].rsplit("requirementId=", 1)[-1]
+        client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
+
+        resp2 = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": depts[1]["id"],
+            "date": "2026-08-25", "branchId": branch_id, "requirementId": requirement_id,
+            "itemId": [items[1]["id"]], "qty": ["2"],
+        })
+        assert resp2.status_code == 302
+        rows = full_db_conn.execute(
+            "SELECT DISTINCT departmentId FROM KitchenRequirementItem WHERE requirementId = ?", (requirement_id,)
+        ).fetchall()
+        assert len(rows) == 2
+
+    def test_submitting_twice_is_a_harmless_noop(self, full_app, full_db_conn, branch_id):
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        dept = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 1").fetchone()
+
+        resp = client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": dept["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["4"],
+        })
+        requirement_id = resp.headers["Location"].rsplit("requirementId=", 1)[-1]
+        r1 = client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
+        r2 = client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
+        assert r1.status_code == 302
+        assert r2.status_code == 302
+
     def test_second_regular_request_same_day_is_blocked(self, full_app, full_db_conn, branch_id):
         client = full_app.test_client()
         _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
@@ -211,6 +336,7 @@ class TestKitchenRequestEntry:
             "itemId": [item["id"]], "qty": ["3"],
         })
         requirement_id = resp1.headers["Location"].rsplit("requirementId=", 1)[-1]
+        client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
         from app.services.kitchen_requirement import approve_kitchen_requirement
         admin_id, _, _ = make_user(full_db_conn, "ADMIN", None)
         approve_kitchen_requirement(full_db_conn, admin_id, requirement_id)
@@ -232,6 +358,7 @@ class TestKitchenRequestEntry:
             "itemId": [item["id"]], "qty": ["3"],
         })
         requirement_id = resp1.headers["Location"].rsplit("requirementId=", 1)[-1]
+        client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
 
         from app.services.kitchen_requirement import approve_kitchen_requirement
         admin_id, _, _ = make_user(full_db_conn, "ADMIN", None)
@@ -325,11 +452,13 @@ class TestKitchenRequestEntry:
         token = csrf_token(client)
         item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
         dept = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 LIMIT 1").fetchone()
-        client.post("/kitchen/request/save", data={
+        resp0 = client.post("/kitchen/request/save", data={
             "_csrf_token": token, "requestType": "EXTRA", "departmentId": dept["id"],
             "date": "2026-08-25", "branchId": branch_id,
             "itemId": [item["id"]], "qty": ["1"],
         })
+        requirement_id = resp0.headers["Location"].rsplit("requirementId=", 1)[-1]
+        client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
 
         # The Pending list is scoped to whatever date the picker is on --
         # a request for 2026-08-25 shows up when viewing that date...

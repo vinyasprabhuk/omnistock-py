@@ -12,7 +12,11 @@
 <div class="card" style="font-size:0.85rem;">
   <strong>Saved so far:</strong> {{ saved_departments | join(', ') }}
 </div>
-<a class="btn btn-primary btn-block" href="{{ url_for('kitchen.review', requirement_id=requirement_id) }}">Submit</a>
+<form method="post" action="{{ url_for('kitchen.request_submit', requirement_id=requirement_id) }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-primary btn-block">Submit</button>
+</form>
+<p class="text-muted" style="font-size:0.8rem;margin-top:8px;">Admin won't see this request until you click Submit.</p>
 {% endif %}
 {% else %}
 <p class="text-muted" style="margin-top:-10px;">Pick a date{{ ', a branch,' if branches else '' }} then a department to see its items.</p>
