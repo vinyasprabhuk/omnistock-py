@@ -54,15 +54,22 @@ def preview_purchase_excel(conn: sqlite3.Connection, file_bytes: bytes, filename
 
 
 def commit_purchase_excel(conn: sqlite3.Connection, user_id: str, branch_id: str, date_key: str,
-                           supplier: str | None, rows: list[dict]) -> dict:
-    """rows: [{"itemId": str, "qty": float, "rate": float}, ...]"""
+                           supplier: str | None, rows: list[dict],
+                           gst_number: str | None = None, bill_no: str | None = None) -> dict:
+    """rows: [{"itemId": str, "qty": float, "rate": float}, ...]
+
+    gst_number/bill_no mirror create_purchase's -- captured on the Bulk
+    Upload review screen alongside supplier, for the same future Zoho
+    Books webhook sync."""
     if not rows:
         raise ValueError("No rows to save")
 
     purchase_id = new_id()
     conn.execute(
-        "INSERT INTO Purchase (id, date, branchId, supplier, createdAt) VALUES (?, ?, ?, ?, ?)",
-        (purchase_id, date_key_to_db(date_key), branch_id, supplier or None, now_db()),
+        "INSERT INTO Purchase (id, date, branchId, supplier, gstNumber, billNo, createdAt) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (purchase_id, date_key_to_db(date_key), branch_id, supplier or None,
+         gst_number or None, bill_no or None, now_db()),
     )
     for r in rows:
         conn.execute(

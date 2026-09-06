@@ -52,6 +52,41 @@ class TestPurchasesManualEntry:
         after = full_db_conn.execute("SELECT COUNT(*) FROM Purchase").fetchone()[0]
         assert after == before
 
+    def test_create_purchase_captures_gst_and_bill_no(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+
+        client.post("/purchases", data={
+            "_csrf_token": token, "date": "2026-08-25", "branchId": branch_id, "supplier": "Test Supplier",
+            "gstNumber": "29ABCDE1234F1Z5", "billNo": "INV-1001",
+            "itemId": item["id"], "qty": "10", "rate": "50",
+        })
+        row = full_db_conn.execute(
+            "SELECT supplier, gstNumber, billNo FROM Purchase WHERE branchId = ? ORDER BY createdAt DESC LIMIT 1",
+            (branch_id,),
+        ).fetchone()
+        assert row["supplier"] == "Test Supplier"
+        assert row["gstNumber"] == "29ABCDE1234F1Z5"
+        assert row["billNo"] == "INV-1001"
+
+    def test_create_purchase_without_gst_or_bill_no_stays_optional(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn, branch_id)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+
+        resp = client.post("/purchases", data={
+            "_csrf_token": token, "date": "2026-08-25", "branchId": branch_id,
+            "itemId": item["id"], "qty": "3", "rate": "5",
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+        row = full_db_conn.execute(
+            "SELECT gstNumber, billNo FROM Purchase WHERE branchId = ? ORDER BY createdAt DESC LIMIT 1",
+            (branch_id,),
+        ).fetchone()
+        assert row["gstNumber"] is None
+        assert row["billNo"] is None
+
     def test_purchase_visible_on_tracker_afterward(self, full_app, full_db_conn, branch_id):
         client = _admin_client(full_app, full_db_conn, branch_id)
         token = csrf_token(client)
@@ -126,11 +161,20 @@ class TestExcelPreviewAndCommit:
         before = full_db_conn.execute("SELECT COUNT(*) FROM PurchaseItem").fetchone()[0]
         commit_resp = client.post("/purchases/commit", data={
             "_csrf_token": token, "date": "2026-08-25", "branchId": branch_id,
+            "supplier": "Bulk Supplier", "gstNumber": "27AAAAA0000A1Z5", "billNo": "BULK-42",
             "itemId": item["id"], "qty": "5", "rate": "10",
         }, follow_redirects=True)
         assert commit_resp.status_code == 200
         after = full_db_conn.execute("SELECT COUNT(*) FROM PurchaseItem").fetchone()[0]
         assert after == before + 1
+
+        row = full_db_conn.execute(
+            "SELECT supplier, gstNumber, billNo FROM Purchase WHERE branchId = ? ORDER BY createdAt DESC LIMIT 1",
+            (branch_id,),
+        ).fetchone()
+        assert row["supplier"] == "Bulk Supplier"
+        assert row["gstNumber"] == "27AAAAA0000A1Z5"
+        assert row["billNo"] == "BULK-42"
 
     def test_issue_excel_preview_then_commit(self, full_app, full_db_conn, branch_id):
         client = _admin_client(full_app, full_db_conn, branch_id)

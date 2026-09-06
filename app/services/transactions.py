@@ -14,15 +14,23 @@ from app.services.departments import find_or_create_department
 
 
 def create_purchase(conn: sqlite3.Connection, user_id: str, branch_id: str, date_key: str,
-                     supplier: str | None, lines: list[dict]) -> str:
-    """lines: [{"itemId": str, "qty": float, "rate": float}, ...]"""
+                     supplier: str | None, lines: list[dict],
+                     gst_number: str | None = None, bill_no: str | None = None) -> str:
+    """lines: [{"itemId": str, "qty": float, "rate": float}, ...]
+
+    gst_number/bill_no are optional (not every vendor is GST-registered,
+    and a bill number may not be in hand yet at entry time), captured
+    alongside supplier for a future Zoho Books webhook sync to match
+    against -- the existing `date` doubles as the vendor's bill date."""
     if not lines:
         raise ValueError("Add at least one line item")
 
     purchase_id = new_id()
     conn.execute(
-        "INSERT INTO Purchase (id, date, branchId, supplier, createdAt) VALUES (?, ?, ?, ?, ?)",
-        (purchase_id, date_key_to_db(date_key), branch_id, supplier or None, now_db()),
+        "INSERT INTO Purchase (id, date, branchId, supplier, gstNumber, billNo, createdAt) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (purchase_id, date_key_to_db(date_key), branch_id, supplier or None,
+         gst_number or None, bill_no or None, now_db()),
     )
     for line in lines:
         conn.execute(
