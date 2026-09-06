@@ -32,3 +32,4 @@ tests/parity_out/
 # Editor
 .vscode/
 .idea/
+tests_ui/.env.local

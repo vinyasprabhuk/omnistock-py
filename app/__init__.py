@@ -45,6 +45,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
     from app.views.intent import bp as intent_bp
     from app.views.recipe import bp as recipe_bp
     from app.views.webhooks import bp as webhooks_bp
+    from app.views.opening_stock import bp as opening_stock_bp
 
     app.register_blueprint(login_bp)
     app.register_blueprint(files_bp)
@@ -62,6 +63,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
     app.register_blueprint(intent_bp)
     app.register_blueprint(recipe_bp)
     app.register_blueprint(webhooks_bp)
+    app.register_blueprint(opening_stock_bp)
 
     from app.services.color import is_light_color
     from app.formatting import fmt, money, money_grouped, pct
@@ -186,6 +188,7 @@ def create_app(config_object: str = "config.Config") -> Flask:
 _ALL_NAV_LINKS = [
     {"href": "/dashboard", "label": "Dashboard", "roles": ["ADMIN", "VIEWER"]},
     {"href": "/inventory", "label": "Master Inventory", "roles": ["ADMIN", "MANAGER", "STORE", "VIEWER"]},
+    {"href": "/opening-stock", "label": "Opening Stock", "roles": ["ADMIN", "MANAGER", "STORE", "KITCHEN"]},
     {"href": "/kitchen", "label": "Kitchen Upload", "roles": ["ADMIN", "MANAGER", "KITCHEN"]},
     {"href": "/intent", "label": "Intent", "roles": ["ADMIN"]},
     {"href": "/recipe", "label": "Recipe", "roles": ["ADMIN"]},
@@ -207,7 +210,7 @@ _DESKTOP_SLOTS = [
     ("link", "/dashboard"),
     ("link", "/inventory"),
     ("link", "/tracker"),
-    ("group", "Operations", ["/purchases", "/issue", "/wastage"]),
+    ("group", "Operations", ["/purchases", "/issue", "/wastage", "/opening-stock"]),
     ("group", "Planning", ["/intent", "/recipe", "/kitchen", "/requirements"]),
     ("link", "/admin"),
 ]

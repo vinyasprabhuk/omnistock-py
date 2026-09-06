@@ -1,3 +1,11 @@
 # Dev/test-only dependencies -- never installed on the production host.
 -r requirements.txt
 pytest==8.3.4
+
+# tests_ui/ only -- real-browser regression suite against a live
+# deployment (test env), not needed for the tests/ Flask-test-client
+# suite. Uses the system's installed Chrome via channel="chrome", not
+# Playwright's own bundled browser download (unsupported on some hosts),
+# so no `playwright install` step is required.
+playwright==1.62.0
+pytest-playwright==0.9.0
