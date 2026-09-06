@@ -12,34 +12,35 @@
 #
 # Deliberately does NOT run `pip install` on every deploy. This host has a
 # tight memory limit that has previously OOM-killed dependency installs
-# (see README.md) -- so deploys here are just "copy the new files", not
-# "reinstall the world". When a dependency genuinely changes, install it
-# manually once via Terminal (with --only-binary=:all:), the same way the
-# original working environment was built.
+# (see README.md) -- so deploys here are just "update the tracked files",
+# not "reinstall the world". When a dependency genuinely changes, install
+# it manually once via Terminal (with --only-binary=:all:), the same way
+# the original working environment was built. Likewise, a schema change
+# needs its migration script run manually once after deploying -- see
+# tools/migrate_*.py.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/wattsupc/inventory.mokshamveg.com/
-    # Wiping $DEPLOYPATH/app before copying the new one over mirrors app/
-    # exactly -- a file removed from the repo (e.g. a deleted feature)
-    # gets removed on the server too. `cp -R` alone only ever
-    # adds/overwrites, so a deleted source file would silently stay on
-    # the server forever -- exactly what happened when the Workstation
-    # Photos feature was removed (see the "Remove Workstation Photos
-    # feature" commit): the deploy never actually removed the old files,
-    # so stale code kept running no matter how many times it redeployed.
-    # (Originally used `rsync -a --delete` for this, but rsync isn't
+    # This repo's Repository Path IS the live app folder (proven by the
+    # .git directory sitting right next to passenger_wsgi.py on the
+    # server) -- there is no separate staging clone to copy FROM. Every
+    # earlier version of this file tried to copy app/ from a path onto
+    # that exact same path (first via `rsync -a --delete app/
+    # $DEPLOYPATH/app/`, which just silently no-op'd since rsync isn't
     # installed on this host -- confirmed via `which rsync` returning
-    # nothing -- so that line silently failed on every deploy, meaning
-    # app/ was NEVER actually updated by "Deploy HEAD Commit" even
-    # though the other files were. rm+cp needs no extra binary.)
-    - /bin/rm -rf $DEPLOYPATH/app
-    - /bin/cp -R app $DEPLOYPATH/app
-    - /bin/cp -R config.py $DEPLOYPATH
-    - /bin/cp -R passenger_wsgi.py $DEPLOYPATH
-    - /bin/cp -R wsgi.py $DEPLOYPATH
-    - /bin/cp -R requirements.txt $DEPLOYPATH
-    - /bin/cp -R tools $DEPLOYPATH
-    # NOT copied on purpose -- these hold real data / secrets / local
-    # working files and must never be overwritten by a deploy:
-    #   instance/dev.db, instance/secret_key, uploads/, .venv/
+    # nothing -- so app/ was never actually being touched; then via
+    # `rm -rf $DEPLOYPATH/app && cp -R app $DEPLOYPATH/app`, which is
+    # even worse: it deletes app/ and then tries to copy it from the
+    # now-deleted source, guaranteed to fail and take the whole site
+    # down with a bare `ModuleNotFoundError: No module named 'app'`.
+    # This actually happened twice in production.
+    #
+    # The fix: don't copy anything. `git checkout -f HEAD` re-populates
+    # every tracked file (including deleting ones removed from the repo,
+    # e.g. the old Workstation Photos feature files, which is the exact
+    # problem the old rsync/cp dance was trying and failing to solve)
+    # directly from the same working directory the deploy tasks already
+    # run in -- no path confusion possible. Untracked/gitignored paths
+    # (instance/dev.db, instance/secret_key, instance/audit.db,
+    # uploads/, .venv/, tmp/) are never touched by checkout regardless.
+    - /usr/local/cpanel/3rdparty/lib/path-bin/git -C /home/wattsupc/inventory.mokshamveg.com checkout -f HEAD
     - touch /home/wattsupc/inventory.mokshamveg.com/tmp/restart.txt
