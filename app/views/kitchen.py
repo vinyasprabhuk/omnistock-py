@@ -38,15 +38,17 @@ def index():
     branches = list_branches_for_admin(conn) if not user_branch_id else []
     date = request.args.get("date") or today_key()
     pending_regular = pending_extra = []
+    regular_exists_for_date = False
     branch_for_pending = user_branch_id or request.args.get("branchId")
     if branch_for_pending:
         date_db = date_key_to_db(date)
         pending_regular = get_open_requirements_for_kitchen(conn, branch_for_pending, "REGULAR", date_db)
         pending_extra = get_open_requirements_for_kitchen(conn, branch_for_pending, "EXTRA", date_db)
+        regular_exists_for_date = get_regular_requirement_for_date(conn, branch_for_pending, date_db) is not None
     return render_template(
         "kitchen/index.html", branches=branches, user_branch_id=user_branch_id, today=today_key(),
         pending_regular=pending_regular, pending_extra=pending_extra, branch_id=branch_for_pending or "",
-        date=date,
+        regular_exists_for_date=regular_exists_for_date, date=date,
     )
 
 

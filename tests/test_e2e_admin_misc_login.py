@@ -342,6 +342,35 @@ class TestKitchenRequestEntry:
         resp2 = client.get("/kitchen?date=2026-08-26")
         assert b"Pending" not in resp2.data
 
+    def test_request_regular_button_greys_out_once_one_exists_for_date(self, full_app, full_db_conn, branch_id):
+        client = full_app.test_client()
+        _, username, password = make_user(full_db_conn, "KITCHEN", branch_id)
+        login(client, username, password)
+        token = csrf_token(client)
+        item = full_db_conn.execute("SELECT id FROM Item WHERE active = 1 LIMIT 1").fetchone()
+        dept = full_db_conn.execute("SELECT id FROM Department WHERE active = 1 AND name != 'Historical Import' LIMIT 1").fetchone()
+
+        before = client.get("/kitchen?date=2026-08-25")
+        assert b'href="/kitchen/request?type=regular&amp;date=2026-08-25"' in before.data
+        assert b"disabled" not in before.data
+
+        client.post("/kitchen/request/save", data={
+            "_csrf_token": token, "requestType": "REGULAR", "departmentId": dept["id"],
+            "date": "2026-08-25", "branchId": branch_id,
+            "itemId": [item["id"]], "qty": ["1"],
+        })
+
+        after = client.get("/kitchen?date=2026-08-25")
+        assert b"Request Regular Items</button>" in after.data, "button must be a disabled <button>, not a clickable link, once one exists"
+        assert b"disabled" in after.data
+
+        # Extra stays unaffected -- still a clickable link.
+        assert b'href="/kitchen/request?type=extra&amp;date=2026-08-25"' in after.data
+
+        # An unrelated date has no Regular request yet, so its button stays active.
+        other_date = client.get("/kitchen?date=2026-08-26")
+        assert b'href="/kitchen/request?type=regular&amp;date=2026-08-26"' in other_date.data
+
 
 class TestLoginLogoutCsrf:
     def test_logout_clears_session(self, full_app, full_db_conn, branch_id):

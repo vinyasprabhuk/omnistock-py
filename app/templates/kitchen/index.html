@@ -14,9 +14,16 @@
     {{ date_switcher(date) }}
   </div>
   <div style="display:flex;flex-direction:column;gap:12px;">
+    {% if regular_exists_for_date %}
+    <button type="button" class="btn btn-block" style="height:56px;font-size:1rem;opacity:0.5;cursor:not-allowed;" disabled title="A Regular request already exists for this date -- see it below to edit.">Request Regular Items</button>
+    {% else %}
     <a class="btn btn-primary btn-block" style="height:56px;font-size:1rem;" href="{{ url_for('kitchen.request_entry', type='regular', date=date) }}">Request Regular Items</a>
+    {% endif %}
     <a class="btn btn-block" style="height:56px;font-size:1rem;" href="{{ url_for('kitchen.request_entry', type='extra', date=date) }}">Request Extra Items</a>
   </div>
+  {% if regular_exists_for_date %}
+  <p class="text-muted" style="font-size:0.8rem;margin-top:10px;margin-bottom:0;">Already requested for {{ date }} -- see it below to review or edit.</p>
+  {% endif %}
 </div>
 
 {% if pending_regular or pending_extra %}
