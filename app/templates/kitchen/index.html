@@ -14,9 +14,16 @@
     {{ date_switcher(date) }}
   </div>
   <div style="display:flex;flex-direction:column;gap:12px;">
+    {% if regular_exists_for_date %}
+    <button type="button" class="btn btn-block" style="height:56px;font-size:1rem;opacity:0.5;cursor:not-allowed;" disabled title="A Regular request already exists for this date -- see it below to edit.">Request Regular Items</button>
+    {% else %}
     <a class="btn btn-primary btn-block" style="height:56px;font-size:1rem;" href="{{ url_for('kitchen.request_entry', type='regular', date=date) }}">Request Regular Items</a>
+    {% endif %}
     <a class="btn btn-block" style="height:56px;font-size:1rem;" href="{{ url_for('kitchen.request_entry', type='extra', date=date) }}">Request Extra Items</a>
   </div>
+  {% if regular_exists_for_date %}
+  <p class="text-muted" style="font-size:0.8rem;margin-top:10px;margin-bottom:0;">Already requested for {{ date }} -- see it below to review or edit.</p>
+  {% endif %}
 </div>
 
 {% if pending_regular or pending_extra %}
@@ -26,26 +33,30 @@
   {% if pending_regular %}
   <div class="text-muted" style="font-size:0.8rem;font-weight:600;margin:14px 0 6px;">Regular</div>
   {% for req in pending_regular %}
-  <a href="{{ url_for('kitchen.review', requirement_id=req.id) }}" style="display:block;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;text-decoration:none;color:inherit;">
+  <a href="{{ url_for('kitchen.request_entry', type='regular', date=req.dateKey, requirementId=req.id) if req.status == 'PENDING' else url_for('kitchen.review', requirement_id=req.id) }}" style="display:block;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;text-decoration:none;color:inherit;">
     <div class="flex-row" style="justify-content:space-between;">
       <span>{{ req.departmentNames or 'No items yet' }}</span>
       {% if req.status == 'APPROVED' %}<span class="badge badge-success">&#128274; Approved by {{ req.confirmedByName or 'admin' }}</span>
+      {% elif not req.submittedAt %}<span class="badge" style="background:var(--border);color:inherit;">Draft -- not submitted</span>
       {% else %}<span class="badge badge-danger">Pending</span>{% endif %}
     </div>
     <div class="text-muted" style="font-size:0.78rem;">For {{ req.dateKey }} &middot; {{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}</div>
+    <div class="text-muted" style="font-size:0.7rem;font-family:monospace;">Txn: {{ req.id }}</div>
   </a>
   {% endfor %}
   {% endif %}
   {% if pending_extra %}
   <div class="text-muted" style="font-size:0.8rem;font-weight:600;margin:14px 0 6px;">Extra</div>
   {% for req in pending_extra %}
-  <a href="{{ url_for('kitchen.review', requirement_id=req.id) }}" style="display:block;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;text-decoration:none;color:inherit;">
+  <a href="{{ url_for('kitchen.request_entry', type='extra', date=req.dateKey, requirementId=req.id) if req.status == 'PENDING' else url_for('kitchen.review', requirement_id=req.id) }}" style="display:block;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;text-decoration:none;color:inherit;">
     <div class="flex-row" style="justify-content:space-between;">
       <span>{{ req.departmentNames or 'No items yet' }}</span>
       {% if req.status == 'APPROVED' %}<span class="badge badge-success">&#128274; Approved by {{ req.confirmedByName or 'admin' }}</span>
+      {% elif not req.submittedAt %}<span class="badge" style="background:var(--border);color:inherit;">Draft -- not submitted</span>
       {% else %}<span class="badge badge-danger">Pending</span>{% endif %}
     </div>
     <div class="text-muted" style="font-size:0.78rem;">For {{ req.dateKey }} &middot; {{ req.itemCount }} item{{ 's' if req.itemCount != 1 else '' }}</div>
+    <div class="text-muted" style="font-size:0.7rem;font-family:monospace;">Txn: {{ req.id }}</div>
   </a>
   {% endfor %}
   {% endif %}

@@ -106,6 +106,8 @@ MIGRATIONS = (
     "migrate_add_workstation",
     "migrate_add_requirement_review",
     "migrate_kitchen_requirement_v2",
+    "migrate_kitchen_requirement_v3",
+    "migrate_purchase_vendor_fields",
 )
 
 

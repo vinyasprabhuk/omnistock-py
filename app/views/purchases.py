@@ -29,6 +29,8 @@ def create():
     date_key = request.form.get("date") or ""
     branch_id = user_branch_id or request.form.get("branchId")
     supplier = (request.form.get("supplier") or "").strip() or None
+    gst_number = (request.form.get("gstNumber") or "").strip() or None
+    bill_no = (request.form.get("billNo") or "").strip() or None
 
     item_ids = request.form.getlist("itemId")
     qtys = request.form.getlist("qty")
@@ -52,7 +54,8 @@ def create():
         flash("Date is required.", "error")
         return redirect(url_for("purchases.index"))
 
-    purchase_id = create_purchase(conn, g.user["id"], branch_id, date_key, supplier, lines)
+    purchase_id = create_purchase(conn, g.user["id"], branch_id, date_key, supplier, lines,
+                                   gst_number=gst_number, bill_no=bill_no)
 
     receipt = request.files.get("receipt")
     if receipt and receipt.filename:
@@ -90,6 +93,8 @@ def commit():
     date_key = request.form.get("date") or ""
     branch_id = user_branch_id or request.form.get("branchId")
     supplier = (request.form.get("supplier") or "").strip() or None
+    gst_number = (request.form.get("gstNumber") or "").strip() or None
+    bill_no = (request.form.get("billNo") or "").strip() or None
 
     item_ids = request.form.getlist("itemId")
     qtys = request.form.getlist("qty")
@@ -107,6 +112,7 @@ def commit():
         flash("Every row needs a matched item and quantity before confirming.", "error")
         return redirect(url_for("purchases.index"))
 
-    result = commit_purchase_excel(conn, g.user["id"], branch_id, date_key, supplier, rows)
+    result = commit_purchase_excel(conn, g.user["id"], branch_id, date_key, supplier, rows,
+                                    gst_number=gst_number, bill_no=bill_no)
     flash(f"Saved {result['itemsCreated']} purchase line item(s).", "success")
     return redirect(url_for("purchases.index"))

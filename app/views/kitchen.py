@@ -14,12 +14,14 @@ from app.services.kitchen_requirement import (
     get_department_history_items,
     get_draft_requirement_departments,
     get_open_requirements_for_kitchen,
+    get_regular_requirement_for_date,
     get_requestable_departments,
     get_requirement_for_review,
     issue_kitchen_requirement,
     reject_kitchen_requirement,
     request_requirement_edit,
     save_department_to_requirement,
+    submit_requirement_draft,
     submit_requirement_edit,
     update_requirement_item,
     upload_kitchen_screenshot,
@@ -37,15 +39,17 @@ def index():
     branches = list_branches_for_admin(conn) if not user_branch_id else []
     date = request.args.get("date") or today_key()
     pending_regular = pending_extra = []
+    regular_exists_for_date = False
     branch_for_pending = user_branch_id or request.args.get("branchId")
     if branch_for_pending:
         date_db = date_key_to_db(date)
         pending_regular = get_open_requirements_for_kitchen(conn, branch_for_pending, "REGULAR", date_db)
         pending_extra = get_open_requirements_for_kitchen(conn, branch_for_pending, "EXTRA", date_db)
+        regular_exists_for_date = get_regular_requirement_for_date(conn, branch_for_pending, date_db) is not None
     return render_template(
         "kitchen/index.html", branches=branches, user_branch_id=user_branch_id, today=today_key(),
         pending_regular=pending_regular, pending_extra=pending_extra, branch_id=branch_for_pending or "",
-        date=date,
+        regular_exists_for_date=regular_exists_for_date, date=date,
     )
 
 
@@ -79,6 +83,18 @@ def request_entry():
             saved_departments = get_draft_requirement_departments(conn, requirement_id)
             date = from_db(req["date"]).strftime("%Y-%m-%d")
             branch_id = req["branchId"]
+    elif request_type == "REGULAR" and branch_id:
+        # Only one Regular request per branch per day -- if today's (or
+        # whatever date is selected) already exists, resume it instead of
+        # letting the user start a second one that would only fail once
+        # they tried to save a department into it.
+        existing = get_regular_requirement_for_date(conn, branch_id, date_key_to_db(date))
+        if existing:
+            if existing["status"] == "PENDING":
+                return redirect(url_for("kitchen.request_entry", type="regular", date=date,
+                                         branchId=branch_id, requirementId=existing["id"]))
+            flash("A Regular request already exists for this date -- opening it below.", "info")
+            return redirect(url_for("kitchen.review", requirement_id=existing["id"]))
 
     if not department_id:
         departments = get_requestable_departments(conn)
@@ -147,6 +163,20 @@ def request_save():
                                  departmentId=department_id, requirementId=requirement_id))
     flash("Department saved. Add another department, or Submit to finish.", "success")
     return redirect(url_for("kitchen.request_entry", type=request_type.lower(), requirementId=requirement_id))
+
+
+@bp.route("/kitchen/request/<requirement_id>/submit", methods=["POST"])
+@require_write
+def request_submit(requirement_id: str):
+    req = g.conn.execute("SELECT requestType FROM KitchenRequirement WHERE id = ?", (requirement_id,)).fetchone()
+    request_type = (req["requestType"] if req else "REGULAR").lower()
+    try:
+        submit_requirement_draft(g.conn, requirement_id)
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("kitchen.request_entry", type=request_type, requirementId=requirement_id))
+    flash("Request submitted -- an admin can now review it.", "success")
+    return redirect(url_for("kitchen.review", requirement_id=requirement_id))
 
 
 @bp.route("/kitchen/upload", methods=["POST"])

@@ -12,23 +12,32 @@
 #
 # Deliberately does NOT run `pip install` on every deploy. This host has a
 # tight memory limit that has previously OOM-killed dependency installs
-# (see README.md) -- so deploys here are just "copy the new files", not
-# "reinstall the world". When a dependency genuinely changes, install it
-# manually once via Terminal (with --only-binary=:all:), the same way the
-# original working environment was built.
-# THIS BRANCH (test-deploy) ONLY -- deploys to the separate test subdomain,
-# never to production. Do not merge this file's DEPLOYPATH change into main.
+# (see README.md) -- so deploys here are just "update the tracked files",
+# not "reinstall the world". When a dependency genuinely changes, install
+# it manually once via Terminal (with --only-binary=:all:), the same way
+# the original working environment was built. Likewise, a schema change
+# needs its migration script run manually once after deploying -- see
+# tools/migrate_*.py.
+#
+# THIS BRANCH (test-deploy) ONLY -- deploys to the separate test
+# subdomain, never to production. Do not merge this file's DEPLOYPATH
+# section into main.
+#
+# Unlike production (where the Repository Path IS the live serving
+# folder -- see main's .cpanel.yml for that whole story), the test
+# environment's Repository Path (wherever cPanel checked this repo out
+# to) is a genuinely separate directory from where the app is actually
+# served (test.inventory.mokshamveg.com) -- so copying files from one to
+# the other is correct here, not the self-referential mistake main's
+# file made. rsync isn't installed on this host (confirmed via `which
+# rsync` returning nothing), so rm+cp is used instead -- it needs no
+# extra binary and gives the same "a file deleted from the repo actually
+# gets removed on the server" guarantee that `rsync --delete` would.
 deployment:
   tasks:
     - export DEPLOYPATH=/home/wattsupc/test.inventory.mokshamveg.com/
-    # rsync --delete mirrors app/ exactly -- a file removed from the repo
-    # (e.g. a deleted feature) gets removed on the server too. `cp -R`
-    # only ever adds/overwrites, so a deleted source file silently stays
-    # on the server forever -- exactly what happened when the Workstation
-    # Photos feature was removed (see the "Remove Workstation Photos
-    # feature" commit): the deploy never actually removed the old files,
-    # so stale code kept running no matter how many times it redeployed.
-    - /usr/bin/rsync -a --delete app/ $DEPLOYPATH/app/
+    - /bin/rm -rf $DEPLOYPATH/app
+    - /bin/cp -R app $DEPLOYPATH/app
     - /bin/cp -R config.py $DEPLOYPATH
     - /bin/cp -R passenger_wsgi.py $DEPLOYPATH
     - /bin/cp -R wsgi.py $DEPLOYPATH

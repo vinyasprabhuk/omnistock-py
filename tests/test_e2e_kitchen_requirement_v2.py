@@ -28,10 +28,10 @@ def _kitchen_client(full_app, full_db_conn, branch_id):
 def _submit(client, token, branch_id, department_id, request_type, lines, date="2026-08-25"):
     """Saves one department's worth of items as a new Regular/Extra
     request (the first Save of a session -- see request_save/
-    save_department_to_requirement) and returns the resulting
-    requirement_id. Save redirects back to the department picker
-    (?requirementId=...), not straight to the review page -- Submit
-    there is just a plain navigation link once a department is saved."""
+    save_department_to_requirement), then actually clicks Submit
+    (request_submit/submit_requirement_draft) so it's visible to
+    Admin/Manager, and returns the resulting requirement_id -- matching
+    what a real single-department kitchen session does end to end."""
     data = {
         "_csrf_token": token, "requestType": request_type, "departmentId": department_id,
         "date": date, "branchId": branch_id,
@@ -40,7 +40,9 @@ def _submit(client, token, branch_id, department_id, request_type, lines, date="
     resp = client.post("/kitchen/request/save", data=data)
     if resp.status_code != 302:
         return None
-    return resp.headers["Location"].rsplit("requirementId=", 1)[-1]
+    requirement_id = resp.headers["Location"].rsplit("requirementId=", 1)[-1]
+    client.post(f"/kitchen/request/{requirement_id}/submit", data={"_csrf_token": token})
+    return requirement_id
 
 
 def _approve(client, token, requirement_id, branch_id, date="2026-08-25"):

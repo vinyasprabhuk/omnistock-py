@@ -14,7 +14,11 @@
       <select name="branchId" style="width:200px;">{% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
     </label>
     {% endif %}
-    <label class="field" style="width:auto;margin-bottom:16px;"><span>Supplier (optional)</span><input type="text" name="supplier" style="width:240px;"></label>
+    <div class="flex-row" style="margin-bottom:16px;">
+      <label class="field" style="width:auto;"><span>Supplier (optional)</span><input type="text" name="supplier" style="width:220px;"></label>
+      <label class="field" style="width:auto;"><span>GST Number (optional)</span><input type="text" name="gstNumber" style="width:180px;"></label>
+      <label class="field" style="width:auto;"><span>Bill No (optional)</span><input type="text" name="billNo" style="width:140px;"></label>
+    </div>
 
     <div class="table-wrap">
       <table>
