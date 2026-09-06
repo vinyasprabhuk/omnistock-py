@@ -5,6 +5,12 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 from app.auth.page_branch import list_branches_for_admin
 from app.security import require_write
 from app.services.excel_upload import commit_purchase_excel, preview_purchase_excel
+from app.services.purchase_webhook import (
+    approve_webhook_event,
+    get_pending_webhook_events,
+    get_webhook_event_for_review,
+    reject_webhook_event,
+)
 from app.services.transactions import attach_purchase_receipt, create_purchase
 
 bp = Blueprint("purchases", __name__)
@@ -18,7 +24,9 @@ def index():
         "SELECT id, name, unit FROM Item WHERE active = 1 ORDER BY name ASC"
     )]
     branches = list_branches_for_admin(conn) if not user_branch_id else []
-    return render_template("purchases/index.html", items=items, branches=branches, user_branch_id=user_branch_id)
+    pending_webhook_count = len(get_pending_webhook_events(conn))
+    return render_template("purchases/index.html", items=items, branches=branches,
+                            user_branch_id=user_branch_id, pending_webhook_count=pending_webhook_count)
 
 
 @bp.route("/purchases", methods=["POST"])
@@ -116,3 +124,72 @@ def commit():
                                     gst_number=gst_number, bill_no=bill_no)
     flash(f"Saved {result['itemsCreated']} purchase line item(s).", "success")
     return redirect(url_for("purchases.index"))
+
+
+@bp.route("/purchases/incoming", methods=["GET"])
+def incoming():
+    events = get_pending_webhook_events(g.conn)
+    return render_template("purchases/incoming.html", events=events)
+
+
+@bp.route("/purchases/incoming/<event_id>", methods=["GET"])
+def incoming_review(event_id: str):
+    conn = g.conn
+    event = get_webhook_event_for_review(conn, event_id)
+    if event is None:
+        flash("That invoice event was not found.", "error")
+        return redirect(url_for("purchases.incoming"))
+    user_branch_id = g.user.get("branchId")
+    branches = list_branches_for_admin(conn) if not user_branch_id else []
+    all_items = [dict(r) for r in conn.execute("SELECT id, name, unit FROM Item WHERE active = 1 ORDER BY name ASC")]
+    return render_template(
+        "purchases/incoming_review.html", event=event, all_items=all_items,
+        branches=branches, user_branch_id=user_branch_id,
+    )
+
+
+@bp.route("/purchases/incoming/<event_id>/approve", methods=["POST"])
+@require_write
+def incoming_approve(event_id: str):
+    conn = g.conn
+    user_branch_id = g.user.get("branchId")
+    branch_id = user_branch_id or request.form.get("branchId")
+
+    item_ids = request.form.getlist("itemId")
+    qtys = request.form.getlist("qty")
+    rates = request.form.getlist("rate")
+
+    lines = []
+    for item_id, qty, rate in zip(item_ids, qtys, rates):
+        if item_id and qty:
+            try:
+                lines.append({"itemId": item_id, "qty": float(qty), "rate": float(rate or 0)})
+            except ValueError:
+                continue
+
+    if not branch_id:
+        flash("Select a branch first.", "error")
+        return redirect(url_for("purchases.incoming_review", event_id=event_id))
+
+    try:
+        approve_webhook_event(conn, g.user["id"], event_id, branch_id, lines)
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("purchases.incoming_review", event_id=event_id))
+
+    flash("Invoice approved and saved as a Purchase.", "success")
+    return redirect(url_for("purchases.incoming"))
+
+
+@bp.route("/purchases/incoming/<event_id>/reject", methods=["POST"])
+@require_write
+def incoming_reject(event_id: str):
+    reason = request.form.get("reason") or ""
+    try:
+        reject_webhook_event(g.conn, g.user["id"], event_id, reason)
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("purchases.incoming_review", event_id=event_id))
+
+    flash("Invoice rejected.", "success")
+    return redirect(url_for("purchases.incoming"))
