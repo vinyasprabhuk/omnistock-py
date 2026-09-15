@@ -14,8 +14,11 @@ document.addEventListener("click", (e) => {
   dialog.querySelector("#issue-adjust-current").textContent = `${btn.dataset.current} ${btn.dataset.unit}`;
   dialog.querySelector("#issue-adjust-unit").textContent = btn.dataset.unit;
   dialog.querySelector('[name="departmentName"]').value = "";
-  dialog.querySelector('[name="qty"]').value = "";
+  // Pre-fill with the CURRENT total, not blank -- this is an edit-in-place
+  // ("whatever you type becomes the new total"), not an empty delta field.
+  dialog.querySelector("#issue-adjust-qty").value = btn.dataset.current;
   dialog.showModal();
+  dialog.querySelector("#issue-adjust-qty").select();
 });
 
 document.addEventListener("click", (e) => {
