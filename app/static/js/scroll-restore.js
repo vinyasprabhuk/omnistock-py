@@ -5,13 +5,38 @@
 // Review, Tracker, Wastage...). This remembers the scroll position across
 // that submit -> redirect -> reload cycle, then forgets it.
 //
-// Opt out on a specific form with class "js-no-scroll-restore" (e.g. login,
-// where landing at the top of a new page is correct).
+// Same idea for a plain link click that just changes query params on the
+// SAME page (filter/date-range/tab links, e.g. the Dashboard's chart date
+// pickers) -- those are also "approximately the same page", just re-scoped,
+// so losing scroll position there is the same bug. A link to a genuinely
+// different page (main nav, etc.) should still land at the top, so this
+// only fires when the clicked link's pathname matches the current page's.
+//
+// Opt out on a specific form/link with class "js-no-scroll-restore" (e.g.
+// login, where landing at the top of a new page is correct).
 const SCROLL_KEY = "omnistock:scrollY";
+
+function saveScroll() {
+  sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+}
 
 document.addEventListener("submit", (e) => {
   if (e.target.classList.contains("js-no-scroll-restore")) return;
-  sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+  saveScroll();
+});
+
+document.addEventListener("click", (e) => {
+  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+  const link = e.target.closest("a[href]");
+  if (!link || link.closest(".js-no-scroll-restore")) return;
+  if (link.target === "_blank" || link.hasAttribute("download")) return;
+  const href = link.getAttribute("href");
+  if (!href || href.startsWith("#") || href.startsWith("javascript:") ||
+      href.startsWith("mailto:") || href.startsWith("tel:")) return;
+  let url;
+  try { url = new URL(href, window.location.href); } catch { return; }
+  if (url.origin !== window.location.origin || url.pathname !== window.location.pathname) return;
+  saveScroll();
 });
 
 window.addEventListener("DOMContentLoaded", () => {

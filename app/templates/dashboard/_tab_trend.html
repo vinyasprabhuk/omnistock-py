@@ -1,0 +1,55 @@
+{% from "dashboard/_macros.html" import chart_date_picker %}
+<p class="text-muted">Total Produced, Wasted and Variance logged each day (all recipes combined, in Litres) &mdash; {{ 'selected date range' if from_param and to_param else 'today' }}. Variance = Produced &minus; Sold &minus; Wasted, same formula as the Variance tool; sourced from the same Production/Wastage log entries.</p>
+{% if trend_has_data and not trend_any_sales %}
+<p class="text-muted" style="font-size:0.85rem;">No Dish Sale report has been uploaded for any day in this window yet, so Sold is treated as 0 and Variance below is really just Produced &minus; Wasted until one is uploaded.</p>
+{% endif %}
+
+<div class="card">
+  {{ chart_date_picker(active_tab, branch.branchId, department_name, from_param, to_param, last_week_from_key, last_week_to_key, this_month_from_key, this_month_to_key, last_month_from_key, last_month_to_key, last_7_days_from_key, last_7_days_to_key, is_today_preset, is_last_week_preset, is_this_month_preset, is_last_month_preset, is_last_7_days_preset) }}
+  {% if not trend_has_data %}
+    <p class="text-muted">No Production or Wastage log entries in this window yet.</p>
+  {% else %}
+    <div class="flex-row" style="gap:20px;margin-bottom:8px;font-size:0.85rem;">
+      <span class="flex-row" style="gap:6px;"><span style="width:14px;height:3px;background:var(--primary);display:inline-block;"></span> Produced</span>
+      <span class="flex-row" style="gap:6px;"><span style="width:14px;height:3px;background:var(--danger);display:inline-block;"></span> Wasted</span>
+      <span class="flex-row" style="gap:6px;"><span style="width:14px;height:3px;background:var(--warning);display:inline-block;"></span> Variance</span>
+    </div>
+    <div class="js-trend-chart" style="overflow-x:auto;">
+      <svg viewBox="0 0 {{ trend_width }} {{ trend_height }}" width="100%" height="240" preserveAspectRatio="none" style="min-width:480px;cursor:crosshair;">
+        <line x1="0" y1="{{ trend_zero_y }}" x2="{{ trend_width }}" y2="{{ trend_zero_y }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="4,3" />
+        <polyline points="{{ trend_produced_points }}" fill="none" stroke="var(--primary)" stroke-width="2.5" />
+        <polyline points="{{ trend_wasted_points }}" fill="none" stroke="var(--danger)" stroke-width="2.5" />
+        <polyline points="{{ trend_variance_points }}" fill="none" stroke="var(--warning)" stroke-width="2.5" />
+      </svg>
+      <script type="application/json" class="js-trend-data">{{ trend_rows | tojson }}</script>
+    </div>
+    {% set trend_label_step = 1 if trend_rows | length <= 14 else 3 %}
+    <div style="display:flex;gap:4px;font-size:0.65rem;color:var(--muted-foreground);margin-top:4px;">
+      {% for d in trend_rows %}
+      <div style="flex:1 1 0;text-align:center;white-space:nowrap;">{{ d.dayLabel if loop.index0 % trend_label_step == 0 else '' }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+{% if trend_has_data %}
+<details class="card">
+  <summary style="cursor:pointer;font-weight:600;">Day-by-day figures</summary>
+  <div class="table-wrap" style="margin-top:12px;">
+    <table>
+      <thead><tr><th>Date</th><th class="num">Produced (L)</th><th class="num">Sold (L)</th><th class="num">Wasted (L)</th><th class="num">Variance (L)</th></tr></thead>
+      <tbody>
+        {% for d in trend_rows %}
+        <tr>
+          <td>{{ d.dayLabel }}{% if not d.salesAvailable %} <span class="text-muted" style="font-size:0.75em;">(no sales report)</span>{% endif %}</td>
+          <td class="num">{{ d.produced | fmt }}</td>
+          <td class="num">{{ d.sold | fmt }}</td>
+          <td class="num">{{ d.wasted | fmt }}</td>
+          <td class="num" style="color:{{ 'var(--danger)' if d.variance < 0 else 'inherit' }};">{{ d.variance | fmt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endif %}

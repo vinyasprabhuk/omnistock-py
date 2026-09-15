@@ -1,0 +1,42 @@
+{% macro chart_date_picker(active_tab, branch_id, department_name, from_param, to_param,
+                            last_week_from_key, last_week_to_key,
+                            this_month_from_key, this_month_to_key,
+                            last_month_from_key, last_month_to_key,
+                            last_7_days_from_key, last_7_days_to_key,
+                            is_today_preset, is_last_week_preset,
+                            is_this_month_preset, is_last_month_preset, is_last_7_days_preset) %}
+{% set dept_qs = ('&department=' ~ department_name) if department_name else '' %}
+<div class="flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+  <a class="btn btn-sm {{ 'btn-primary' if is_today_preset else '' }}"
+     href="?tab={{ active_tab }}&branchId={{ branch_id }}{{ dept_qs }}">Today</a>
+  <a class="btn btn-sm {{ 'btn-primary' if is_last_7_days_preset else '' }}"
+     href="?tab={{ active_tab }}&branchId={{ branch_id }}&from={{ last_7_days_from_key }}&to={{ last_7_days_to_key }}{{ dept_qs }}">Last 7 Days</a>
+  <a class="btn btn-sm {{ 'btn-primary' if is_last_week_preset else '' }}"
+     href="?tab={{ active_tab }}&branchId={{ branch_id }}&from={{ last_week_from_key }}&to={{ last_week_to_key }}{{ dept_qs }}">Last Week</a>
+  <a class="btn btn-sm {{ 'btn-primary' if is_this_month_preset else '' }}"
+     href="?tab={{ active_tab }}&branchId={{ branch_id }}&from={{ this_month_from_key }}&to={{ this_month_to_key }}{{ dept_qs }}">This Month</a>
+  <a class="btn btn-sm {{ 'btn-primary' if is_last_month_preset else '' }}"
+     href="?tab={{ active_tab }}&branchId={{ branch_id }}&from={{ last_month_from_key }}&to={{ last_month_to_key }}{{ dept_qs }}">Last Month</a>
+  <form method="get" class="flex-row" style="align-items:center;gap:6px;">
+    <input type="hidden" name="branchId" value="{{ branch_id }}">
+    <input type="hidden" name="tab" value="{{ active_tab }}">
+    {% if department_name %}<input type="hidden" name="department" value="{{ department_name }}">{% endif %}
+    <input type="date" name="from" value="{{ from_param }}" style="width:auto;padding:4px 6px;font-size:0.8rem;">
+    <span class="text-muted" style="font-size:0.8rem;">to</span>
+    <input type="date" name="to" value="{{ to_param }}" style="width:auto;padding:4px 6px;font-size:0.8rem;">
+    <button type="submit" class="btn btn-sm">Go</button>
+    {% if from_param or to_param %}<a class="btn btn-sm" href="?tab={{ active_tab }}&branchId={{ branch_id }}{{ dept_qs }}">Reset</a>{% endif %}
+  </form>
+</div>
+{% endmacro %}
+
+{% macro bar_chart_by_day(rows, max_value, value_field) %}
+<div class="js-bar-chart" style="display:flex;align-items:flex-end;gap:4px;height:150px;overflow-x:auto;padding-top:8px;">
+  {% for d in rows %}
+  <div class="js-chart-bar" style="flex:0 0 auto;width:16px;cursor:default;"
+       data-label="{{ d.dayLabel }}" data-value-fmt="{{ d[value_field] | money_grouped }}">
+    <div style="width:100%;border-radius:3px 3px 0 0;background:var(--primary);min-height:1px;height:{{ (d[value_field] / max_value * 130) if max_value else 0 }}px;"></div>
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}

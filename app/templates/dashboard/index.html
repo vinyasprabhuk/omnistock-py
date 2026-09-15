@@ -77,6 +77,7 @@
   <a class="btn {{ 'btn-primary' if active_tab == 'comparison' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=comparison{{ base_qs }}">Period Comparison</a>
   <a class="btn {{ 'btn-primary' if active_tab == 'purchase' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=purchase{{ base_qs }}">Purchase Spend</a>
   <a class="btn {{ 'btn-primary' if active_tab == 'usage' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=usage{{ base_qs }}">Usage Spend</a>
+  <a class="btn {{ 'btn-primary' if active_tab == 'trend' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=trend{{ base_qs }}">Production, Wastage &amp; Variance</a>
   <a class="btn {{ 'btn-primary' if active_tab == 'lowstock' else '' }}" style="border-radius:6px 6px 0 0;" href="?tab=lowstock{{ base_qs }}">Low Stock ({{ low_stock | length }})</a>
 </div>
 
@@ -84,9 +85,14 @@
   {% include "dashboard/_tab_purchase.html" %}
 {% elif active_tab == 'usage' %}
   {% include "dashboard/_tab_usage.html" %}
+{% elif active_tab == 'trend' %}
+  {% include "dashboard/_tab_trend.html" %}
 {% elif active_tab == 'lowstock' %}
   {% include "dashboard/_tab_lowstock.html" %}
 {% else %}
   {% include "dashboard/_tab_comparison.html" %}
 {% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard-charts.js') }}"></script>
 {% endblock %}

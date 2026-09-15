@@ -1,3 +1,4 @@
+{% from "dashboard/_macros.html" import bar_chart_by_day, chart_date_picker %}
 <p class="text-muted">Estimated cost of what was actually issued to departments (qty issued &times; each item's average purchase price) &mdash; this can differ a lot from purchase spend, e.g. stocking up in bulk one month vs. steady daily use.</p>
 
 <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px,1fr));">
@@ -19,6 +20,17 @@
 
 {% set comparison = usage_period %}
 {% include "dashboard/_period_cards.html" %}
+
+<div class="card">
+  <h3 class="mt-0">Usage Spend by Day</h3>
+  {{ chart_date_picker(active_tab, branch.branchId, department_name, from_param, to_param, last_week_from_key, last_week_to_key, this_month_from_key, this_month_to_key, last_month_from_key, last_month_to_key, last_7_days_from_key, last_7_days_to_key, is_today_preset, is_last_week_preset, is_this_month_preset, is_last_month_preset, is_last_7_days_preset) }}
+  <p class="text-muted" style="font-size:0.85rem;">{{ 'Selected date range' if from_param and to_param else 'Today' }}, one bar per calendar day.</p>
+  {% if usage_by_day | sum(attribute='totalSpend') == 0 %}
+    <p class="text-muted">No stock issue activity in this window.</p>
+  {% else %}
+    {{ bar_chart_by_day(usage_by_day, max_usage_day, 'totalSpend') }}
+  {% endif %}
+</div>
 
 <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(280px,1fr));">
   <div class="card">

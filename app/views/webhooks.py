@@ -2,14 +2,17 @@
 Public-but-localhost-only endpoints for external services running on
 this same machine to push data in. Registered under PUBLIC_PATHS
 (app/__init__.py) so it skips the normal login/CSRF gate entirely --
-its own guard here is "the request must originate from localhost"
-instead, since the sending service has no user session to authenticate
-with. Never add a route here that a browser session should be able to
-call -- that belongs in an ordinary blueprint.
+its guards here are "the request must originate from localhost" and
+"the request must carry the shared webhook key" instead, since the
+sending service has no user session to authenticate with. Never add a
+route here that a browser session should be able to call -- that
+belongs in an ordinary blueprint.
 """
 from __future__ import annotations
 
-from flask import Blueprint, g, jsonify, request
+import hmac
+
+from flask import Blueprint, current_app, g, jsonify, request
 
 from app.services.purchase_webhook import ingest_purchase_invoice_webhook
 
@@ -24,9 +27,15 @@ def purchase_invoice():
     # remote_addr to the real client IP from X-Forwarded-For, so this
     # correctly rejects anything that didn't originate on this machine
     # even though every request physically arrives via the Apache/
-    # Passenger reverse proxy.
+    # Passenger reverse proxy. Checked before the key so a non-local
+    # caller always gets the same 403 regardless of what it sends.
     if request.remote_addr not in _LOCALHOST_ADDRS:
         return jsonify({"error": "This endpoint only accepts local requests"}), 403
+
+    sent_key = request.headers.get("X-Webhook-Key", "")
+    expected_key = current_app.config["WEBHOOK_SECRET_KEY"]
+    if not sent_key or not hmac.compare_digest(sent_key, expected_key):
+        return jsonify({"error": "Missing or invalid X-Webhook-Key"}), 401
 
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
