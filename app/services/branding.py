@@ -99,15 +99,21 @@ def update_app_name(conn: sqlite3.Connection, app_name: str, tagline: str) -> No
     _upsert(conn, {"appName": app_name, "tagline": tagline or None})
 
 
-def update_logo(conn: sqlite3.Connection, static_dir: Path, filename: str, file_bytes: bytes) -> None:
+def update_logo(conn: sqlite3.Connection, instance_dir: Path, filename: str, file_bytes: bytes) -> None:
     """
-    Writes to static/branding/logo.<ext> and stores a `/branding/<file>?v=...`
-    DB path -- served by the dedicated /branding/<filename> route (app/views/
-    files.py), matching the path convention already present in the live DB
-    (e.g. existing rows already say "/branding/logo.png?v=...").
+    Writes to instance/branding/logo.<ext> (a runtime asset, gitignored --
+    same reasoning as instance/dev.db or instance/secret_key: a file the
+    live app writes to must never also be a tracked file, or every admin
+    logo change shows up as a local git modification and blocks the next
+    deploy/pull with a conflict). Stores a `/branding/<file>?v=...` DB
+    path -- served by the dedicated /branding/<filename> route (app/views/
+    files.py), which checks this instance directory before falling back
+    to the committed default in static/branding/, matching the path
+    convention already present in the live DB (e.g. existing rows already
+    say "/branding/logo.png?v=...").
     """
     ext = (filename.rsplit(".", 1)[-1] if "." in filename else "png").lower()
-    branding_dir = static_dir / "branding"
+    branding_dir = instance_dir / "branding"
     branding_dir.mkdir(parents=True, exist_ok=True)
     out_name = f"logo.{ext}"
     (branding_dir / out_name).write_bytes(file_bytes)

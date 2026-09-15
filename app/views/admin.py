@@ -359,8 +359,8 @@ def branding_logo():
     if not file or not file.filename:
         flash("No file provided.", "error")
         return redirect(url_for("admin.branding_page"))
-    static_dir = Path(__file__).resolve().parent.parent / "static"
-    branding_service.update_logo(g.conn, static_dir, file.filename, file.read())
+    instance_dir = Path(__file__).resolve().parent.parent.parent / "instance"
+    branding_service.update_logo(g.conn, instance_dir, file.filename, file.read())
     flash("Logo updated.", "success")
     return redirect(url_for("admin.branding_page"))
 
