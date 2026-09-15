@@ -351,6 +351,14 @@ tr:hover td { background: var(--muted); }
    so nothing needs to hide behind an extra click. */
 .nav-links { display: none; }
 
+/* Production/Wastage page's Log-form + summary-sidebar layout. Two
+   columns on desktop when there's a log form to show; a fixed 280px+
+   minimum on the first column is wider than a phone screen outright, so
+   it must collapse to one column below the same 640px breakpoint
+   everything else here uses, not just shrink. */
+.wastage-layout-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+.wastage-layout-grid.has-log-col { grid-template-columns: minmax(280px, 360px) 1fr; }
+
 @media (max-width: 640px) {
   /* Mobile: swap to the flat hamburger panel -- no room for a grouped
      horizontal bar or hover/click dropdowns at this width. */
@@ -414,4 +422,5 @@ tr:hover td { background: var(--muted); }
   table { font-size: 0.78rem; }
   .card { padding: 16px; border-radius: 10px; }
   .flex-row { gap: 10px; }
+  .wastage-layout-grid.has-log-col { grid-template-columns: 1fr; }
 }
