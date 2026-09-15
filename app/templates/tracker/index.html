@@ -31,7 +31,14 @@
           <td class="num">{{ r.price | money }}</td>
           <td class="num">{{ r.purchased | fmt }}</td>
           <td class="num">{{ r.kitchenRequirement | fmt }}</td>
-          <td class="num">{{ r.issued | fmt }}</td>
+          <td class="num">
+            {{ r.issued | fmt }}
+            {% if is_admin %}
+            <button type="button" class="btn-link js-adjust-issued" style="font-size:0.75em;margin-left:4px;"
+                    data-item-id="{{ r.itemId }}" data-item-name="{{ r.itemName }}"
+                    data-unit="{{ r.unit }}" data-current="{{ r.issued | fmt }}" title="Add Issued correction">&#9998;</button>
+            {% endif %}
+          </td>
           <td class="num"><strong>{{ r.closing | fmt }}</strong></td>
           <td class="text-muted">{{ r.unit }}</td>
           <td class="num">{{ r.usageCost | money }}</td>
@@ -43,4 +50,35 @@
     </table>
   </div>
 </div>
+
+{% if is_admin %}
+<dialog id="issue-adjust-dialog" style="border-radius:10px;border:1px solid var(--border);padding:0;max-width:360px;width:90%;">
+  <form method="post" action="{{ url_for('tracker.adjust_issued') }}" style="padding:20px;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="branchId" value="{{ branch.branchId }}">
+    <input type="hidden" name="itemId" id="issue-adjust-item-id">
+    <h3 class="mt-0" style="margin-bottom:2px;">Add Issued Correction</h3>
+    <p class="text-muted" style="font-size:0.85rem;margin-top:0;" id="issue-adjust-item-name"></p>
+    <p class="text-muted" style="font-size:0.85rem;">Currently issued this day: <strong id="issue-adjust-current"></strong></p>
+    <label class="field"><span>Department</span>
+      <input type="text" name="departmentName" list="department-list" placeholder="e.g. Historical Import" required>
+      <datalist id="department-list">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
+    </label>
+    <label class="field"><span>Quantity to add</span>
+      <input type="number" name="qty" step="any" min="0.001" required>
+    </label>
+    <p class="text-muted" style="font-size:0.78rem;margin-top:-6px;">Unit: <span id="issue-adjust-unit"></span></p>
+    <div class="flex-row" style="justify-content:flex-end;gap:8px;margin-top:12px;">
+      <button type="button" class="btn btn-sm js-close-dialog">Cancel</button>
+      <button type="submit" class="btn btn-sm btn-primary">Save</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if is_admin %}
+<script src="{{ url_for('static', filename='js/tracker-issue-adjust.js') }}"></script>
+{% endif %}
 {% endblock %}
