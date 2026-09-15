@@ -32,6 +32,34 @@
   {% endif %}
 </div>
 
+<div class="card">
+  <h3 class="mt-0">Department Spend Trend</h3>
+  {{ chart_date_picker(active_tab, branch.branchId, department_name, from_param, to_param, last_week_from_key, last_week_to_key, this_month_from_key, this_month_to_key, last_month_from_key, last_month_to_key, last_7_days_from_key, last_7_days_to_key, is_today_preset, is_last_week_preset, is_this_month_preset, is_last_month_preset, is_last_7_days_preset) }}
+  <p class="text-muted" style="font-size:0.85rem;">Estimated Usage Spend per department, day by day &mdash; {{ 'selected date range' if from_param and to_param else 'today' }}.</p>
+  {% if not dept_trend.has_data %}
+    <p class="text-muted">No stock issue activity in this window.</p>
+  {% else %}
+    <div class="flex-row" style="gap:14px;margin-bottom:8px;font-size:0.8rem;flex-wrap:wrap;">
+      {% for s in dept_trend.series %}
+      <span class="flex-row" style="gap:5px;"><span style="width:12px;height:3px;background:{{ s.color }};display:inline-block;"></span>{{ s.department }}</span>
+      {% endfor %}
+    </div>
+    <div class="js-multi-trend-chart" style="overflow-x:auto;">
+      <svg viewBox="0 0 {{ trend_width }} {{ trend_height }}" width="100%" height="220" preserveAspectRatio="none" style="min-width:480px;cursor:crosshair;">
+        {% for s in dept_trend.series %}
+        <polyline points="{{ s.points }}" fill="none" stroke="{{ s.color }}" stroke-width="2" />
+        {% endfor %}
+      </svg>
+      <script type="application/json" class="js-trend-data">{{ dept_trend.tooltip_days | tojson }}</script>
+    </div>
+    <div style="display:flex;gap:4px;font-size:0.65rem;color:var(--muted-foreground);margin-top:4px;">
+      {% for label in dept_trend.day_labels %}
+      <div style="flex:1 1 0;text-align:center;white-space:nowrap;">{{ label if loop.index0 % dept_trend.label_step == 0 else '' }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
 <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(280px,1fr));">
   <div class="card">
     <h3>Usage by Month</h3>
