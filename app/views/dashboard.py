@@ -17,6 +17,11 @@ _CHART_TREND_WIDTH = 720
 _CHART_TREND_HEIGHT = 180
 _CHART_MAX_DAYS = 60
 
+_DEPT_COLOR_PALETTE = [
+    "#315bff", "#c02626", "#178a3c", "#92400e", "#7c3aed", "#0891b2",
+    "#db2777", "#65a30d", "#ea580c", "#4338ca", "#0d9488", "#a16207",
+]
+
 
 def _chart_day_range(from_param: str | None, to_param: str | None, today: str) -> tuple[str, str]:
     """Resolves the day-range charts (Spend/Usage/Production-Wastage by
@@ -68,6 +73,49 @@ def _trend_svg_points(rows: list[dict], value_key: str, min_value: float, max_va
         y = (_CHART_TREND_HEIGHT - ((r[value_key] - min_value) / span * _CHART_TREND_HEIGHT)) if span else _CHART_TREND_HEIGHT / 2
         points.append(f"{x:.1f},{y:.1f}")
     return " ".join(points)
+
+
+def _department_spend_trend(conn, branch_id: str, chart_range: dict, department_name: str | None,
+                             from_key: str, to_key: str) -> dict:
+    """One line per department, day by day, over the chart's date range
+    -- same Usage-spend basis (StockIssueItem qty x each item's all-time
+    average purchase rate) as the existing Usage by Department bars,
+    just broken out per calendar day instead of summed over the whole
+    range. Honors the dashboard's department filter (narrows to one
+    line rather than dropping the chart)."""
+    rows = ua.get_usage_by_day_and_department(conn, branch_id, chart_range, department_name)
+    departments = sorted({r["department"] for r in rows})
+    by_key = {(r["dayKey"], r["department"]): r["totalSpend"] for r in rows}
+
+    day_keys = []
+    key = from_key
+    while key <= to_key:
+        day_keys.append(key)
+        key = shift_date_key(key, 1)
+
+    tooltip_days = [{"dayLabel": pa.day_label(dk), "values": {}} for dk in day_keys]
+    series = []
+    max_value = 1.0
+    for i, dept in enumerate(departments):
+        dept_rows = [{"dayKey": dk, "totalSpend": by_key.get((dk, dept), 0.0)} for dk in day_keys]
+        max_value = max(max_value, max(r["totalSpend"] for r in dept_rows))
+        for day_row, tt in zip(dept_rows, tooltip_days):
+            tt["values"][dept] = round(day_row["totalSpend"], 2)
+        series.append({"department": dept, "color": _DEPT_COLOR_PALETTE[i % len(_DEPT_COLOR_PALETTE)],
+                        "rows": dept_rows})
+
+    for s in series:
+        s["points"] = _trend_svg_points(s["rows"], "totalSpend", 0.0, max_value)
+        del s["rows"]
+
+    has_data = any(v for tt in tooltip_days for v in tt["values"].values())
+    return {
+        "series": series,
+        "day_labels": [pa.day_label(dk) for dk in day_keys],
+        "tooltip_days": tooltip_days,
+        "has_data": has_data,
+        "label_step": 1 if len(day_keys) <= 14 else 3,
+    }
 
 bp = Blueprint("dashboard", __name__)
 
@@ -293,6 +341,8 @@ def index():
     trend_has_data = any(r["produced"] or r["wasted"] or r["sold"] for r in trend_rows)
     trend_any_sales = any(r["salesAvailable"] for r in trend_rows)
 
+    dept_trend = _department_spend_trend(conn, branch_id, chart_range, department_name, chart_from_key, chart_to_key)
+
     low_stock = get_low_stock(conn, branch_id, range_to_db)
     total_store_value = sum(r["storeValue"] for r in inventory)
     breakdown_total = today_purchase_spend + today_issue_spend + total_store_value
@@ -335,6 +385,7 @@ def index():
         trend_produced_points=trend_produced_points, trend_wasted_points=trend_wasted_points,
         trend_variance_points=trend_variance_points, trend_zero_y=trend_zero_y,
         trend_width=_CHART_TREND_WIDTH, trend_height=_CHART_TREND_HEIGHT,
+        dept_trend=dept_trend,
         today_key=today, last_week_from_key=last_week_from_key, last_week_to_key=last_week_to_key,
         this_month_from_key=this_month_from_key, this_month_to_key=this_month_to_key,
         last_month_from_key=last_month_from_key, last_month_to_key=last_month_to_key,
