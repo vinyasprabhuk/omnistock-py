@@ -32,6 +32,30 @@ def _load_or_create_secret_key() -> str:
     return key
 
 
+def _load_or_create_webhook_key() -> str:
+    """
+    Shared secret the incoming-invoice webhook (app/views/webhooks.py)
+    requires on every request, on top of its localhost-only check --
+    same stable-across-workers-and-restarts reasoning as SECRET_KEY
+    above, but this one also has to be handed to the external sender
+    (the InvoiceToZoho-Inventory integration), so it's a separate file/
+    env var rather than reusing SECRET_KEY for two different purposes.
+    """
+    env_key = os.environ.get("WEBHOOK_SECRET_KEY")
+    if env_key:
+        return env_key
+
+    key_file = BASE_DIR / "instance" / "webhook_key"
+    if key_file.exists():
+        return key_file.read_text().strip()
+
+    key = secrets.token_hex(24)
+    key_file.parent.mkdir(parents=True, exist_ok=True)
+    key_file.write_text(key)
+    key_file.chmod(0o600)
+    return key
+
+
 class Config:
     DATABASE_PATH = os.environ.get("DATABASE_PATH", str(BASE_DIR / "instance" / "dev.db"))
     # Deliberately a separate SQLite file from DATABASE_PATH, not just a
@@ -41,6 +65,7 @@ class Config:
     AUDIT_DB_PATH = os.environ.get("AUDIT_DB_PATH", str(BASE_DIR / "instance" / "audit.db"))
     UPLOAD_DIR = os.environ.get("UPLOAD_DIR", str(BASE_DIR / "uploads"))
     SECRET_KEY = _load_or_create_secret_key()
+    WEBHOOK_SECRET_KEY = _load_or_create_webhook_key()
     # Override "today" for reproducible local testing (see app/dates.py). Format: YYYY-MM-DD.
     APP_TODAY = os.environ.get("APP_TODAY")
     SESSION_COOKIE_HTTPONLY = True

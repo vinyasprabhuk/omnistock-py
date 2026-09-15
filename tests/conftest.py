@@ -135,6 +135,12 @@ def full_app(full_db_path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(full_db_path))
     from app import create_app
     flask_app = create_app()
+    # Config.WEBHOOK_SECRET_KEY is computed once, whenever config.py is
+    # FIRST imported anywhere in the whole test session -- a later
+    # monkeypatch.setenv() here doesn't reliably take effect if some
+    # other test imported it first. Setting it directly on this app's
+    # config avoids that import-order dependency entirely.
+    flask_app.config["WEBHOOK_SECRET_KEY"] = "test-webhook-key"
     flask_app.config.update(TESTING=True)
     return flask_app
 

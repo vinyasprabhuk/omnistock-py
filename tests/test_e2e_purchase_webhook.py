@@ -10,6 +10,9 @@ import json
 
 from tests.conftest import csrf_token, login, make_user
 
+WEBHOOK_KEY = "test-webhook-key"
+_KEY_HEADERS = {"X-Webhook-Key": WEBHOOK_KEY}
+
 
 def _admin_client(full_app, full_db_conn):
     client = full_app.test_client()
@@ -47,7 +50,7 @@ class TestWebhookIngestion:
     def test_localhost_request_is_accepted(self, full_app, full_db_conn):
         client = full_app.test_client()
         resp = client.post("/webhooks/purchase-invoice", data=json.dumps(_payload()),
-                            content_type="application/json")
+                            content_type="application/json", headers=_KEY_HEADERS)
         assert resp.status_code == 201
         event_id = resp.get_json()["eventId"]
         row = full_db_conn.execute(
@@ -63,9 +66,24 @@ class TestWebhookIngestion:
     def test_non_localhost_request_is_rejected(self, full_app, full_db_conn):
         client = full_app.test_client()
         resp = client.post("/webhooks/purchase-invoice", data=json.dumps(_payload()),
-                            content_type="application/json",
+                            content_type="application/json", headers=_KEY_HEADERS,
                             environ_overrides={"REMOTE_ADDR": "8.8.8.8"})
         assert resp.status_code == 403
+        assert full_db_conn.execute("SELECT COUNT(*) FROM PurchaseWebhookEvent").fetchone()[0] == 0
+
+    def test_missing_key_is_rejected(self, full_app, full_db_conn):
+        client = full_app.test_client()
+        resp = client.post("/webhooks/purchase-invoice", data=json.dumps(_payload()),
+                            content_type="application/json")
+        assert resp.status_code == 401
+        assert full_db_conn.execute("SELECT COUNT(*) FROM PurchaseWebhookEvent").fetchone()[0] == 0
+
+    def test_wrong_key_is_rejected(self, full_app, full_db_conn):
+        client = full_app.test_client()
+        resp = client.post("/webhooks/purchase-invoice", data=json.dumps(_payload()),
+                            content_type="application/json",
+                            headers={"X-Webhook-Key": "not-the-right-key"})
+        assert resp.status_code == 401
         assert full_db_conn.execute("SELECT COUNT(*) FROM PurchaseWebhookEvent").fetchone()[0] == 0
 
     def test_payload_with_no_items_is_rejected(self, full_app, full_db_conn):
@@ -73,12 +91,13 @@ class TestWebhookIngestion:
         payload = _payload()
         payload["invoice"]["items"] = []
         resp = client.post("/webhooks/purchase-invoice", data=json.dumps(payload),
-                            content_type="application/json")
+                            content_type="application/json", headers=_KEY_HEADERS)
         assert resp.status_code == 400
 
     def test_non_json_body_is_rejected(self, full_app, full_db_conn):
         client = full_app.test_client()
-        resp = client.post("/webhooks/purchase-invoice", data="not json", content_type="text/plain")
+        resp = client.post("/webhooks/purchase-invoice", data="not json", content_type="text/plain",
+                            headers=_KEY_HEADERS)
         assert resp.status_code == 400
 
     def test_item_auto_matched_against_item_master(self, full_app, full_db_conn):
@@ -87,7 +106,7 @@ class TestWebhookIngestion:
         assert item is not None, "fixture depends on 'Aval' existing in the pristine Item Master"
 
         resp = client.post("/webhooks/purchase-invoice", data=json.dumps(_payload(item_name="Aval")),
-                            content_type="application/json")
+                            content_type="application/json", headers=_KEY_HEADERS)
         event_id = resp.get_json()["eventId"]
         row = full_db_conn.execute(
             "SELECT matchedItemId, confidence FROM PurchaseWebhookItem WHERE eventId = ?", (event_id,)
@@ -99,7 +118,7 @@ class TestWebhookIngestion:
 class TestIncomingInvoiceReview:
     def _ingest(self, client, **kw):
         resp = client.post("/webhooks/purchase-invoice", data=json.dumps(_payload(**kw)),
-                            content_type="application/json")
+                            content_type="application/json", headers=_KEY_HEADERS)
         return resp.get_json()["eventId"]
 
     def test_pending_event_shown_on_incoming_list(self, full_app, full_db_conn, branch_id):

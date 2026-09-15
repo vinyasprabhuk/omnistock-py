@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import TypedDict
 
 from app.dates import from_db, parse_date_key, today_key
-from app.services.purchase_analytics import in_range, month_key, month_label, _prev_month_key
+from app.services.purchase_analytics import day_key, day_label, in_range, month_key, month_label, _prev_month_key
 from app.services.spend_periods import PeriodComparison, compute_period_comparison
 
 
@@ -203,3 +203,22 @@ def get_usage_by_month(conn: sqlite3.Connection, branch_id: str | None = None,
         key=lambda r: r["monthKey"],
     )
     return sorted_rows[-months:] if months > 0 else sorted_rows
+
+
+class UsageDayRow(TypedDict):
+    dayKey: str
+    dayLabel: str
+    totalSpend: float
+
+
+def get_usage_by_day(conn: sqlite3.Connection, branch_id: str | None = None,
+                      range_: dict | None = None, department_name: str | None = None) -> list[UsageDayRow]:
+    rows = [r for r in fetch_usage_rows(conn, branch_id, department_name) if in_range(r["date"], range_)]
+    by_day: dict[str, float] = {}
+    for r in rows:
+        k = day_key(r["date"])
+        by_day[k] = by_day.get(k, 0.0) + r["spend"]
+    return sorted(
+        ({"dayKey": dk, "dayLabel": day_label(dk), "totalSpend": v} for dk, v in by_day.items()),
+        key=lambda r: r["dayKey"],
+    )

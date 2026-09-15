@@ -1,14 +1,73 @@
 """Port of src/app/(app)/dashboard/page.tsx -- the most complex page in the app."""
 from __future__ import annotations
 
+import sqlite3
+
 from flask import Blueprint, g, render_template, request
 
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
-from app.dates import date_key_to_db, from_db, today_key
+from app.dates import date_key_to_db, from_db, parse_date_key, shift_date_key, today_key
 from app.services import purchase_analytics as pa
 from app.services import usage_analytics as ua
 from app.services.calculations import get_low_stock, get_master_inventory, get_period_tracker
 from app.services.spend_periods import get_period_boundaries
+from app.services.wastage_variance import get_production_wastage_variance_trend
+
+_CHART_TREND_WIDTH = 720
+_CHART_TREND_HEIGHT = 180
+_CHART_MAX_DAYS = 60
+
+
+def _chart_day_range(from_param: str | None, to_param: str | None, today: str) -> tuple[str, str]:
+    """Resolves the day-range charts (Spend/Usage/Production-Wastage by
+    day) aggregate over: the dashboard's own date filter when set
+    (capped so a huge filtered range can't blow up the per-day
+    Production/Wastage matcher loop), else today only -- the "Today" /
+    "Last Week" quick-picks and the plain From/To fields all set the
+    same from/to query params, so this is the one place that decides
+    what an unset filter defaults to."""
+    if from_param and to_param:
+        from_key, to_key = from_param, to_param
+    else:
+        from_key = to_key = today
+    if (parse_date_key(to_key) - parse_date_key(from_key)).days > _CHART_MAX_DAYS:
+        from_key = shift_date_key(to_key, -_CHART_MAX_DAYS)
+    return from_key, to_key
+
+
+def _fill_missing_days(rows: list[dict], from_key: str, to_key: str, value_key: str) -> list[dict]:
+    """Reindexes a sparse {dayKey, dayLabel, <value_key>} list (only
+    days with actual activity) onto every calendar day in the range, so
+    a bar chart shows one bar per day, not just the days with data."""
+    by_key = {r["dayKey"]: r for r in rows}
+    filled = []
+    key = from_key
+    while key <= to_key:
+        if key in by_key:
+            filled.append(by_key[key])
+        else:
+            filled.append({"dayKey": key, "dayLabel": pa.day_label(key), value_key: 0.0})
+        key = shift_date_key(key, 1)
+    return filled
+
+
+def _trend_svg_points(rows: list[dict], value_key: str, min_value: float, max_value: float) -> str:
+    """Maps values onto the chart's y-axis using a shared min/max across
+    all series (not just this one), so Produced/Wasted/Variance stay on
+    the same scale and remain comparable -- Variance can go negative
+    (more sold than produced+wasted, e.g. drawing down existing stock),
+    so this can't assume a 0 floor the way a plain bar chart could."""
+    n = len(rows)
+    if n == 0:
+        return ""
+    span = max_value - min_value
+    x_step = _CHART_TREND_WIDTH / (n - 1) if n > 1 else 0.0
+    points = []
+    for i, r in enumerate(rows):
+        x = i * x_step
+        y = (_CHART_TREND_HEIGHT - ((r[value_key] - min_value) / span * _CHART_TREND_HEIGHT)) if span else _CHART_TREND_HEIGHT / 2
+        points.append(f"{x:.1f},{y:.1f}")
+    return " ".join(points)
 
 bp = Blueprint("dashboard", __name__)
 
@@ -113,6 +172,24 @@ def index():
         cmp_mode = "week"
 
     bounds = get_period_boundaries()
+
+    # --- quick date-range picks for the Purchase/Usage/Trend day-wise charts
+    # (and the shared From/To filter, since they write the same params) ---
+    last_week_from_key = bounds["lastWeekStart"].strftime("%Y-%m-%d")
+    last_week_to_key = bounds["lastWeekEnd"].strftime("%Y-%m-%d")
+    this_month_from_key = bounds["thisMonthStart"].strftime("%Y-%m-%d")
+    this_month_to_key = bounds["thisMonthEnd"].strftime("%Y-%m-%d")
+    last_month_from_key = bounds["lastMonthStart"].strftime("%Y-%m-%d")
+    last_month_to_key = bounds["lastMonthEnd"].strftime("%Y-%m-%d")
+    last_7_days_from_key = shift_date_key(today, -6)
+    last_7_days_to_key = today
+
+    is_today_preset = not from_param and not to_param
+    is_last_week_preset = from_param == last_week_from_key and to_param == last_week_to_key
+    is_this_month_preset = from_param == this_month_from_key and to_param == this_month_to_key
+    is_last_month_preset = from_param == last_month_from_key and to_param == last_month_to_key
+    is_last_7_days_preset = from_param == last_7_days_from_key and to_param == last_7_days_to_key
+
     if cmp_mode == "month":
         period_a = {"from": bounds["lastMonthStart"], "to": bounds["lastMonthEnd"], "label": "Last Month"}
         period_b = {"from": bounds["thisMonthStart"], "to": bounds["thisMonthEnd"], "label": "This Month"}
@@ -188,6 +265,34 @@ def index():
     # usage cost descending (the evident intent) instead.
     tracker_compare_rows.sort(key=lambda r: r["b"]["usageCost"], reverse=True)
 
+    # --- date-wise chart data (Spend by Day, Usage by Day, Production vs Wastage trend) ---
+    chart_from_key, chart_to_key = _chart_day_range(from_param, to_param, today)
+    chart_range = {"from": parse_date_key(chart_from_key), "to": parse_date_key(chart_to_key)}
+    spend_by_day = _fill_missing_days(
+        pa.get_spend_by_day(conn, branch_id, chart_range), chart_from_key, chart_to_key, "totalSpend")
+    usage_by_day = _fill_missing_days(
+        ua.get_usage_by_day(conn, branch_id, chart_range, department_name), chart_from_key, chart_to_key, "totalSpend")
+    max_spend_day = max([1.0] + [d["totalSpend"] for d in spend_by_day])
+    max_usage_day = max([1.0] + [d["totalSpend"] for d in usage_by_day])
+
+    try:
+        trend_rows = get_production_wastage_variance_trend(conn, branch_id, chart_from_key, chart_to_key)
+    except sqlite3.OperationalError:
+        # Recipe/DishSale (added by migrate_add_intent_recipe) aren't on
+        # every DB this view might run against -- e.g. the pristine
+        # parity-test snapshot predates that migration. Degrade to an
+        # empty trend rather than 500ing the whole Dashboard over one tab.
+        trend_rows = []
+    trend_values = [v for r in trend_rows for v in (r["produced"], r["wasted"], r["variance"])]
+    trend_max = max([0.0] + trend_values)
+    trend_min = min([0.0] + trend_values)
+    trend_produced_points = _trend_svg_points(trend_rows, "produced", trend_min, trend_max)
+    trend_wasted_points = _trend_svg_points(trend_rows, "wasted", trend_min, trend_max)
+    trend_variance_points = _trend_svg_points(trend_rows, "variance", trend_min, trend_max)
+    trend_zero_y = _CHART_TREND_HEIGHT - ((0 - trend_min) / (trend_max - trend_min) * _CHART_TREND_HEIGHT) if trend_max > trend_min else _CHART_TREND_HEIGHT / 2
+    trend_has_data = any(r["produced"] or r["wasted"] or r["sold"] for r in trend_rows)
+    trend_any_sales = any(r["salesAvailable"] for r in trend_rows)
+
     low_stock = get_low_stock(conn, branch_id, range_to_db)
     total_store_value = sum(r["storeValue"] for r in inventory)
     breakdown_total = today_purchase_spend + today_issue_spend + total_store_value
@@ -224,4 +329,17 @@ def index():
         max_usage_month=max_usage_month, max_usage_department=max_usage_department,
         usage_department_total=usage_department_total,
         low_stock=low_stock,
+        spend_by_day=spend_by_day, max_spend_day=max_spend_day,
+        usage_by_day=usage_by_day, max_usage_day=max_usage_day,
+        trend_rows=trend_rows, trend_has_data=trend_has_data, trend_any_sales=trend_any_sales,
+        trend_produced_points=trend_produced_points, trend_wasted_points=trend_wasted_points,
+        trend_variance_points=trend_variance_points, trend_zero_y=trend_zero_y,
+        trend_width=_CHART_TREND_WIDTH, trend_height=_CHART_TREND_HEIGHT,
+        today_key=today, last_week_from_key=last_week_from_key, last_week_to_key=last_week_to_key,
+        this_month_from_key=this_month_from_key, this_month_to_key=this_month_to_key,
+        last_month_from_key=last_month_from_key, last_month_to_key=last_month_to_key,
+        last_7_days_from_key=last_7_days_from_key, last_7_days_to_key=last_7_days_to_key,
+        is_today_preset=is_today_preset, is_last_week_preset=is_last_week_preset,
+        is_this_month_preset=is_this_month_preset, is_last_month_preset=is_last_month_preset,
+        is_last_7_days_preset=is_last_7_days_preset,
     )

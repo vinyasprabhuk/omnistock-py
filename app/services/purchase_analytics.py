@@ -98,6 +98,15 @@ def month_label(mk: str) -> str:
     return f"{_MONTH_ABBR[int(month) - 1]} {year}"
 
 
+def day_key(d: datetime) -> str:
+    return d.strftime("%Y-%m-%d")
+
+
+def day_label(dk: str) -> str:
+    year, month, dom = dk.split("-")
+    return f"{dom} {_MONTH_ABBR[int(month) - 1]}"
+
+
 def _prev_month_key(today: datetime) -> str:
     if today.month == 1:
         return f"{today.year - 1:04d}-12"
@@ -297,3 +306,26 @@ def get_spend_by_month(conn: sqlite3.Connection, branch_id: str | None = None,
         key=lambda r: r["monthKey"],
     )
     return sorted_rows[-months:] if months > 0 else sorted_rows
+
+
+class DaySpendRow(TypedDict):
+    dayKey: str
+    dayLabel: str
+    totalSpend: float
+
+
+def get_spend_by_day(conn: sqlite3.Connection, branch_id: str | None = None,
+                      range_: dict | None = None) -> list[DaySpendRow]:
+    """Per-calendar-day purchase spend within range_ -- the dashboard's
+    day-range chart windowing (default trailing 30 days, or the filtered
+    range) lives in the view, not here; this just aggregates whatever
+    range_ it's given, with no day the caller didn't ask about."""
+    rows = [r for r in fetch_all_rows(conn, branch_id) if in_range(r["date"], range_)]
+    by_day: dict[str, float] = {}
+    for r in rows:
+        k = day_key(r["date"])
+        by_day[k] = by_day.get(k, 0.0) + r["qty"] * r["rate"]
+    return sorted(
+        ({"dayKey": dk, "dayLabel": day_label(dk), "totalSpend": v} for dk, v in by_day.items()),
+        key=lambda r: r["dayKey"],
+    )
