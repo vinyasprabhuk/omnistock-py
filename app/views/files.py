@@ -19,10 +19,18 @@ from app.services import storage
 bp = Blueprint("files", __name__)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+INSTANCE_DIR = Path(__file__).resolve().parent.parent.parent / "instance"
 
 
 @bp.route("/branding/<path:filename>")
 def branding_asset(filename: str):
+    # A live-uploaded logo (see branding.update_logo) lands in instance/
+    # branding/ -- a gitignored runtime asset, same as instance/dev.db --
+    # so a real logo change on a server never shows up as a tracked-file
+    # modification. Falls back to the committed default in static/branding/
+    # for a fresh clone/deploy that's never had a logo uploaded yet.
+    if (INSTANCE_DIR / "branding" / filename).is_file():
+        return send_from_directory(INSTANCE_DIR / "branding", filename)
     return send_from_directory(STATIC_DIR / "branding", filename)
 
 
