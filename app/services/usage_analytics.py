@@ -222,31 +222,3 @@ def get_usage_by_day(conn: sqlite3.Connection, branch_id: str | None = None,
         ({"dayKey": dk, "dayLabel": day_label(dk), "totalSpend": v} for dk, v in by_day.items()),
         key=lambda r: r["dayKey"],
     )
-
-
-class UsageDayDepartmentRow(TypedDict):
-    dayKey: str
-    dayLabel: str
-    department: str
-    totalSpend: float
-
-
-def get_usage_by_day_and_department(conn: sqlite3.Connection, branch_id: str | None = None,
-                                     range_: dict | None = None,
-                                     department_name: str | None = None) -> list[UsageDayDepartmentRow]:
-    """Per-day totals broken out by department, for the Dashboard's
-    Department Spend Trend chart -- one row per (day, department) pair
-    that actually had spend, rows the caller pivots into one series per
-    department. Honors the dashboard's department filter same as every
-    other usage function here (picking one department just narrows this
-    to a single line instead of dropping the trend entirely)."""
-    rows = [r for r in fetch_usage_rows(conn, branch_id, department_name) if in_range(r["date"], range_)]
-    by_key: dict[tuple[str, str], float] = {}
-    for r in rows:
-        k = (day_key(r["date"]), r["departmentName"])
-        by_key[k] = by_key.get(k, 0.0) + r["spend"]
-    return sorted(
-        ({"dayKey": dk, "dayLabel": day_label(dk), "department": dept, "totalSpend": v}
-         for (dk, dept), v in by_key.items()),
-        key=lambda r: (r["dayKey"], r["department"]),
-    )

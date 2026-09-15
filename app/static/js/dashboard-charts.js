@@ -65,33 +65,17 @@
       svg.addEventListener('mouseleave', function () { hideTooltip(tip); });
     });
 
-    // Multi-series trend charts (e.g. Department Spend Trend) -- generic
-    // over however many series/departments are present, unlike the fixed
-    // Produced/Wasted/Variance tooltip above.
-    document.querySelectorAll('.js-multi-trend-chart').forEach(function (wrap) {
-      var svg = wrap.querySelector('svg');
-      var dataEl = wrap.querySelector('.js-trend-data');
-      if (!svg || !dataEl) return;
-      var points;
-      try { points = JSON.parse(dataEl.textContent); } catch (err) { return; }
-      if (!points.length) return;
-      var viewBox = svg.viewBox.baseVal;
-      var step = points.length > 1 ? viewBox.width / (points.length - 1) : 0;
-
-      svg.addEventListener('mousemove', function (e) {
-        var rect = svg.getBoundingClientRect();
-        var relX = (e.clientX - rect.left) / rect.width * viewBox.width;
-        var idx = step ? Math.round(relX / step) : 0;
-        idx = Math.max(0, Math.min(points.length - 1, idx));
-        var p = points[idx];
-        var lines = Object.keys(p.values)
-          .filter(function (k) { return p.values[k]; })
-          .sort(function (a, b) { return p.values[b] - p.values[a]; })
-          .map(function (k) { return k + ': ₹' + p.values[k].toLocaleString('en-IN'); });
-        if (!lines.length) lines.push('No spend');
-        showTooltip(tip, e.clientX, e.clientY, '<strong>' + p.dayLabel + '</strong><br>' + lines.join('<br>'));
+    // Department Spend pie chart -- each slice carries its own data
+    // attributes, so no embedded JSON/index math is needed the way the
+    // line charts above require.
+    document.querySelectorAll('.js-pie-slice').forEach(function (slice) {
+      slice.addEventListener('mousemove', function (e) {
+        showTooltip(tip, e.clientX, e.clientY,
+          '<strong>' + slice.dataset.department + '</strong><br>' +
+          '₹' + Number(slice.dataset.spend).toLocaleString('en-IN', {maximumFractionDigits: 2, minimumFractionDigits: 2}) +
+          ' (' + slice.dataset.pct + '%)');
       });
-      svg.addEventListener('mouseleave', function () { hideTooltip(tip); });
+      slice.addEventListener('mouseleave', function () { hideTooltip(tip); });
     });
   });
 })();

@@ -1,6 +1,7 @@
 """Port of src/app/(app)/dashboard/page.tsx -- the most complex page in the app."""
 from __future__ import annotations
 
+import math
 import sqlite3
 
 from flask import Blueprint, g, render_template, request
@@ -75,47 +76,37 @@ def _trend_svg_points(rows: list[dict], value_key: str, min_value: float, max_va
     return " ".join(points)
 
 
-def _department_spend_trend(conn, branch_id: str, chart_range: dict, department_name: str | None,
-                             from_key: str, to_key: str) -> dict:
-    """One line per department, day by day, over the chart's date range
-    -- same Usage-spend basis (StockIssueItem qty x each item's all-time
-    average purchase rate) as the existing Usage by Department bars,
-    just broken out per calendar day instead of summed over the whole
-    range. Honors the dashboard's department filter (narrows to one
-    line rather than dropping the chart)."""
-    rows = ua.get_usage_by_day_and_department(conn, branch_id, chart_range, department_name)
-    departments = sorted({r["department"] for r in rows})
-    by_key = {(r["dayKey"], r["department"]): r["totalSpend"] for r in rows}
+_PIE_RADIUS = 70  # radius of the circle being stroked (used for circumference/dash math)
+_PIE_STROKE_WIDTH = _PIE_RADIUS * 2  # = 2r, so the stroke fills solid from the center out to 2r (a full pie, no donut hole)
+_PIE_CENTER = _PIE_RADIUS * 2  # viewBox center; leaves exactly one full radius of margin around the 2r-radius disk
+_PIE_VIEWBOX_SIZE = _PIE_RADIUS * 4
+_PIE_CIRCUMFERENCE = 2 * math.pi * _PIE_RADIUS
 
-    day_keys = []
-    key = from_key
-    while key <= to_key:
-        day_keys.append(key)
-        key = shift_date_key(key, 1)
 
-    tooltip_days = [{"dayLabel": pa.day_label(dk), "values": {}} for dk in day_keys]
-    series = []
-    max_value = 1.0
-    for i, dept in enumerate(departments):
-        dept_rows = [{"dayKey": dk, "totalSpend": by_key.get((dk, dept), 0.0)} for dk in day_keys]
-        max_value = max(max_value, max(r["totalSpend"] for r in dept_rows))
-        for day_row, tt in zip(dept_rows, tooltip_days):
-            tt["values"][dept] = round(day_row["totalSpend"], 2)
-        series.append({"department": dept, "color": _DEPT_COLOR_PALETTE[i % len(_DEPT_COLOR_PALETTE)],
-                        "rows": dept_rows})
-
-    for s in series:
-        s["points"] = _trend_svg_points(s["rows"], "totalSpend", 0.0, max_value)
-        del s["rows"]
-
-    has_data = any(v for tt in tooltip_days for v in tt["values"].values())
-    return {
-        "series": series,
-        "day_labels": [pa.day_label(dk) for dk in day_keys],
-        "tooltip_days": tooltip_days,
-        "has_data": has_data,
-        "label_step": 1 if len(day_keys) <= 14 else 3,
-    }
+def _department_spend_pie(rows: list[dict]) -> dict:
+    """Each department's share of total Usage Spend over the chart's
+    selected date range, as pie slices -- same Usage-spend basis
+    (StockIssueItem qty x each item's all-time average purchase rate)
+    as the existing Usage by Department bars, just for whichever window
+    the chart's own date picker is set to rather than the page-level
+    filter. Rendered as a ring via stroke-dasharray/-dashoffset on
+    concentric circles (no path arc math needed)."""
+    total = sum(r["totalSpend"] for r in rows)
+    slices = []
+    cumulative = 0.0
+    for i, r in enumerate(rows):
+        if r["totalSpend"] <= 0 or total <= 0:
+            continue
+        fraction = r["totalSpend"] / total
+        dash = fraction * _PIE_CIRCUMFERENCE
+        slices.append({
+            "department": r["department"], "totalSpend": r["totalSpend"], "pct": fraction * 100,
+            "color": _DEPT_COLOR_PALETTE[i % len(_DEPT_COLOR_PALETTE)],
+            "dasharray": f"{dash:.2f} {_PIE_CIRCUMFERENCE - dash:.2f}",
+            "dashoffset": f"{-cumulative * _PIE_CIRCUMFERENCE:.2f}",
+        })
+        cumulative += fraction
+    return {"slices": slices, "total": total, "has_data": total > 0}
 
 bp = Blueprint("dashboard", __name__)
 
@@ -341,7 +332,8 @@ def index():
     trend_has_data = any(r["produced"] or r["wasted"] or r["sold"] for r in trend_rows)
     trend_any_sales = any(r["salesAvailable"] for r in trend_rows)
 
-    dept_trend = _department_spend_trend(conn, branch_id, chart_range, department_name, chart_from_key, chart_to_key)
+    dept_pie_rows = ua.get_usage_by_department(conn, branch_id, chart_range, department_name)
+    dept_pie = _department_spend_pie(dept_pie_rows)
 
     low_stock = get_low_stock(conn, branch_id, range_to_db)
     total_store_value = sum(r["storeValue"] for r in inventory)
@@ -385,7 +377,8 @@ def index():
         trend_produced_points=trend_produced_points, trend_wasted_points=trend_wasted_points,
         trend_variance_points=trend_variance_points, trend_zero_y=trend_zero_y,
         trend_width=_CHART_TREND_WIDTH, trend_height=_CHART_TREND_HEIGHT,
-        dept_trend=dept_trend,
+        dept_pie=dept_pie, pie_radius=_PIE_RADIUS, pie_stroke_width=_PIE_STROKE_WIDTH,
+        pie_center=_PIE_CENTER, pie_viewbox_size=_PIE_VIEWBOX_SIZE,
         today_key=today, last_week_from_key=last_week_from_key, last_week_to_key=last_week_to_key,
         this_month_from_key=this_month_from_key, this_month_to_key=this_month_to_key,
         last_month_from_key=last_month_from_key, last_month_to_key=last_month_to_key,
