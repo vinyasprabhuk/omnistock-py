@@ -10,10 +10,13 @@ from app.excel.export_workbook import (
     build_master_inventory_workbook,
     build_purchase_order_workbook,
     build_tracker_workbook,
+    build_wastage_export_workbook,
 )
 from app.services.calculations import get_daily_tracker, get_low_stock, get_master_inventory
 from app.services.kitchen_requirement import get_requirement_items_by_status
 from app.services.intent import compute_recipe_prep
+from app.services.production import get_production_for_date
+from app.services.wastage import get_wastage_for_date
 
 bp = Blueprint("export", __name__, url_prefix="/api/export")
 
@@ -91,6 +94,16 @@ def purchase_order():
     ]
     data = build_purchase_order_workbook(rows)
     return _xlsx_response(data, f"purchase-order-{today_key()}.xlsx")
+
+
+@bp.route("/wastage")
+def wastage():
+    date = request.args.get("date") or today_key()
+    branch = page_resolve_branch(g.conn, g.user, request.args.get("branchId"))
+    production_rows = get_production_for_date(g.conn, branch["branchId"], date)
+    wastage_rows = get_wastage_for_date(g.conn, branch["branchId"], date)
+    data = build_wastage_export_workbook(date, production_rows, wastage_rows)
+    return _xlsx_response(data, f"production-wastage-{date}.xlsx")
 
 
 @bp.route("/intent")

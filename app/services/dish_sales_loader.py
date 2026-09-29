@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 
 from app.db import new_id
-from app.dates import date_key_to_db, now_db
+from app.dates import date_key_to_db, from_db, now_db
 from app.parsing.dish_sales_excel import parse_dish_sales_file
 from app.services.dish_classify import guess_department, guess_dish_category, guess_menu_group
 from app.services.match_dish import match_dish
@@ -78,3 +78,33 @@ def load_dish_sales_file(conn: sqlite3.Connection, path: str, filename: str) -> 
     dishes_after = conn.execute("SELECT COUNT(*) c FROM Dish").fetchone()["c"]
 
     return {"date": date_key, "rowsLoaded": loaded, "dishesCreated": dishes_after - dishes_before}
+
+
+def get_recent_uploads(conn: sqlite3.Connection, limit: int = 20) -> list[dict]:
+    """Most recent sale-report uploads (one row per calendar day, since
+    load_dish_sales_file keys DishSaleUpload by date and replaces on
+    re-upload), each with its row count -- lets an admin see what's
+    actually been loaded rather than just trusting the upload flashed
+    a success message."""
+    rows = conn.execute(
+        "SELECT u.id, u.filename, u.date, u.createdAt, COUNT(s.id) AS rowCount "
+        "FROM DishSaleUpload u LEFT JOIN DishSale s ON s.uploadId = u.id "
+        "GROUP BY u.id ORDER BY u.date DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    return [{**dict(r), "dateKey": from_db(r["date"]).strftime("%Y-%m-%d")} for r in rows]
+
+
+def get_upload_line_items(conn: sqlite3.Connection, upload_id: str) -> list[dict]:
+    """The actual parsed rows behind one upload, for reviewing exactly
+    what was loaded -- dish name falls back to the raw POS item name
+    when unmatched (matchStatus != 'AUTO'), same fallback the Intent
+    predictions themselves rely on."""
+    rows = conn.execute(
+        "SELECT s.rawItemName, s.rawCategory, s.restaurant, s.qty, s.matchStatus, s.matchConfidence, "
+        "dish.name AS dishName "
+        "FROM DishSale s LEFT JOIN Dish dish ON dish.id = s.dishId "
+        "WHERE s.uploadId = ? ORDER BY s.qty DESC",
+        (upload_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]

@@ -123,7 +123,7 @@ class TestIntentMutations:
         resp = client.post("/intent/upload-sales", data={
             "_csrf_token": token, "week": "2026-08-31", "branchId": branch_id,
         }, follow_redirects=True)
-        assert b"Choose at least one day-wise sale report" in resp.data
+        assert b"Choose at least one item-wise sales report" in resp.data
 
 
 class TestIntentIndexPage:

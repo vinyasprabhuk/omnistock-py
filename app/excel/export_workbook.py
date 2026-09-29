@@ -9,6 +9,8 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
+from app.dates import ist_time
+
 _DEPT_HEADER_FONT = Font(bold=True, size=11, color="FFFFFF", name="Arial")
 _DEPT_HEADER_FILL = PatternFill("solid", fgColor="2F5233")
 _SUBHEADER_FONT = Font(bold=True, name="Arial")
@@ -46,6 +48,27 @@ def build_tracker_workbook(date: str, rows: list[dict]) -> bytes:
             r["itemName"], r["opening"], r["price"], r["purchased"],
             r["kitchenRequirement"], r["issued"], r["closing"], r["unit"], r["usageCost"],
         ])
+    return _to_bytes(wb)
+
+
+def build_wastage_export_workbook(date: str, production_rows: list[dict], wastage_rows: list[dict]) -> bytes:
+    """New export (no original-app equivalent to port) -- Production and
+    Wastage log entries for one date in a single sheet, each row carrying
+    its logged qty/unit exactly as entered (KG or GM today; the unit
+    column is whatever's on the row, not converted) and who logged it."""
+    wb = Workbook()
+    wb.remove(wb.active)
+    sheet = _sheet(wb, f"Production+Wastage {date}", [
+        ("Type", 12), ("Meal Period", 14), ("Item", 26), ("Qty", 10), ("Unit", 10),
+        ("Pieces", 10), ("Logged By", 20), ("Logged At", 12),
+    ])
+    for label, rows in (("Production", production_rows), ("Wastage", wastage_rows)):
+        for r in rows:
+            sheet.append([
+                label, (r["mealPeriod"] or "").title(), r["description"],
+                r["weight"], r["unit"] if r["weight"] is not None else "",
+                r["pieces"], r["createdByName"], ist_time(r["createdAt"]),
+            ])
     return _to_bytes(wb)
 
 

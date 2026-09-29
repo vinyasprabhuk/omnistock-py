@@ -28,8 +28,17 @@
 </div>
 
 <details class="rcard" style="margin-bottom:16px;">
-  <summary>Upload sale reports <span class="rmeta text-muted">day-wise POS export, one or more files at once</span></summary>
-  <form method="post" action="{{ url_for('intent.upload_sales') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;padding:12px 14px 14px;">
+  <summary>Item-wise Sales Report Upload <span class="rmeta text-muted">day-wise POS export, one or more files at once</span></summary>
+  <div class="js-upload-period flex-row" style="gap:16px;padding:12px 14px 0;font-size:0.85rem;">
+    <label class="flex-row" style="gap:5px;width:auto;"><input type="radio" name="uploadPeriodChoice" value="day" checked> Day</label>
+    <label class="flex-row" style="gap:5px;width:auto;"><input type="radio" name="uploadPeriodChoice" value="week"> Week</label>
+    <label class="flex-row" style="gap:5px;width:auto;"><input type="radio" name="uploadPeriodChoice" value="month"> Month</label>
+  </div>
+  <p class="text-muted js-upload-period-hint" data-hint-day="Each file is one day's report -- select the single file for that day."
+     data-hint-week="Each file is still one day's report -- select up to 7 files at once, one per day of the week."
+     data-hint-month="Each file is still one day's report -- select one file per day for the whole month (up to ~31 files at once)."
+     style="font-size:0.8rem;padding:6px 14px 0;margin:0;">Each file is one day's report -- select the single file for that day.</p>
+  <form method="post" action="{{ url_for('intent.upload_sales') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;padding:10px 14px 14px;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="branchId" value="{{ branch.branchId }}">
     <input type="hidden" name="week" value="{{ days_info[0].dateKey }}">
@@ -37,6 +46,30 @@
     <button type="submit" class="btn btn-primary">Upload &amp; Load</button>
   </form>
   <p class="text-muted" style="font-size:0.8rem;padding:0 14px 12px;margin:0;">Re-uploading a date replaces that day's sales, so it's safe to run again. Intent averages the last 6 same-weekday reports, so more history here means better predictions.</p>
+</details>
+
+<details class="rcard" style="margin-bottom:16px;">
+  <summary>Item-wise Sales Reports Uploaded <span class="rmeta text-muted">{{ recent_uploads | length }} most recent</span></summary>
+  {% if recent_uploads | length == 0 %}
+    <p class="text-muted" style="padding:12px 14px;">No item-wise sales reports uploaded yet.</p>
+  {% else %}
+  <div class="table-wrap" style="padding:0 14px 14px;">
+    <table>
+      <thead><tr><th>Date</th><th>Filename</th><th class="num">Rows</th><th>Uploaded At</th><th></th></tr></thead>
+      <tbody>
+        {% for u in recent_uploads %}
+        <tr>
+          <td>{{ u.dateKey }}</td>
+          <td>{{ u.filename }}</td>
+          <td class="num">{{ u.rowCount }}</td>
+          <td class="text-muted">{{ u.createdAt | ist_time }}</td>
+          <td><a class="btn btn-sm" href="{{ url_for('intent.view_upload', upload_id=u.id, branchId=branch.branchId) }}">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 </details>
 
 <div class="flex-row" style="gap:6px;margin-bottom:18px;flex-wrap:wrap;">
@@ -183,6 +216,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/intent-upload-period.js') }}"></script>
 <script>
 (function () {
   function wireFilter(selectEl, inputEl, rowSelector, matchFn) {
