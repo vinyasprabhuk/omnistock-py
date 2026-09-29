@@ -81,6 +81,44 @@ class TestExportRoutes:
         assert "Predicted Dish Counts" in wb.sheetnames
         assert "Ingredient Requirement" in wb.sheetnames
 
+    def test_wastage_export_with_no_entries_is_still_a_valid_workbook(self, full_app, full_db_conn, branch_id):
+        client = _admin_client(full_app, full_db_conn)
+        resp = client.get(f"/api/export/wastage?date=2026-08-25&branchId={branch_id}")
+        assert resp.status_code == 200
+        assert resp.mimetype == XLSX_MIME
+        from openpyxl import load_workbook
+        import io
+        wb = load_workbook(io.BytesIO(resp.data))
+        assert "Production+Wastage 2026-08-25" in wb.sheetnames
+        sheet = wb["Production+Wastage 2026-08-25"]
+        assert [c.value for c in sheet[1]] == [
+            "Type", "Meal Period", "Item", "Qty", "Unit", "Pieces", "Logged By", "Logged At",
+        ]
+
+    def test_wastage_export_includes_production_and_wastage_rows_with_logged_by(self, full_app, full_db_conn, branch_id):
+        from app.services.production import create_production
+        from app.services.wastage import create_wastage
+
+        admin_id, username, password = make_user(full_db_conn, "ADMIN", None)
+        photo = b"\x89PNG\r\n\x1a\n" + b"0" * 20
+        create_production(full_db_conn, admin_id, branch_id, "2026-08-25", "BREAKFAST",
+                           "Sambar", 5.0, "KG", None, photo, "p.png", "image/png")
+        create_wastage(full_db_conn, admin_id, branch_id, "2026-08-25", "LUNCH",
+                        "Rice", 1.2, "KG", None, photo, "w.png", "image/png")
+        full_db_conn.commit()
+
+        client = full_app.test_client()
+        login(client, username, password)
+        resp = client.get(f"/api/export/wastage?date=2026-08-25&branchId={branch_id}")
+        assert resp.status_code == 200
+        from openpyxl import load_workbook
+        import io
+        wb = load_workbook(io.BytesIO(resp.data))
+        sheet = wb["Production+Wastage 2026-08-25"]
+        rows = [[c.value for c in row] for row in sheet.iter_rows(min_row=2)]
+        assert ["Production", "Breakfast", "Sambar", 5.0, "KG", None, "Test ADMIN", rows[0][7]] == rows[0]
+        assert ["Wastage", "Lunch", "Rice", 1.2, "KG", None, "Test ADMIN", rows[1][7]] == rows[1]
+
     def test_export_routes_require_auth(self, full_app):
         client = full_app.test_client()
         for path in ("/api/export/tracker", "/api/export/inventory", "/api/export/purchase-order"):

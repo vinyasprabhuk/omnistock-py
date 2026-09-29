@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Item-wise Sales Report {{ date_key }} - {{ branding.appName }}{% endblock %}
+{% block content %}
+<div class="flex-row" style="justify-content:space-between;align-items:center;margin-bottom:16px;">
+  <h1 class="mt-0">Item-wise Sales Report &mdash; {{ date_key }}</h1>
+  <a class="btn btn-sm" href="{{ url_for('intent.index', branchId=branch.branchId) }}">&larr; Back to Intent</a>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="flex-row" style="gap:24px;flex-wrap:wrap;font-size:0.9rem;">
+    <div style="min-width:0;overflow-wrap:break-word;"><span class="text-muted">Filename</span><br><strong>{{ upload.filename }}</strong></div>
+    <div><span class="text-muted">Rows</span><br><strong>{{ items | length }}</strong></div>
+    <div><span class="text-muted">Uploaded</span><br><strong>{{ upload.createdAt | ist_time }}</strong></div>
+  </div>
+</div>
+
+<div class="card">
+  {% if items | length == 0 %}
+    <p class="text-muted">No rows in this report.</p>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Dish</th><th>POS Item Name</th><th>Restaurant</th><th>Category</th><th class="num">Qty</th><th>Match</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.dishName or item.rawItemName }}</td>
+          <td class="text-muted">{{ item.rawItemName }}</td>
+          <td class="text-muted">{{ item.restaurant or '—' }}</td>
+          <td class="text-muted">{{ item.rawCategory or '—' }}</td>
+          <td class="num">{{ item.qty | fmt }}</td>
+          <td>
+            {% if item.matchStatus == 'AUTO' %}<span class="badge badge-success">Matched</span>
+            {% elif item.dishName %}<span class="badge badge-warning" title="Best guess only">Guessed</span>
+            {% else %}<span class="badge badge-muted">Unmatched</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -9,7 +9,7 @@ from flask import Blueprint, flash, g, redirect, render_template, request, url_f
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import from_db, to_db, today_key
 from app.security import require_write
-from app.services.dish_sales_loader import load_dish_sales_file
+from app.services.dish_sales_loader import get_recent_uploads, get_upload_line_items, load_dish_sales_file
 from app.services.intent import compute_recipe_prep, generate_intent_day, set_dish_override
 
 bp = Blueprint("intent", __name__)
@@ -81,6 +81,7 @@ def index():
     next_week = (week_monday + timedelta(days=7)).strftime("%Y-%m-%d")
     dish_categories = sorted({dc["category"] for dc in dish_counts})
     recipe_groups = sorted({ing["groupLabel"] for ing in ingredients})
+    recent_uploads = get_recent_uploads(conn)
 
     return render_template(
         "intent/index.html", branch=branch, is_admin=is_admin, branches=branches,
@@ -88,6 +89,22 @@ def index():
         prev_week=prev_week, next_week=next_week, intent_day=intent_day,
         dish_counts=dish_counts, ingredients=ingredients, recipe_prep=recipe_prep,
         dish_categories=dish_categories, recipe_groups=recipe_groups,
+        recent_uploads=recent_uploads,
+    )
+
+
+@bp.route("/intent/uploads/<upload_id>", methods=["GET"])
+def view_upload(upload_id: str):
+    conn = g.conn
+    branch = page_resolve_branch(conn, g.user, request.args.get("branchId"))
+    upload = conn.execute("SELECT * FROM DishSaleUpload WHERE id = ?", (upload_id,)).fetchone()
+    if upload is None:
+        flash("That upload no longer exists.", "error")
+        return redirect(url_for("intent.index", branchId=branch["branchId"]))
+    items = get_upload_line_items(conn, upload_id)
+    return render_template(
+        "intent/upload_detail.html", branch=branch, upload=upload, items=items,
+        date_key=from_db(upload["date"]).strftime("%Y-%m-%d"),
     )
 
 
@@ -172,7 +189,7 @@ def upload_sales():
     branch_id = request.form.get("branchId")
     files = [f for f in request.files.getlist("files") if f and f.filename]
     if not files:
-        flash("Choose at least one day-wise sale report file.", "error")
+        flash("Choose at least one item-wise sales report file (one day per file).", "error")
         return redirect(url_for("intent.index", week=week, branchId=branch_id))
 
     total_rows = 0
