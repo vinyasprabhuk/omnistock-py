@@ -41,11 +41,14 @@ class VarianceRow(TypedDict):
     soldBreakdown: list[SoldBreakdownEntry]
 
 
-def _recipe_litres_from_log(conn: sqlite3.Connection, table: str, date_db: str, branch_id: str) -> dict[str, float]:
-    rows = conn.execute(
-        f"SELECT description, weight, unit, pieces FROM {table} WHERE date = ? AND branchId = ?",
-        (date_db, branch_id),
-    ).fetchall()
+def _recipe_litres_from_log(conn: sqlite3.Connection, table: str, date_db: str, branch_id: str,
+                             meal_period: str | None = None) -> dict[str, float]:
+    sql = f"SELECT description, weight, unit, pieces FROM {table} WHERE date = ? AND branchId = ?"
+    params: list = [date_db, branch_id]
+    if meal_period is not None:
+        sql += " AND mealPeriod = ?"
+        params.append(meal_period)
+    rows = conn.execute(sql, params).fetchall()
     totals: dict[str, float] = defaultdict(float)
     for row in rows:
         result = match_and_scale_entry(conn, dict(row))
@@ -98,42 +101,38 @@ def _recipe_litres_from_sales(
     return dict(totals), {k: dict(v) for k, v in breakdown.items()}, True
 
 
-class TrendDayRow(TypedDict):
+
+class MealTrendDayRow(TypedDict):
     dayKey: str
     dayLabel: str
     produced: float
     wasted: float
-    sold: float
-    variance: float
-    salesAvailable: bool
 
 
-def get_production_wastage_variance_trend(
+VALID_MEAL_PERIODS = ("BREAKFAST", "LUNCH", "DINNER")
+
+
+def get_production_wastage_trend_by_meal(
     conn: sqlite3.Connection, branch_id: str, from_day_key: str, to_day_key: str,
-) -> list[TrendDayRow]:
-    """Per-calendar-day totals (Litres, summed across every recipe) of
-    Produced / Wasted / Sold / Variance, for the Dashboard's trend chart
-    -- same per-recipe matcher and variance formula compute_variance
-    uses for one date (produced - sold - wasted), just summed across
-    recipes and walked across a date range. Every day in the range is
-    included even when totals are zero, so the chart's x-axis stays one
-    point per calendar day. "Sold" (and therefore Variance) is only
-    meaningful on a day with an uploaded DishSale report -- salesAvailable
-    flags that per day, same as compute_variance does for a single date."""
-    rows: list[TrendDayRow] = []
+    meal_period: str | None = None,
+) -> list[MealTrendDayRow]:
+    """Per-calendar-day Produced vs Wasted (Litres, summed across every
+    recipe), optionally scoped to one meal period -- unlike the combined
+    Produced/Wasted/Sold/Variance trend above, this has no Variance,
+    because ProductionLog/Wastage carry a real mealPeriod column but
+    DishSale (Sold) carries no meal-period or time-of-day info at all,
+    so Variance can't be split by meal without fabricating that link.
+    meal_period is one of VALID_MEAL_PERIODS, or None for all meals combined."""
+    rows: list[MealTrendDayRow] = []
     key = from_day_key
     while key <= to_day_key:
         date_db = date_key_to_db(key)
-        produced = sum(_recipe_litres_from_log(conn, "ProductionLog", date_db, branch_id).values())
-        wasted = sum(_recipe_litres_from_log(conn, "Wastage", date_db, branch_id).values())
-        sold_by_recipe, _, sales_available = _recipe_litres_from_sales(conn, date_db)
-        sold = sum(sold_by_recipe.values())
+        produced = sum(_recipe_litres_from_log(conn, "ProductionLog", date_db, branch_id, meal_period).values())
+        wasted = sum(_recipe_litres_from_log(conn, "Wastage", date_db, branch_id, meal_period).values())
         day, month, _year = format_date_key(key).split(" ")
         rows.append({
             "dayKey": key, "dayLabel": f"{day} {month}",
             "produced": round(produced, 2), "wasted": round(wasted, 2),
-            "sold": round(sold, 2), "variance": round(produced - sold - wasted, 2),
-            "salesAvailable": sales_available,
         })
         key = shift_date_key(key, 1)
     return rows

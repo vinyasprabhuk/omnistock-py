@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
 from app.auth.page_branch import list_branches_for_admin, page_resolve_branch
 from app.dates import date_key_to_db, today_key
+from app.formatting import fmt
 from app.security import require_write
 from app.services.kitchen_requirement import (
     edit_approved_requirement_qty,
@@ -49,6 +52,20 @@ def _group_into_batches(items: list[dict]) -> list[dict]:
     return batches
 
 
+def _whatsapp_share_url(branch_name: str, date: str, batch: dict) -> str:
+    """A wa.me link that opens WhatsApp with this batch pre-written as a
+    message -- the sender picks the recipient/group themselves, so no
+    phone number or WhatsApp API account is involved. Built from the same
+    rows the page renders, so it reflects any qty edits already saved."""
+    lines = [f"*Kitchen Requirement — {branch_name}*", f"{date} · {batch['requestType'].title()}"]
+    for dept in batch["departmentSections"]:
+        lines += ["", f"*{dept['departmentName']}*"]
+        for item in dept["items"]:
+            unit = f" {item['unit']}" if item.get("unit") else ""
+            lines.append(f"• {item['itemName']} — {fmt(item['qty'])}{unit}")
+    return "https://wa.me/?text=" + quote("\n".join(lines))
+
+
 @bp.route("/requirements")
 def index():
     date = request.args.get("date") or today_key()
@@ -65,6 +82,8 @@ def index():
     issued_items = get_requirement_items_by_status(g.conn, branch["branchId"], date_db, "ISSUED")
     approved_batches = _group_into_batches(approved_items)
     issued_batches = _group_into_batches(issued_items)
+    for batch in approved_batches + issued_batches:
+        batch["whatsappUrl"] = _whatsapp_share_url(branch["branchName"], date, batch)
 
     action_dates = get_action_dates_for_branch(g.conn, branch["branchId"]) if can_review else []
     other_action_dates = [d for d in action_dates if d["dateKey"] != date]

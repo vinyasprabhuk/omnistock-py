@@ -12,9 +12,8 @@ from app.services import purchase_analytics as pa
 from app.services import usage_analytics as ua
 from app.services.calculations import get_low_stock, get_master_inventory, get_period_tracker
 from app.services.spend_periods import get_period_boundaries
-from app.services.wastage_variance import get_production_wastage_variance_trend
+from app.services.wastage_variance import VALID_MEAL_PERIODS, get_production_wastage_trend_by_meal
 
-_CHART_TREND_WIDTH = 720
 _CHART_TREND_HEIGHT = 180
 _CHART_MAX_DAYS = 60
 
@@ -57,23 +56,35 @@ def _fill_missing_days(rows: list[dict], from_key: str, to_key: str, value_key: 
     return filled
 
 
-def _trend_svg_points(rows: list[dict], value_key: str, min_value: float, max_value: float) -> str:
-    """Maps values onto the chart's y-axis using a shared min/max across
-    all series (not just this one), so Produced/Wasted/Variance stay on
-    the same scale and remain comparable -- Variance can go negative
-    (more sold than produced+wasted, e.g. drawing down existing stock),
-    so this can't assume a 0 floor the way a plain bar chart could."""
-    n = len(rows)
-    if n == 0:
-        return ""
+_PRODUCED_WASTED_SERIES = (
+    ("produced", "Produced", "var(--primary)"),
+    ("wasted", "Wasted", "var(--danger)"),
+)
+
+
+def _trend_bar_chart(rows: list[dict], min_value: float, max_value: float, series: tuple) -> dict:
+    """Grouped bars (one per series per day) sharing one min/max scale,
+    growing up from a floating zero baseline rather than the chart's
+    bottom edge -- a value can go negative (e.g. Variance: more sold
+    than produced+wasted), so this can't just grow up from 0 the way a
+    plain single-series bar chart could assume. With an all-nonnegative
+    series (e.g. Produced/Wasted alone), the zero baseline simply lands
+    at the bottom, same as a normal bar chart."""
     span = max_value - min_value
-    x_step = _CHART_TREND_WIDTH / (n - 1) if n > 1 else 0.0
-    points = []
-    for i, r in enumerate(rows):
-        x = i * x_step
-        y = (_CHART_TREND_HEIGHT - ((r[value_key] - min_value) / span * _CHART_TREND_HEIGHT)) if span else _CHART_TREND_HEIGHT / 2
-        points.append(f"{x:.1f},{y:.1f}")
-    return " ".join(points)
+    zero_y = (max_value / span * _CHART_TREND_HEIGHT) if span else _CHART_TREND_HEIGHT / 2
+    days = []
+    for r in rows:
+        bars = []
+        for key, label, color in series:
+            value = r[key]
+            bar_height = abs(value) / span * _CHART_TREND_HEIGHT if span else 0.0
+            top = zero_y - bar_height if value >= 0 else zero_y
+            bars.append({
+                "label": label, "color": color, "valueFmt": f"{value:.2f}",
+                "top": round(top, 1), "height": round(max(bar_height, 1.0) if value else 0.0, 1),
+            })
+        days.append({"dayLabel": r["dayLabel"], "bars": bars})
+    return {"days": days, "zeroY": round(zero_y, 1), "height": _CHART_TREND_HEIGHT}
 
 
 _PIE_RADIUS = 70  # radius of the circle being stroked (used for circumference/dash math)
@@ -314,23 +325,25 @@ def index():
     max_spend_day = max([1.0] + [d["totalSpend"] for d in spend_by_day])
     max_usage_day = max([1.0] + [d["totalSpend"] for d in usage_by_day])
 
+    # Produced vs Wasted chart, always scoped to one meal period -- no
+    # "all meals combined" view (deliberately dropped: Variance can't be
+    # split by meal since Sold/DishSale carries no meal-period info, and
+    # a combined Produced/Wasted-only number was worth less than a real
+    # per-meal breakdown). Defaults to Breakfast when no/invalid meal is
+    # given, same as picking the first tab.
+    meal_period_filter = (request.args.get("meal") or "").upper() or None
+    if meal_period_filter not in VALID_MEAL_PERIODS:
+        meal_period_filter = VALID_MEAL_PERIODS[0]
+    selected_meal = meal_period_filter.lower()
     try:
-        trend_rows = get_production_wastage_variance_trend(conn, branch_id, chart_from_key, chart_to_key)
+        meal_trend_rows = get_production_wastage_trend_by_meal(
+            conn, branch_id, chart_from_key, chart_to_key, meal_period_filter)
     except sqlite3.OperationalError:
-        # Recipe/DishSale (added by migrate_add_intent_recipe) aren't on
-        # every DB this view might run against -- e.g. the pristine
-        # parity-test snapshot predates that migration. Degrade to an
-        # empty trend rather than 500ing the whole Dashboard over one tab.
-        trend_rows = []
-    trend_values = [v for r in trend_rows for v in (r["produced"], r["wasted"], r["variance"])]
-    trend_max = max([0.0] + trend_values)
-    trend_min = min([0.0] + trend_values)
-    trend_produced_points = _trend_svg_points(trend_rows, "produced", trend_min, trend_max)
-    trend_wasted_points = _trend_svg_points(trend_rows, "wasted", trend_min, trend_max)
-    trend_variance_points = _trend_svg_points(trend_rows, "variance", trend_min, trend_max)
-    trend_zero_y = _CHART_TREND_HEIGHT - ((0 - trend_min) / (trend_max - trend_min) * _CHART_TREND_HEIGHT) if trend_max > trend_min else _CHART_TREND_HEIGHT / 2
-    trend_has_data = any(r["produced"] or r["wasted"] or r["sold"] for r in trend_rows)
-    trend_any_sales = any(r["salesAvailable"] for r in trend_rows)
+        meal_trend_rows = []
+    meal_trend_values = [v for r in meal_trend_rows for v in (r["produced"], r["wasted"])]
+    meal_trend_max = max([1.0] + meal_trend_values)
+    trend_bar_chart = _trend_bar_chart(meal_trend_rows, 0.0, meal_trend_max, _PRODUCED_WASTED_SERIES)
+    meal_chart_has_data = any(meal_trend_values)
 
     dept_pie_rows = ua.get_usage_by_department(conn, branch_id, chart_range, department_name)
     dept_pie = _department_spend_pie(dept_pie_rows)
@@ -373,10 +386,7 @@ def index():
         low_stock=low_stock,
         spend_by_day=spend_by_day, max_spend_day=max_spend_day,
         usage_by_day=usage_by_day, max_usage_day=max_usage_day,
-        trend_rows=trend_rows, trend_has_data=trend_has_data, trend_any_sales=trend_any_sales,
-        trend_produced_points=trend_produced_points, trend_wasted_points=trend_wasted_points,
-        trend_variance_points=trend_variance_points, trend_zero_y=trend_zero_y,
-        trend_width=_CHART_TREND_WIDTH, trend_height=_CHART_TREND_HEIGHT,
+        trend_bar_chart=trend_bar_chart, selected_meal=selected_meal, meal_chart_has_data=meal_chart_has_data,
         dept_pie=dept_pie, pie_radius=_PIE_RADIUS, pie_stroke_width=_PIE_STROKE_WIDTH,
         pie_center=_PIE_CENTER, pie_viewbox_size=_PIE_VIEWBOX_SIZE,
         today_key=today, last_week_from_key=last_week_from_key, last_week_to_key=last_week_to_key,
