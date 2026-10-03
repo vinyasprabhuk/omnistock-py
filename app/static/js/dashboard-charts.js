@@ -40,31 +40,6 @@
       chart.addEventListener('mouseleave', function () { hideTooltip(tip); });
     });
 
-    document.querySelectorAll('.js-trend-chart').forEach(function (wrap) {
-      var svg = wrap.querySelector('svg');
-      var dataEl = wrap.querySelector('.js-trend-data');
-      if (!svg || !dataEl) return;
-      var points;
-      try { points = JSON.parse(dataEl.textContent); } catch (err) { return; }
-      if (!points.length) return;
-      var viewBox = svg.viewBox.baseVal;
-      var step = points.length > 1 ? viewBox.width / (points.length - 1) : 0;
-
-      svg.addEventListener('mousemove', function (e) {
-        var rect = svg.getBoundingClientRect();
-        var relX = (e.clientX - rect.left) / rect.width * viewBox.width;
-        var idx = step ? Math.round(relX / step) : 0;
-        idx = Math.max(0, Math.min(points.length - 1, idx));
-        var p = points[idx];
-        showTooltip(tip, e.clientX, e.clientY,
-          '<strong>' + p.dayLabel + '</strong><br>Produced: ' + p.produced + ' L<br>' +
-          'Sold: ' + p.sold + ' L<br>Wasted: ' + p.wasted + ' L<br>' +
-          '<strong>Variance: ' + p.variance + ' L</strong>' +
-          (p.salesAvailable ? '' : '<br><span style="opacity:0.75;">(no sales report)</span>'));
-      });
-      svg.addEventListener('mouseleave', function () { hideTooltip(tip); });
-    });
-
     // Department Spend pie chart -- each slice carries its own data
     // attributes, so no embedded JSON/index math is needed the way the
     // line charts above require.

@@ -77,9 +77,12 @@
         &#128274; Approved by {{ batch.confirmedByName }} on {{ batch.confirmedAt }}
         <span class="text-muted" style="font-size:0.72rem;font-family:monospace;display:block;">Txn: {{ batch.requirementId }}</span>
       </span>
-      {% if current_user.role in ('ADMIN', 'MANAGER') %}
-      <button type="submit" form="issue-form-{{ batch.requirementId }}" class="btn btn-sm btn-primary">Issue</button>
-      {% endif %}
+      <span class="flex-row" style="gap:8px;">
+        <a class="btn btn-sm" href="{{ batch.whatsappUrl }}" target="_blank" rel="noopener">Share on WhatsApp</a>
+        {% if current_user.role in ('ADMIN', 'MANAGER') %}
+        <button type="submit" form="issue-form-{{ batch.requirementId }}" class="btn btn-sm btn-primary">Issue</button>
+        {% endif %}
+      </span>
     </div>
     <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
       {% for dept in batch.departmentSections %}
@@ -125,7 +128,10 @@
       <span class="text-muted" style="font-size:0.85rem;">&#128274; Issued by {{ batch.issuedByName }} on {{ batch.issuedAt }}</span>
       <span class="text-muted" style="font-size:0.72rem;font-family:monospace;display:block;">Txn: {{ batch.requirementId }}</span>
     </span>
-    {{ export_button('/api/export/requirements?date=' ~ date ~ '&branchId=' ~ branch.branchId ~ '&requirementId=' ~ batch.requirementId) }}
+    <span class="flex-row" style="gap:8px;">
+      <a class="btn btn-sm" href="{{ batch.whatsappUrl }}" target="_blank" rel="noopener">Share on WhatsApp</a>
+      {{ export_button('/api/export/requirements?date=' ~ date ~ '&branchId=' ~ branch.branchId ~ '&requirementId=' ~ batch.requirementId) }}
+    </span>
   </div>
   <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
     {% for dept in batch.departmentSections %}

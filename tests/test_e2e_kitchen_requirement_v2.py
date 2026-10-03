@@ -302,3 +302,53 @@ class TestNavBadgeCounts:
         _issue(admin, token, req_id, branch_id)
         assert len(get_pending_requirements(full_db_conn, admin_user)) == before_pending
         assert len(get_approved_requirements(full_db_conn, admin_user)) == before_approved
+
+
+class TestRequirementsWhatsAppShare:
+    """Requirements page "Share on WhatsApp": a wa.me link per Approved/
+    Issued batch carrying the batch as pre-written message text -- nothing
+    for a still-Pending request, which isn't something to hand to the
+    store yet."""
+
+    @staticmethod
+    def _share_texts(html: bytes) -> list[str]:
+        import re
+        from urllib.parse import unquote
+        return [unquote(m.decode()) for m in re.findall(rb'href="https://wa\.me/\?text=([^"]+)"', html)]
+
+    def test_approved_batch_has_share_link_with_items_and_qty(self, full_app, full_db_conn, branch_id):
+        admin = _admin_client(full_app, full_db_conn)
+        token = csrf_token(admin)
+        items, dept = _two_items_and_dept(full_db_conn)
+        req_id = _submit(admin, token, branch_id, dept["id"], "REGULAR", [{"itemId": items[0]["id"], "qty": 4.5}])
+        _approve(admin, token, req_id, branch_id)
+
+        resp = admin.get(f"/requirements?date=2026-08-25&branchId={branch_id}")
+        texts = self._share_texts(resp.data)
+        assert len(texts) == 1
+        assert "Kitchen Requirement" in texts[0]
+        assert "2026-08-25 · Regular" in texts[0]
+        assert f"• {items[0]['name']} — 4.50" in texts[0]
+
+    def test_pending_requirement_has_no_share_link(self, full_app, full_db_conn, branch_id):
+        admin = _admin_client(full_app, full_db_conn)
+        token = csrf_token(admin)
+        items, dept = _two_items_and_dept(full_db_conn)
+        _submit(admin, token, branch_id, dept["id"], "REGULAR", [{"itemId": items[0]["id"], "qty": 2}])
+
+        resp = admin.get(f"/requirements?date=2026-08-25&branchId={branch_id}")
+        assert self._share_texts(resp.data) == []
+
+    def test_issued_batch_keeps_share_link(self, full_app, full_db_conn, branch_id):
+        admin = _admin_client(full_app, full_db_conn)
+        token = csrf_token(admin)
+        items, dept = _two_items_and_dept(full_db_conn)
+        req_id = _submit(admin, token, branch_id, dept["id"], "EXTRA", [{"itemId": items[0]["id"], "qty": 3}])
+        _approve(admin, token, req_id, branch_id)
+        _issue(admin, token, req_id, branch_id)
+
+        resp = admin.get(f"/requirements?date=2026-08-25&branchId={branch_id}")
+        texts = self._share_texts(resp.data)
+        assert len(texts) == 1
+        assert "2026-08-25 · Extra" in texts[0]
+        assert f"• {items[0]['name']} — 3" in texts[0]
