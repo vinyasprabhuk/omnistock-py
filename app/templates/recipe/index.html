@@ -1,5 +1,42 @@
 {% extends "base.html" %}
 {% block title %}Recipe - {{ branding.appName }}{% endblock %}
+{% macro recipe_card(r, lines, yields, meta) %}
+{% set default_mode = 'kg' if yields.kg else ('pax' if yields.pax else '') %}
+<details class="rcard" data-recipe-id="{{ r.recipeId }}">
+  <summary>{{ r.name }} <span class="rmeta text-muted">{{ meta }}</span></summary>
+  <div class="flex-row js-scale-controls" style="padding:10px 14px 0;gap:8px;align-items:center;flex-wrap:wrap;">
+    <label for="scale-value-{{ r.recipeId }}" style="margin:0;">Make</label>
+    <input type="number" id="scale-value-{{ r.recipeId }}" class="js-scale-value" min="0" step="any" placeholder="e.g. 6" style="width:90px;" {{ 'disabled' if not default_mode else '' }}>
+    <select class="js-scale-mode" aria-label="Unit" style="width:auto;" {{ 'disabled' if not default_mode else '' }}>
+      <option value="kg" {{ 'selected' if default_mode == 'kg' else '' }} {{ 'disabled' if not yields.kg else '' }}>kg</option>
+      <option value="pax" {{ 'selected' if default_mode == 'pax' else '' }} {{ 'disabled' if not yields.pax else '' }}>pax</option>
+    </select>
+    <span class="text-muted" style="font-size:0.8rem;">
+      {% if default_mode %}Full batch:
+        {%- if yields.kg %} {{ yields.kg | fmt }} kg{% endif %}{% if yields.kg and yields.pax %} &middot;{% endif %}
+        {%- if yields.pax %} {{ yields.pax | fmt }} pax{% endif %}
+      {% else %}No yield recorded, so this recipe can't be scaled.{% endif %}
+    </span>
+  </div>
+  <p class="js-scale-message text-muted" style="font-size:0.85rem;padding:6px 14px 0;margin:0;" hidden></p>
+  <div class="table-wrap js-scale-result" hidden></div>
+  <div class="table-wrap js-full-batch">
+    <table>
+      <thead><tr><th>Ingredient</th><th>Qty for full batch</th><th>Unit</th><th></th></tr></thead>
+      <tbody>
+        {% for line in lines %}
+        <tr>
+          <td>{{ line.itemName or line.rawIngredientName }}</td>
+          <td>{{ '%.3f' | format(line.qty) if line.itemId else line.rawQtyValue }}</td>
+          <td>{{ line.itemUnit or line.rawQtyUnit }}</td>
+          <td>{% if not line.itemId %}<span class="badge badge-danger">No item match</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endmacro %}
 {% block content %}
 <h1>Recipe</h1>
 <p class="text-muted">The ingredient makeup of every dish, used by Intent to translate planned production into raw material needs.</p>
@@ -18,24 +55,7 @@
   <h2>Dishes with a recipe ({{ dish_recipes | length }})</h2>
   <div class="recipe-list">
     {% for r in dish_recipes %}
-    <details class="rcard">
-      <summary>{{ r.name }} <span class="rmeta text-muted">{{ r.menuGroup }} &middot; {{ recipe_lines[r.recipeId] | length }} ingredients</span></summary>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Ingredient</th><th>Qty for full batch</th><th>Unit</th><th></th></tr></thead>
-          <tbody>
-            {% for line in recipe_lines[r.recipeId] %}
-            <tr>
-              <td>{{ line.itemName or line.rawIngredientName }}</td>
-              <td>{{ '%.3f' | format(line.qty) if line.itemId else line.rawQtyValue }}</td>
-              <td>{{ line.itemUnit or line.rawQtyUnit }}</td>
-              <td>{% if not line.itemId %}<span class="badge badge-danger">No item match</span>{% endif %}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
+    {{ recipe_card(r, recipe_lines[r.recipeId], recipe_yield_info[r.recipeId], r.menuGroup ~ ' · ' ~ (recipe_lines[r.recipeId] | length) ~ ' ingredients') }}
     {% endfor %}
   </div>
 </div>
@@ -45,24 +65,7 @@
   <p class="text-muted">Not sold on their own &mdash; added automatically by the Intent accompaniment rules (chutneys, sambar, sides).</p>
   <div class="recipe-list">
     {% for r in accompaniment_recipes %}
-    <details class="rcard">
-      <summary>{{ r.name }} <span class="rmeta text-muted">{{ recipe_lines[r.recipeId] | length }} ingredients</span></summary>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Ingredient</th><th>Qty for full batch</th><th>Unit</th><th></th></tr></thead>
-          <tbody>
-            {% for line in recipe_lines[r.recipeId] %}
-            <tr>
-              <td>{{ line.itemName or line.rawIngredientName }}</td>
-              <td>{{ '%.3f' | format(line.qty) if line.itemId else line.rawQtyValue }}</td>
-              <td>{{ line.itemUnit or line.rawQtyUnit }}</td>
-              <td>{% if not line.itemId %}<span class="badge badge-danger">No item match</span>{% endif %}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
+    {{ recipe_card(r, recipe_lines[r.recipeId], recipe_yield_info[r.recipeId], (recipe_lines[r.recipeId] | length) ~ ' ingredients') }}
     {% endfor %}
   </div>
 </div>
@@ -92,4 +95,7 @@
     {% endfor %}
   </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/recipe-scale.js') }}"></script>
 {% endblock %}

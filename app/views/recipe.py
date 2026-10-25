@@ -4,10 +4,11 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
 
 from app.security import require_write
 from app.services.recipe_loader import load_recipes_from_docx
+from app.services.recipe_scaling import recipe_yields, scale_recipe
 
 bp = Blueprint("recipe", __name__)
 
@@ -60,10 +61,24 @@ def index():
         sorted(dishes_without_recipe_by_group.items(), key=lambda kv: -len(kv[1]))
     )
 
+    recipe_yield_info = {r["recipeId"]: recipe_yields(r) for r in list(dish_recipes) + list(accompaniment_recipes)}
+
     return render_template(
         "recipe/index.html", dish_recipes=dish_recipes, accompaniment_recipes=accompaniment_recipes,
         recipe_lines=recipe_lines, dishes_without_recipe_by_group=dishes_without_recipe_by_group,
+        recipe_yield_info=recipe_yield_info,
     )
+
+
+@bp.route("/recipe/<recipe_id>/scale", methods=["GET"])
+def scale(recipe_id: str):
+    try:
+        result = scale_recipe(g.conn, recipe_id, request.args.get("mode", ""), request.args.get("value", ""))
+    except LookupError:
+        return jsonify({"error": "Recipe not found."}), 404
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(result)
 
 
 @bp.route("/recipe/upload", methods=["POST"])
