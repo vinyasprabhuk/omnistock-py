@@ -216,8 +216,12 @@ def rematch_unmatched_lines(conn: sqlite3.Connection) -> dict:
     aliases were added to Item Master. First swaps any line that is really
     another recipe for that recipe's ingredients, then links only a
     confident (AUTO) match whose unit converts, exactly like at upload time;
-    anything else is left as it was. Never touches a line that already has
-    an Item."""
+    anything else is left as it was.
+
+    A line that already has an Item is left alone, with one exception: a line
+    sitting on an item with no price is re-checked, and moves to a priced item
+    the name now matches confidently (a wrong alias that pointed at a free
+    item, once corrected, would otherwise leave its lines costing nothing)."""
     expanded = expand_subrecipe_lines(conn)
     lines = conn.execute(
         "SELECT id, rawIngredientName, rawQtyValue, rawQtyUnit FROM RecipeLine "
@@ -237,4 +241,27 @@ def rematch_unmatched_lines(conn: sqlite3.Connection) -> dict:
             (match["matchedItemId"], qty, line["id"]),
         )
         linked += 1
-    return {"checked": len(lines), "linked": linked, "stillUnmatched": len(lines) - linked, "expanded": expanded}
+
+    moved = 0
+    unpriced = conn.execute(
+        "SELECT rl.id, rl.itemId, rl.rawIngredientName, rl.rawQtyValue, rl.rawQtyUnit FROM RecipeLine rl "
+        "JOIN Item i ON i.id = rl.itemId WHERE COALESCE(i.purchasePrice, 0) <= 0 AND rl.subRecipeId IS NULL "
+        "ORDER BY rl.rowid"
+    ).fetchall()
+    for line in unpriced:
+        match = match_item(conn, line["rawIngredientName"])
+        if match["status"] != "AUTO" or not match["matchedItemId"] or match["matchedItemId"] == line["itemId"]:
+            continue
+        item = conn.execute(
+            "SELECT name, unit, purchasePrice FROM Item WHERE id = ?", (match["matchedItemId"],)
+        ).fetchone()
+        if not (item["purchasePrice"] or 0) > 0:
+            continue
+        qty = _convert_qty(line["rawQtyValue"], line["rawQtyUnit"], item["unit"], item["name"])
+        if qty is None:
+            continue
+        conn.execute("UPDATE RecipeLine SET itemId = ?, qty = ?, matchStatus = 'AUTO' WHERE id = ?",
+                     (match["matchedItemId"], qty, line["id"]))
+        moved += 1
+    return {"checked": len(lines), "linked": linked, "stillUnmatched": len(lines) - linked,
+            "expanded": expanded, "moved": moved}

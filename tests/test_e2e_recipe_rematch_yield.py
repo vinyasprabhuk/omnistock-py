@@ -249,3 +249,50 @@ class TestSubRecipeExpansion:
         rid, _ = _recipe(full_db_conn, "Expand Selfie", [("Expand Rice 3", 1.0, "kg", rice), ("Expand Selfie", 100, "grams", None)], litres=4)
         assert rematch_unmatched_lines(full_db_conn)["expanded"] == 0
         assert full_db_conn.execute("SELECT COUNT(*) c FROM RecipeLine WHERE recipeId = ?", (rid,)).fetchone()["c"] == 2
+
+
+class TestMovingOffUnpricedItems:
+    def test_line_on_a_free_item_moves_to_the_priced_item_its_name_now_matches(self, full_db_conn):
+        wrong = _item(full_db_conn, "Free Boondhi", "Kg", price=0)
+        right = _item(full_db_conn, "Real Hing Powder", "Kg", price=1500)
+        add_item_alias(full_db_conn, right, "Hingu Moved")           # the corrected alias
+        _, (line_id,) = _recipe(full_db_conn, "Moved Recipe A", [("Hingu Moved", 10, "grams", wrong)])
+
+        result = rematch_unmatched_lines(full_db_conn)
+
+        assert result["moved"] >= 1
+        row = _line(full_db_conn, line_id)
+        assert row["itemId"] == right and abs(row["qty"] - 0.01) < 1e-9
+
+    def test_a_free_item_with_no_better_match_is_left_alone(self, full_db_conn):
+        free = _item(full_db_conn, "Moved Free Only", "Kg", price=0)
+        _, (line_id,) = _recipe(full_db_conn, "Moved Recipe B", [("Moved Free Only", 2, "kg", free)])
+        rematch_unmatched_lines(full_db_conn)
+        row = _line(full_db_conn, line_id)
+        assert row["itemId"] == free and row["qty"] == 2
+
+    def test_never_moves_onto_another_unpriced_item(self, full_db_conn):
+        wrong = _item(full_db_conn, "Moved Wrong Free", "Kg", price=0)
+        other_free = _item(full_db_conn, "Moved Other Free", "Kg", price=0)
+        add_item_alias(full_db_conn, other_free, "Moved Target Name")
+        _, (line_id,) = _recipe(full_db_conn, "Moved Recipe C", [("Moved Target Name", 1, "kg", wrong)])
+        rematch_unmatched_lines(full_db_conn)
+        assert _line(full_db_conn, line_id)["itemId"] == wrong
+
+    def test_a_priced_item_is_never_touched(self, full_db_conn):
+        priced = _item(full_db_conn, "Moved Priced Keeps", "Kg", price=40)
+        better = _item(full_db_conn, "Moved Better Priced", "Kg", price=50)
+        add_item_alias(full_db_conn, better, "Moved Priced Keeps")
+        _, (line_id,) = _recipe(full_db_conn, "Moved Recipe D", [("Moved Priced Keeps", 1, "kg", priced)])
+        rematch_unmatched_lines(full_db_conn)
+        assert _line(full_db_conn, line_id)["itemId"] == priced
+
+    def test_flash_mentions_moved_lines(self, full_app, full_db_conn):
+        wrong = _item(full_db_conn, "Flash Free Item", "Kg", price=0)
+        right = _item(full_db_conn, "Flash Real Item", "Kg", price=90)
+        add_item_alias(full_db_conn, right, "Flash Moved Spice")
+        _recipe(full_db_conn, "Moved Recipe E", [("Flash Moved Spice", 5, "grams", wrong)])
+        client = _admin(full_app, full_db_conn)
+        html = client.post("/recipe/rematch", data={"_csrf_token": csrf_token(client)},
+                           follow_redirects=True).get_data(as_text=True)
+        assert "on an item with no price moved to the priced item" in html

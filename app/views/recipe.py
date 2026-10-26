@@ -128,13 +128,16 @@ def rematch():
     g.conn.commit()
     expanded = (f" {result['expanded']} line(s) that were really other recipes were replaced by those "
                 f"recipes' ingredients.") if result["expanded"] else ""
+    moved = (f" {result['moved']} line(s) on an item with no price moved to the priced item their name "
+             f"now matches.") if result["moved"] else ""
+    extra = expanded + moved
     if result["checked"] == 0:
-        flash("Every recipe line already has an item." + expanded, "success")
+        flash("Every recipe line already has an item." + extra, "success")
     else:
         flash(
             f"Re-matched {result['linked']} of {result['checked']} unmatched recipe lines; "
-            f"{result['stillUnmatched']} still need an item added or an alias set in Admin > Items." + expanded,
-            "success" if result["linked"] or result["expanded"] else "message",
+            f"{result['stillUnmatched']} still need an item added or an alias set in Admin > Items." + extra,
+            "success" if result["linked"] or result["expanded"] or result["moved"] else "message",
         )
     return redirect(url_for("recipe.index"))
 
