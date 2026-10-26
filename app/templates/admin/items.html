@@ -46,7 +46,14 @@
         <tr>
           <td><strong>{{ item.name }}</strong></td>
           <td>{{ item.unit }}</td>
-          <td>{{ item.purchasePrice | money }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.items_set_price', item_id=item.id) }}" class="flex-row" style="gap:4px;">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="branchId" value="{{ branch_id }}">
+              <input type="number" name="price" min="0" step="0.01" value="{{ '%.2f' | format(item.purchasePrice or 0) }}" aria-label="Price of {{ item.name }}" style="width:100px;">
+              <button type="submit" class="btn btn-sm">Set</button>
+            </form>
+          </td>
           <td>
             <form method="post" action="{{ url_for('admin.items_opening_stock') }}" class="flex-row" style="gap:4px;">
               <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">

@@ -25,6 +25,24 @@ def create_item(conn: sqlite3.Connection, name: str, unit: str, purchase_price: 
     return item_id
 
 
+def set_item_price(conn: sqlite3.Connection, item_id: str, price: str | float) -> float:
+    """Sets an item's purchase price (per its own unit). Raises LookupError for
+    an unknown item and ValueError, with a message fit to show, for a bad number."""
+    import math
+
+    if conn.execute("SELECT 1 FROM Item WHERE id = ?", (item_id,)).fetchone() is None:
+        raise LookupError(item_id)
+    try:
+        value = float(price)
+    except (TypeError, ValueError):
+        raise ValueError("Enter the price as a number.") from None
+    if not math.isfinite(value) or value < 0 or value > 10_000_000:
+        raise ValueError("Price must be a number from 0 up to 10,000,000.")
+    conn.execute("UPDATE Item SET purchasePrice = ?, updatedAt = ? WHERE id = ?", (value, now_db(), item_id))
+    conn.commit()
+    return value
+
+
 def set_opening_stock(conn: sqlite3.Connection, item_id: str, branch_id: str, qty: float) -> None:
     existing = conn.execute(
         "SELECT id FROM ItemOpeningStock WHERE itemId = ? AND branchId = ?", (item_id, branch_id)
