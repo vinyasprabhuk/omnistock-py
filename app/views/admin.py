@@ -84,6 +84,23 @@ def items_create():
     return redirect(url_for("admin.items", branchId=request.form.get("branchId")))
 
 
+@bp.route("/items/<item_id>/price", methods=["POST"])
+@require_role("ADMIN")
+def items_set_price(item_id: str):
+    conn = g.conn
+    branch_id = request.form.get("branchId")
+    try:
+        price = admin_service.set_item_price(conn, item_id, request.form.get("price", ""))
+    except LookupError:
+        flash("Item not found.", "error")
+    except ValueError as e:
+        flash(str(e), "error")
+    else:
+        name = conn.execute("SELECT name FROM Item WHERE id = ?", (item_id,)).fetchone()["name"]
+        flash(f"{name}: price set to {price:g}.", "success")
+    return redirect(url_for("admin.items", branchId=branch_id))
+
+
 @bp.route("/items/opening-stock", methods=["POST"])
 @require_role("ADMIN")
 def items_opening_stock():
