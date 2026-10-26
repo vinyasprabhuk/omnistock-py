@@ -137,3 +137,41 @@ class TestBatchSize:
         html = _admin(full_app, full_db_conn).get("/recipe").get_data(as_text=True)
         assert f"/recipe/{no_kg}/yield" in html
         assert f"/recipe/{has_kg}/yield" not in html
+
+
+class TestUnitWeights:
+    """Counted/spooned units convert via the kitchen's per-item weights."""
+
+    def test_weights_convert_to_kg(self):
+        from app.services.recipe_loader import _convert_qty
+        assert abs(_convert_qty(6, "pieces", "Kg", "Green chilly") - 0.030) < 1e-9
+        assert abs(_convert_qty(10, "cloves", "Kg", "Garlic") - 0.050) < 1e-9
+        assert abs(_convert_qty(3, "coconuts", "Kg", "Coconut") - 0.850) < 1e-9
+        assert abs(_convert_qty(2, "pieces", "Kg", "Drumsticks") - 0.240) < 1e-9
+        assert abs(_convert_qty(2, "pieces", "Kg", "Capsicum") - 0.400) < 1e-9
+        assert abs(_convert_qty(1, "pieces", "Kg", "Raw banana") - 0.120) < 1e-9
+        assert abs(_convert_qty(3, "spoons", "Kg", "Chilly Powder") - 0.090) < 1e-9
+        assert abs(_convert_qty(1.5, "spoons", "Kg", "Turmeric Powder") - 0.045) < 1e-9
+        assert abs(_convert_qty(3, "spoons", "Kg", "Pepper") - 0.060) < 1e-9
+
+    def test_unknown_item_or_unit_is_still_not_guessed(self):
+        from app.services.recipe_loader import _convert_qty
+        assert _convert_qty(5, "pieces", "Kg", "Cashew") is None          # no weight supplied
+        assert _convert_qty(5, "spoons", "Kg", "Green chilly") is None    # no spoon weight for it
+        assert _convert_qty(5, "bunches", "Kg", "Garlic") is None
+        assert _convert_qty(5, "pieces", "Kg") is None                    # no item name
+
+    def test_ordinary_conversions_are_unchanged(self):
+        from app.services.recipe_loader import _convert_qty
+        assert _convert_qty(250, "grams", "Kg", "Garlic") == 0.25
+        assert _convert_qty(500, "ml", "Litre", "Curd") == 0.5
+        assert _convert_qty(4, "pieces", "Piece", "Anything") == 4
+
+    def test_rematch_links_a_counted_line_using_the_weight(self, full_db_conn):
+        item = _item(full_db_conn, "Green chilly", "Kg")
+        add_item_alias(full_db_conn, item, "Unitweight Green Chillies")
+        _, (line_id,) = _recipe(full_db_conn, "Unit Weight Recipe",
+                                [("Unitweight Green Chillies", 6, "pieces", None)])
+        rematch_unmatched_lines(full_db_conn)
+        row = _line(full_db_conn, line_id)
+        assert row["itemId"] == item and abs(row["qty"] - 0.030) < 1e-9
