@@ -126,13 +126,15 @@ def upload():
 def rematch():
     result = rematch_unmatched_lines(g.conn)
     g.conn.commit()
+    expanded = (f" {result['expanded']} line(s) that were really other recipes were replaced by those "
+                f"recipes' ingredients.") if result["expanded"] else ""
     if result["checked"] == 0:
-        flash("Every recipe line already has an item.", "success")
+        flash("Every recipe line already has an item." + expanded, "success")
     else:
         flash(
             f"Re-matched {result['linked']} of {result['checked']} unmatched recipe lines; "
-            f"{result['stillUnmatched']} still need an item added or an alias set in Admin > Items.",
-            "success" if result["linked"] else "message",
+            f"{result['stillUnmatched']} still need an item added or an alias set in Admin > Items." + expanded,
+            "success" if result["linked"] or result["expanded"] else "message",
         )
     return redirect(url_for("recipe.index"))
 

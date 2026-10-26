@@ -36,18 +36,31 @@ _COUNT = {"piece": 1.0, "pieces": 1.0, "pcs": 1.0, "pc": 1.0, "nos": 1.0, "no": 
 # be costed against an item that is priced per Kg. Supplied by the kitchen;
 # an item/unit pair not listed here stays unmatched rather than guessed at.
 _UNIT_KIND = {**{u: "count" for u in _COUNT}, "clove": "clove", "cloves": "clove",
-              "coconut": "coconut", "coconuts": "coconut", "spoon": "spoon", "spoons": "spoon"}
+              "coconut": "coconut", "coconuts": "coconut", "spoon": "spoon", "spoons": "spoon",
+              "bunch": "bunch", "bunches": "bunch"}
 UNIT_GRAMS = {
     "green chilly": {"count": 5},
+    "red chilli": {"count": 5},
     "garlic": {"clove": 5},
-    "coconut": {"coconut": 850 / 3},
+    "coconut": {"coconut": 850 / 3, "count": 850 / 3},
     "drumsticks": {"count": 120},
     "capsicum": {"count": 200},
     "raw banana": {"count": 120},
+    "banana": {"count": 118},
+    "cashew": {"count": 4},
+    "cauliflower": {"count": 300},
+    "coriander leaves": {"bunch": 80},
     "chilly powder": {"spoon": 30},
     "turmeric powder": {"spoon": 30},
     "pepper": {"spoon": 20},
 }
+
+# Grams of the item behind one ml of what the recipe lists: 250 ml of tamarind
+# extract is made from 50 g of tamarind.
+ML_TO_GRAMS = {"tamarind": 50 / 250}
+
+# A recipe line that names another recipe, under a different spelling.
+SUB_RECIPE_ALIASES = {"mini idli batter": "idli batter"}
 
 
 def _convert_qty(value: float, raw_unit: str, target_unit: str, item_name: str | None = None) -> float | None:
@@ -61,6 +74,9 @@ def _convert_qty(value: float, raw_unit: str, target_unit: str, item_name: str |
     than leaving those lines unmatched."""
     raw_unit = raw_unit.lower()
     target = target_unit.lower()
+    extract = ML_TO_GRAMS.get((item_name or "").strip().lower())
+    if extract is not None and raw_unit in _VOLUME and target in ("kg", "litre"):
+        return value * _VOLUME[raw_unit] * extract / 1000.0
     if raw_unit in _WEIGHT and target == "kg":
         return value * _WEIGHT[raw_unit] / 1000.0
     if raw_unit in _VOLUME and target == "litre":
@@ -152,11 +168,57 @@ def load_recipes_from_docx(conn: sqlite3.Connection, docx_path: str) -> dict:
     return summary
 
 
+def expand_subrecipe_lines(conn: sqlite3.Connection) -> int:
+    """A line with no Item whose name is another recipe ("Idli batter 110 g",
+    "Potato masala 40 g") is replaced by that recipe's own ingredients,
+    scaled to the quantity used -- so the batter's rice, dal and so on are
+    costed instead of one unpriceable text line. Uses the same 1 g = 1 ml
+    scale as the rest of the app, and skips a recipe with no batch size."""
+    from app.services.wastage_ingredients import batch_ml_for_recipe
+
+    lines = conn.execute(
+        "SELECT id, recipeId, rawIngredientName, rawQtyValue, rawQtyUnit FROM RecipeLine "
+        "WHERE itemId IS NULL AND subRecipeId IS NULL ORDER BY rowid"
+    ).fetchall()
+    expanded = 0
+    for line in lines:
+        key = line["rawIngredientName"].strip().lower()
+        sub = conn.execute(
+            "SELECT * FROM Recipe WHERE lower(name) = ? AND id != ?",
+            (SUB_RECIPE_ALIASES.get(key, key), line["recipeId"]),
+        ).fetchone()
+        unit = line["rawQtyUnit"].lower()
+        if sub is None or (unit not in _WEIGHT and unit not in _VOLUME):
+            continue
+        batch_ml = batch_ml_for_recipe(sub)
+        sub_lines = conn.execute(
+            "SELECT itemId, qty, rawIngredientName, rawQtyValue, rawQtyUnit, matchStatus FROM RecipeLine "
+            "WHERE recipeId = ? AND subRecipeId IS NULL ORDER BY rowid", (sub["id"],)
+        ).fetchall()
+        if not batch_ml or not sub_lines:
+            continue
+        used_ml = line["rawQtyValue"] * (_WEIGHT.get(unit) or _VOLUME[unit])
+        scale = used_ml / batch_ml
+        for sl in sub_lines:
+            conn.execute(
+                "INSERT INTO RecipeLine (id, recipeId, itemId, subRecipeId, qty, rawIngredientName, "
+                "rawQtyValue, rawQtyUnit, matchStatus, createdAt) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)",
+                (new_id(), line["recipeId"], sl["itemId"], sl["qty"] * scale, sl["rawIngredientName"],
+                 sl["rawQtyValue"] * scale, sl["rawQtyUnit"], sl["matchStatus"], now_db()),
+            )
+        conn.execute("DELETE FROM RecipeLine WHERE id = ?", (line["id"],))
+        expanded += 1
+    return expanded
+
+
 def rematch_unmatched_lines(conn: sqlite3.Connection) -> dict:
     """Retries every recipe line that has no Item yet -- for after items or
-    aliases were added to Item Master. Only a confident (AUTO) match whose
-    unit converts is linked, exactly like at upload time; anything else is
-    left as it was. Never touches a line that already has an Item."""
+    aliases were added to Item Master. First swaps any line that is really
+    another recipe for that recipe's ingredients, then links only a
+    confident (AUTO) match whose unit converts, exactly like at upload time;
+    anything else is left as it was. Never touches a line that already has
+    an Item."""
+    expanded = expand_subrecipe_lines(conn)
     lines = conn.execute(
         "SELECT id, rawIngredientName, rawQtyValue, rawQtyUnit FROM RecipeLine "
         "WHERE itemId IS NULL AND subRecipeId IS NULL ORDER BY rowid"
@@ -175,4 +237,4 @@ def rematch_unmatched_lines(conn: sqlite3.Connection) -> dict:
             (match["matchedItemId"], qty, line["id"]),
         )
         linked += 1
-    return {"checked": len(lines), "linked": linked, "stillUnmatched": len(lines) - linked}
+    return {"checked": len(lines), "linked": linked, "stillUnmatched": len(lines) - linked, "expanded": expanded}
