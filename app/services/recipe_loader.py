@@ -31,8 +31,26 @@ _WEIGHT = {"g": 1.0, "gram": 1.0, "grams": 1.0, "kg": 1000.0}
 _VOLUME = {"ml": 1.0, "l": 1000.0, "litre": 1000.0, "liter": 1000.0, "ltr": 1000.0}
 _COUNT = {"piece": 1.0, "pieces": 1.0, "pcs": 1.0, "pc": 1.0, "nos": 1.0, "no": 1.0, "": 1.0}
 
+# What a recipe's counted or spooned unit weighs, per Item (lower-case name),
+# in grams -- so "6 pieces" of Green chilly or "3 spoons" of Chilly Powder can
+# be costed against an item that is priced per Kg. Supplied by the kitchen;
+# an item/unit pair not listed here stays unmatched rather than guessed at.
+_UNIT_KIND = {**{u: "count" for u in _COUNT}, "clove": "clove", "cloves": "clove",
+              "coconut": "coconut", "coconuts": "coconut", "spoon": "spoon", "spoons": "spoon"}
+UNIT_GRAMS = {
+    "green chilly": {"count": 5},
+    "garlic": {"clove": 5},
+    "coconut": {"coconut": 850 / 3},
+    "drumsticks": {"count": 120},
+    "capsicum": {"count": 200},
+    "raw banana": {"count": 120},
+    "chilly powder": {"spoon": 30},
+    "turmeric powder": {"spoon": 30},
+    "pepper": {"spoon": 20},
+}
 
-def _convert_qty(value: float, raw_unit: str, target_unit: str) -> float | None:
+
+def _convert_qty(value: float, raw_unit: str, target_unit: str, item_name: str | None = None) -> float | None:
     """Converts a recipe-doc quantity (in raw_unit) into target_unit's scale.
     Returns None if the two units aren't in the same family (weight/volume/count).
 
@@ -53,6 +71,9 @@ def _convert_qty(value: float, raw_unit: str, target_unit: str) -> float | None:
         return value * _WEIGHT[raw_unit] / 1000.0
     if raw_unit in _VOLUME and target == "kg":
         return value * _VOLUME[raw_unit] / 1000.0
+    grams = UNIT_GRAMS.get((item_name or "").strip().lower(), {}).get(_UNIT_KIND.get(raw_unit))
+    if grams is not None and target in ("kg", "litre"):
+        return value * grams / 1000.0
     return None
 
 
@@ -109,9 +130,9 @@ def load_recipes_from_docx(conn: sqlite3.Connection, docx_path: str) -> dict:
             converted_qty = ing["qtyValue"]
             if match["status"] == "AUTO" and match["matchedItemId"]:
                 item_row = conn.execute(
-                    "SELECT unit FROM Item WHERE id = ?", (match["matchedItemId"],)
+                    "SELECT name, unit FROM Item WHERE id = ?", (match["matchedItemId"],)
                 ).fetchone()
-                converted = _convert_qty(ing["qtyValue"], ing["qtyUnit"], item_row["unit"])
+                converted = _convert_qty(ing["qtyValue"], ing["qtyUnit"], item_row["unit"], item_row["name"])
                 if converted is not None:
                     item_id = match["matchedItemId"]
                     converted_qty = converted
@@ -145,8 +166,8 @@ def rematch_unmatched_lines(conn: sqlite3.Connection) -> dict:
         match = match_item(conn, line["rawIngredientName"])
         if match["status"] != "AUTO" or not match["matchedItemId"]:
             continue
-        unit = conn.execute("SELECT unit FROM Item WHERE id = ?", (match["matchedItemId"],)).fetchone()["unit"]
-        qty = _convert_qty(line["rawQtyValue"], line["rawQtyUnit"], unit)
+        item = conn.execute("SELECT name, unit FROM Item WHERE id = ?", (match["matchedItemId"],)).fetchone()
+        qty = _convert_qty(line["rawQtyValue"], line["rawQtyUnit"], item["unit"], item["name"])
         if qty is None:
             continue
         conn.execute(
