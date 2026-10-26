@@ -7,10 +7,12 @@ Item Master match keeps itemId NULL and its raw name/qty/unit intact, so it
 can be resolved later (see matchStatus) once the missing item is added --
 nothing about it is guessed at import time.
 
-Upsert by Recipe.name, so re-uploading an updated recipe doc (the same
-dish with corrected quantities, say) replaces that recipe's lines instead
-of duplicating it -- safe to run repeatedly from the Recipe tab's upload
-form. A recipe is linked to a Dish only when a Dish with that exact name
+Add-only: a recipe whose name is already in the app -- the same name, or a
+close automatic match to one (e.g. "Tamil Nadu Sambar" vs "Tamilnadu
+Sambar") -- is skipped and reported, never overwritten, so re-uploading a
+doc is safe and only brings in recipes that are genuinely new. The check
+runs against what existed before the upload, so two new recipes in one doc
+never skip each other. A recipe is linked to a Dish only when a Dish with that exact name
 already exists (created from real POS sales) -- never fabricated here, so
 an accompaniment-only recipe (Sambar, Kootu, ...) stays unlinked until the
 matching dish genuinely shows up in sales.
@@ -23,6 +25,7 @@ from app.db import new_id
 from app.dates import now_db
 from app.parsing.recipe_docx import ParsedRecipe, parse_recipe_docx
 from app.services.match_item import match_item
+from app.services.match_recipe import match_recipe
 
 _WEIGHT = {"g": 1.0, "gram": 1.0, "grams": 1.0, "kg": 1000.0}
 _VOLUME = {"ml": 1.0, "l": 1000.0, "litre": 1000.0, "liter": 1000.0, "ltr": 1000.0}
@@ -55,10 +58,30 @@ def _convert_qty(value: float, raw_unit: str, target_unit: str) -> float | None:
 
 def load_recipes_from_docx(conn: sqlite3.Connection, docx_path: str) -> dict:
     recipes = parse_recipe_docx(docx_path)
-    summary = {"recipesLoaded": 0, "recipesUpdated": 0, "dishesLinked": 0,
+    summary = {"recipesLoaded": 0, "recipesSkipped": [], "dishesLinked": 0,
                "linesMatched": 0, "linesUnmatched": []}
 
+    # Decide every skip before writing anything, so the matcher only ever
+    # compares against recipes that existed before this upload.
+    to_load: list[ParsedRecipe] = []
+    seen: set[str] = set()
     for r in recipes:
+        key = r["name"].strip().lower()
+        if key in seen:
+            summary["recipesSkipped"].append((r["name"], "repeated in this file"))
+            continue
+        seen.add(key)
+        exact = conn.execute("SELECT name FROM Recipe WHERE lower(name) = ?", (key,)).fetchone()
+        if exact:
+            summary["recipesSkipped"].append((r["name"], exact["name"]))
+            continue
+        near = match_recipe(conn, r["name"])
+        if near["status"] == "AUTO":
+            summary["recipesSkipped"].append((r["name"], near["matchedRecipeName"]))
+            continue
+        to_load.append(r)
+
+    for r in to_load:
         r: ParsedRecipe
         # Exact (case-insensitive) name match only -- fuzzy matching here
         # risks linking an accompaniment-only recipe (e.g. "Tamilnadu
@@ -71,24 +94,13 @@ def load_recipes_from_docx(conn: sqlite3.Connection, docx_path: str) -> dict:
         if dish_id:
             summary["dishesLinked"] += 1
 
-        existing_recipe = conn.execute("SELECT id FROM Recipe WHERE name = ?", (r["name"],)).fetchone()
         ts = now_db()
-        if existing_recipe:
-            recipe_id = existing_recipe["id"]
-            conn.execute(
-                "UPDATE Recipe SET dishId = ?, servesQty = ?, servesVolumeLitre = ?, portionSizeMl = ?, updatedAt = ? "
-                "WHERE id = ?",
-                (dish_id, r["servesQty"], r["servesVolumeLitre"], r["portionSizeMl"], ts, recipe_id),
-            )
-            conn.execute("DELETE FROM RecipeLine WHERE recipeId = ?", (recipe_id,))
-            summary["recipesUpdated"] += 1
-        else:
-            recipe_id = new_id()
-            conn.execute(
-                "INSERT INTO Recipe (id, dishId, name, servesQty, servesVolumeLitre, portionSizeMl, createdAt, updatedAt) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (recipe_id, dish_id, r["name"], r["servesQty"], r["servesVolumeLitre"], r["portionSizeMl"], ts, ts),
-            )
+        recipe_id = new_id()
+        conn.execute(
+            "INSERT INTO Recipe (id, dishId, name, servesQty, servesVolumeLitre, portionSizeMl, createdAt, updatedAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (recipe_id, dish_id, r["name"], r["servesQty"], r["servesVolumeLitre"], r["portionSizeMl"], ts, ts),
+        )
         summary["recipesLoaded"] += 1
 
         for ing in r["ingredients"]:
@@ -117,3 +129,29 @@ def load_recipes_from_docx(conn: sqlite3.Connection, docx_path: str) -> dict:
             )
 
     return summary
+
+
+def rematch_unmatched_lines(conn: sqlite3.Connection) -> dict:
+    """Retries every recipe line that has no Item yet -- for after items or
+    aliases were added to Item Master. Only a confident (AUTO) match whose
+    unit converts is linked, exactly like at upload time; anything else is
+    left as it was. Never touches a line that already has an Item."""
+    lines = conn.execute(
+        "SELECT id, rawIngredientName, rawQtyValue, rawQtyUnit FROM RecipeLine "
+        "WHERE itemId IS NULL AND subRecipeId IS NULL ORDER BY rowid"
+    ).fetchall()
+    linked = 0
+    for line in lines:
+        match = match_item(conn, line["rawIngredientName"])
+        if match["status"] != "AUTO" or not match["matchedItemId"]:
+            continue
+        unit = conn.execute("SELECT unit FROM Item WHERE id = ?", (match["matchedItemId"],)).fetchone()["unit"]
+        qty = _convert_qty(line["rawQtyValue"], line["rawQtyUnit"], unit)
+        if qty is None:
+            continue
+        conn.execute(
+            "UPDATE RecipeLine SET itemId = ?, qty = ?, matchStatus = 'AUTO' WHERE id = ?",
+            (match["matchedItemId"], qty, line["id"]),
+        )
+        linked += 1
+    return {"checked": len(lines), "linked": linked, "stillUnmatched": len(lines) - linked}

@@ -88,3 +88,25 @@ def scale_recipe(conn: sqlite3.Connection, recipe_id: str, mode: str, value: str
         "yieldKg": yields["kg"], "yieldPax": yields["pax"],
         "lines": lines, "totalCost": total_cost, "uncostedCount": uncosted,
     }
+
+
+MAX_BATCH_KG = 1000
+
+
+def set_batch_kg(conn: sqlite3.Connection, recipe_id: str, value: str | float) -> float:
+    """Records a recipe's finished batch size, in kg (1 kg = 1 litre, the
+    same convention batch_ml_for_recipe uses), so it can be scaled by kg.
+    Raises LookupError for an unknown recipe and ValueError (with a message
+    fit to show the user) for a bad number."""
+    from app.dates import now_db
+
+    if conn.execute("SELECT 1 FROM Recipe WHERE id = ?", (recipe_id,)).fetchone() is None:
+        raise LookupError(recipe_id)
+    try:
+        kg = float(value)
+    except (TypeError, ValueError):
+        raise ValueError("Enter the batch size as a number of kg.") from None
+    if not math.isfinite(kg) or kg <= 0 or kg > MAX_BATCH_KG:
+        raise ValueError(f"Batch size must be more than 0 and at most {MAX_BATCH_KG} kg.")
+    conn.execute("UPDATE Recipe SET servesVolumeLitre = ?, updatedAt = ? WHERE id = ?", (kg, now_db(), recipe_id))
+    return kg

@@ -7,8 +7,8 @@ from pathlib import Path
 from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
 
 from app.security import require_write
-from app.services.recipe_loader import load_recipes_from_docx
-from app.services.recipe_scaling import recipe_yields, scale_recipe
+from app.services.recipe_loader import load_recipes_from_docx, rematch_unmatched_lines
+from app.services.recipe_scaling import recipe_yields, scale_recipe, set_batch_kg
 
 bp = Blueprint("recipe", __name__)
 
@@ -107,11 +107,47 @@ def upload():
     finally:
         tmp_path.unlink(missing_ok=True)
 
-    new_count = summary["recipesLoaded"] - summary["recipesUpdated"]
-    flash(
-        f"Loaded {summary['recipesLoaded']} recipes ({new_count} new, {summary['recipesUpdated']} updated), "
+    skipped = summary["recipesSkipped"]
+    message = (
+        f"Loaded {summary['recipesLoaded']} new recipes, "
         f"{summary['dishesLinked']} linked to a sold dish, {summary['linesMatched']} ingredient lines matched, "
-        f"{len(summary['linesUnmatched'])} still need an item added or matched.",
-        "message" if summary["linesUnmatched"] else "success",
+        f"{len(summary['linesUnmatched'])} still need an item added or matched."
     )
+    if skipped:
+        names = "; ".join(f"{name} (already have {existing})" if existing != "repeated in this file"
+                          else f"{name} (repeated in this file)" for name, existing in skipped)
+        message += f" Skipped {len(skipped)} that already exist: {names}."
+    flash(message, "message" if summary["linesUnmatched"] or skipped else "success")
+    return redirect(url_for("recipe.index"))
+
+
+@bp.route("/recipe/rematch", methods=["POST"])
+@require_write
+def rematch():
+    result = rematch_unmatched_lines(g.conn)
+    g.conn.commit()
+    if result["checked"] == 0:
+        flash("Every recipe line already has an item.", "success")
+    else:
+        flash(
+            f"Re-matched {result['linked']} of {result['checked']} unmatched recipe lines; "
+            f"{result['stillUnmatched']} still need an item added or an alias set in Admin > Items.",
+            "success" if result["linked"] else "message",
+        )
+    return redirect(url_for("recipe.index"))
+
+
+@bp.route("/recipe/<recipe_id>/yield", methods=["POST"])
+@require_write
+def set_yield(recipe_id: str):
+    try:
+        kg = set_batch_kg(g.conn, recipe_id, request.form.get("kg", ""))
+    except LookupError:
+        flash("Recipe not found.", "error")
+        return redirect(url_for("recipe.index"))
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("recipe.index"))
+    g.conn.commit()
+    flash(f"Batch size saved: {kg:g} kg. This recipe can now be scaled by kg.", "success")
     return redirect(url_for("recipe.index"))

@@ -18,6 +18,15 @@
       {% else %}No yield recorded, so this recipe can't be scaled.{% endif %}
     </span>
   </div>
+  {% if not yields.kg %}
+  <form method="post" action="{{ url_for('recipe.set_yield', recipe_id=r.recipeId) }}" class="flex-row" style="padding:8px 14px 0;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <label for="batch-kg-{{ r.recipeId }}" style="margin:0;font-size:0.85rem;">Full batch makes</label>
+    <input type="number" id="batch-kg-{{ r.recipeId }}" name="kg" min="0" step="any" placeholder="kg" required style="width:90px;">
+    <span class="text-muted" style="font-size:0.85rem;">kg</span>
+    <button type="submit" class="btn btn-secondary">Save batch size</button>
+  </form>
+  {% endif %}
   <p class="js-scale-message text-muted" style="font-size:0.85rem;padding:6px 14px 0;margin:0;" hidden></p>
   <div class="table-wrap js-scale-result" hidden></div>
   <div class="table-wrap js-full-batch">
@@ -43,11 +52,16 @@
 
 <div class="card" style="max-width:640px;">
   <h2>Upload Recipes</h2>
-  <p class="text-muted">Upload the recipe Word document. Re-uploading an updated version replaces each recipe's ingredients by name &mdash; safe to run again after correcting quantities.</p>
+  <p class="text-muted">Upload the recipe Word document. Only new recipes are added &mdash; a recipe whose name already exists (or closely matches one) is skipped and left as it is, so it's safe to upload the same file again.</p>
   <form method="post" action="{{ url_for('recipe.upload') }}" enctype="multipart/form-data" class="flex-row" style="align-items:flex-end;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <label class="field" style="width:auto;"><span>File</span><input type="file" name="file" accept=".docx" required style="width:260px;"></label>
     <button type="submit" class="btn btn-primary">Upload &amp; Load</button>
+  </form>
+  <form method="post" action="{{ url_for('recipe.rematch') }}" style="margin-top:14px;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <p class="text-muted" style="margin:0 0 8px;">Added an item or an alias in Admin &gt; Items? Re-check every recipe line that still shows "No item match".</p>
+    <button type="submit" class="btn btn-secondary">Re-match unmatched lines</button>
   </form>
 </div>
 
