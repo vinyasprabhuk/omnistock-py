@@ -156,7 +156,7 @@ class TestUnitWeights:
 
     def test_unknown_item_or_unit_is_still_not_guessed(self):
         from app.services.recipe_loader import _convert_qty
-        assert _convert_qty(5, "pieces", "Kg", "Cashew") is None          # no weight supplied
+        assert _convert_qty(5, "pieces", "Kg", "Paneer") is None          # no weight supplied
         assert _convert_qty(5, "spoons", "Kg", "Green chilly") is None    # no spoon weight for it
         assert _convert_qty(5, "bunches", "Kg", "Garlic") is None
         assert _convert_qty(5, "pieces", "Kg") is None                    # no item name
@@ -175,3 +175,77 @@ class TestUnitWeights:
         rematch_unmatched_lines(full_db_conn)
         row = _line(full_db_conn, line_id)
         assert row["itemId"] == item and abs(row["qty"] - 0.030) < 1e-9
+
+
+class TestMoreUnitWeights:
+    def test_new_weights(self):
+        from app.services.recipe_loader import _convert_qty
+        assert abs(_convert_qty(10, "pieces", "Kg", "Red Chilli") - 0.050) < 1e-9
+        assert abs(_convert_qty(10, "pieces", "Kg", "Cashew") - 0.040) < 1e-9
+        assert abs(_convert_qty(1, "nos", "Kg", "Cauliflower") - 0.300) < 1e-9
+        assert abs(_convert_qty(5, "bunches", "Kg", "Coriander leaves") - 0.400) < 1e-9
+        assert abs(_convert_qty(10, "pieces", "Kg", "Banana") - 1.180) < 1e-9
+        assert abs(_convert_qty(3, "nos", "Kg", "Coconut") - 0.850) < 1e-9
+
+    def test_tamarind_extract_ml_is_a_fifth_of_tamarind_by_weight(self):
+        from app.services.recipe_loader import _convert_qty
+        assert abs(_convert_qty(250, "ml", "Kg", "Tamarind") - 0.050) < 1e-9
+        assert _convert_qty(100, "grams", "Kg", "Tamarind") == 0.1, "grams are untouched"
+        assert _convert_qty(250, "ml", "Kg", "Curd") == 0.25, "other items keep 1 ml = 1 g"
+
+
+class TestSubRecipeExpansion:
+    def _batter(self, conn):
+        rice = _item(conn, "Expand Rice", "Kg", 40)
+        dal = _item(conn, "Expand Dal", "Kg", 100)
+        recipe_id, _ = _recipe(conn, "Expand Batter", [
+            ("Expand Rice", 1.0, "kg", rice), ("Expand Dal", 0.3, "kg", dal), ("Mystery Spice", 10, "grams", None),
+        ], serves_qty=80, litres=4)
+        return rice, dal, recipe_id
+
+    def test_a_line_naming_another_recipe_becomes_its_ingredients_scaled(self, full_db_conn):
+        rice, dal, _ = self._batter(full_db_conn)
+        parent, _ = _recipe(full_db_conn, "Expand Parent", [("Expand Batter", 400, "grams", None)])
+
+        result = rematch_unmatched_lines(full_db_conn)
+
+        assert result["expanded"] == 1
+        lines = {l["rawIngredientName"]: l for l in full_db_conn.execute(
+            "SELECT * FROM RecipeLine WHERE recipeId = ?", (parent,))}
+        assert "Expand Batter" not in lines, "the text line is replaced"
+        assert lines["Expand Rice"]["itemId"] == rice and abs(lines["Expand Rice"]["qty"] - 0.1) < 1e-9
+        assert lines["Expand Dal"]["itemId"] == dal and abs(lines["Expand Dal"]["qty"] - 0.03) < 1e-9
+        assert lines["Mystery Spice"]["itemId"] is None and abs(lines["Mystery Spice"]["rawQtyValue"] - 1.0) < 1e-9
+
+    def test_the_source_recipe_is_not_changed(self, full_db_conn):
+        _, _, batter = self._batter(full_db_conn)
+        _recipe(full_db_conn, "Expand Parent B", [("Expand Batter", 400, "grams", None)])
+        rematch_unmatched_lines(full_db_conn)
+        assert full_db_conn.execute("SELECT COUNT(*) c FROM RecipeLine WHERE recipeId = ?", (batter,)).fetchone()["c"] == 3
+
+    def test_alias_spelling_points_at_the_same_recipe(self, full_db_conn):
+        full_db_conn.execute("UPDATE Recipe SET name = 'Idli Batter' WHERE name = 'Idli Batter' ")  # no-op
+        rice = _item(full_db_conn, "Mini Rice", "Kg", 40)
+        _recipe(full_db_conn, "Idli Batter", [("Mini Rice", 1.0, "kg", rice)], serves_qty=80, litres=4)
+        parent, _ = _recipe(full_db_conn, "Expand Mini Parent", [("Mini idli batter", 10, "grams", None)])
+        rematch_unmatched_lines(full_db_conn)
+        line = full_db_conn.execute("SELECT itemId, qty FROM RecipeLine WHERE recipeId = ?", (parent,)).fetchone()
+        assert line["itemId"] == rice and abs(line["qty"] - 0.0025) < 1e-9
+
+    def test_no_batch_size_or_a_count_unit_means_no_expansion(self, full_db_conn):
+        rice = _item(full_db_conn, "Expand Rice 2", "Kg", 40)
+        _recipe(full_db_conn, "Expand No Yield", [("Expand Rice 2", 1.0, "kg", rice)])  # no yield
+        _recipe(full_db_conn, "Expand Has Yield", [("Expand Rice 2", 1.0, "kg", rice)], litres=4)
+        p1, _ = _recipe(full_db_conn, "Expand Parent C", [("Expand No Yield", 400, "grams", None)])
+        p2, _ = _recipe(full_db_conn, "Expand Parent D", [("Expand Has Yield", 3, "pieces", None)])
+        result = rematch_unmatched_lines(full_db_conn)
+        assert result["expanded"] == 0
+        for parent, name in ((p1, "Expand No Yield"), (p2, "Expand Has Yield")):
+            assert [l["rawIngredientName"] for l in full_db_conn.execute(
+                "SELECT rawIngredientName FROM RecipeLine WHERE recipeId = ?", (parent,))] == [name]
+
+    def test_a_recipe_never_expands_into_itself(self, full_db_conn):
+        rice = _item(full_db_conn, "Expand Rice 3", "Kg", 40)
+        rid, _ = _recipe(full_db_conn, "Expand Selfie", [("Expand Rice 3", 1.0, "kg", rice), ("Expand Selfie", 100, "grams", None)], litres=4)
+        assert rematch_unmatched_lines(full_db_conn)["expanded"] == 0
+        assert full_db_conn.execute("SELECT COUNT(*) c FROM RecipeLine WHERE recipeId = ?", (rid,)).fetchone()["c"] == 2
